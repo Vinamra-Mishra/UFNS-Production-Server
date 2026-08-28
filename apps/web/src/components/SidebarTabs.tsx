@@ -229,7 +229,7 @@ export const SidebarTabs: React.FC<SidebarTabsProps> = ({
 
   return (
     <aside style={{
-      width: '420px',
+      width: '440px',
       background: '#000000',
       borderRight: '1px solid #171717',
       display: 'flex',
@@ -237,16 +237,18 @@ export const SidebarTabs: React.FC<SidebarTabsProps> = ({
       height: '100%',
       overflow: 'hidden',
     }}>
-      {/* Unified Multi-Module Navigation Strip */}
+      {/* Unified Multi-Module Navigation Strip (Balanced 2-Row Layout) */}
       <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(4, 1fr)',
-        gap: '3px',
+        display: 'flex',
+        flexWrap: 'wrap',
+        gap: '4px',
         background: '#000000',
-        padding: '5px',
+        padding: '6px',
         borderBottom: '1px solid #171717',
+        width: '100%',
+        boxSizing: 'border-box'
       }}>
-        {tabs.map((t) => (
+        {tabs.map((t, idx) => (
           <button
             key={t.id}
             onClick={() => {
@@ -254,11 +256,12 @@ export const SidebarTabs: React.FC<SidebarTabsProps> = ({
               if (t.id === 'tab-risk-briefing' && !briefingData) handleLoadBriefing();
             }}
             style={{
-              background: activeTab === t.id ? '#13283d' : '#070c14',
+              flex: idx < 4 ? '1 1 calc(25% - 4px)' : '1 1 calc(33.33% - 4px)',
+              background: activeTab === t.id ? 'linear-gradient(135deg, #0c2340, #13283d)' : '#070c14',
               color: activeTab === t.id ? '#38bdf8' : '#94a3b8',
               border: activeTab === t.id ? '1px solid #0284c7' : '1px solid #1e293b',
               borderRadius: '5px',
-              padding: '5px 2px',
+              padding: '6px 3px',
               cursor: 'pointer',
               fontSize: '10.5px',
               fontWeight: 700,
@@ -269,6 +272,7 @@ export const SidebarTabs: React.FC<SidebarTabsProps> = ({
               gap: '2px',
               transition: 'all 0.15s ease',
               textAlign: 'center',
+              boxSizing: 'border-box',
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>

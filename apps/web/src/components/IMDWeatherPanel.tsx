@@ -98,21 +98,23 @@ export const IMDWeatherPanel: React.FC<IMDWeatherPanelProps> = ({ activeCity }) 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', padding: '10px', color: '#f8fafc', fontSize: '11px', width: '100%', boxSizing: 'border-box' }}>
       {/* 1. Official Header Badge */}
-      <div style={{ background: 'linear-gradient(135deg, #090e17 0%, #131d2e 100%)', border: '1px solid #1e293b', borderRadius: '8px', padding: '10px 12px' }}>
+      <div style={{ background: 'linear-gradient(135deg, #090e17 0%, #131d2e 100%)', border: '1px solid #1e293b', borderRadius: '8px', padding: '10px 12px', width: '100%', boxSizing: 'border-box' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <span style={{ fontSize: '16px' }}>🇮🇳</span>
+            <span style={{ fontSize: '14px', background: 'rgba(56, 189, 248, 0.15)', padding: '2px 5px', borderRadius: '4px', border: '1px solid #0284c7', color: '#38bdf8', fontWeight: 800 }}>
+              IND
+            </span>
             <div>
-              <div style={{ fontSize: '12px', fontWeight: 800, color: '#38bdf8', letterSpacing: '0.3px' }}>
+              <div style={{ fontSize: '11.5px', fontWeight: 800, color: '#38bdf8', letterSpacing: '0.3px' }}>
                 IMD & ISRO OBSERVATORY
               </div>
               <div style={{ fontSize: '9px', color: '#94a3b8' }}>
-                MoES • ISRO-MOSDAC Satellite Ingestion Pipeline
+                MoES • ISRO-MOSDAC Ingestion Pipeline
               </div>
             </div>
           </div>
-          <div style={{ background: 'rgba(56, 189, 248, 0.15)', border: '1px solid #38bdf8', borderRadius: '4px', padding: '2px 6px', fontSize: '9px', fontWeight: 700, color: '#38bdf8' }}>
-            20+ IMD & MOSDAC
+          <div style={{ background: 'rgba(56, 189, 248, 0.15)', border: '1px solid #38bdf8', borderRadius: '4px', padding: '2px 6px', fontSize: '9px', fontWeight: 700, color: '#38bdf8', flexShrink: 0 }}>
+            20+ FEEDS
           </div>
         </div>
 
@@ -133,7 +135,7 @@ export const IMDWeatherPanel: React.FC<IMDWeatherPanelProps> = ({ activeCity }) 
       </div>
 
       {/* 2. Top-Level Stream Mode Selector: IMD vs ISRO */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px', background: '#050811', padding: '3px', borderRadius: '6px', border: '1px solid #1e293b' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '5px', background: '#050811', padding: '4px', borderRadius: '6px', border: '1px solid #1e293b', width: '100%', boxSizing: 'border-box' }}>
         <button
           onClick={() => setMainMode('imd')}
           style={{
@@ -149,6 +151,7 @@ export const IMDWeatherPanel: React.FC<IMDWeatherPanelProps> = ({ activeCity }) 
             alignItems: 'center',
             justifyContent: 'center',
             gap: '5px',
+            boxSizing: 'border-box',
           }}
         >
           <span>🏛️</span> IMD Weather (20 APIs)
@@ -171,6 +174,7 @@ export const IMDWeatherPanel: React.FC<IMDWeatherPanelProps> = ({ activeCity }) 
             alignItems: 'center',
             justifyContent: 'center',
             gap: '5px',
+            boxSizing: 'border-box',
           }}
         >
           <span>🛰️</span> ISRO MOSDAC Satellite
@@ -187,6 +191,8 @@ export const IMDWeatherPanel: React.FC<IMDWeatherPanelProps> = ({ activeCity }) 
           padding: '4px',
           borderRadius: '6px',
           border: '1px solid #1e293b',
+          width: '100%',
+          boxSizing: 'border-box',
         }}>
           {[
             { id: 'synoptic', label: '🌡️ Surface' },
@@ -210,6 +216,7 @@ export const IMDWeatherPanel: React.FC<IMDWeatherPanelProps> = ({ activeCity }) 
                 cursor: 'pointer',
                 textAlign: 'center',
                 whiteSpace: 'nowrap',
+                boxSizing: 'border-box',
               }}
             >
               {tab.label}
@@ -220,14 +227,14 @@ export const IMDWeatherPanel: React.FC<IMDWeatherPanelProps> = ({ activeCity }) 
 
       {/* 4. ISRO MOSDAC SURVEILLANCE COCKPIT */}
       {mainMode === 'isro' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%', boxSizing: 'border-box' }}>
           {mosdacData && (
-            <div style={{ background: '#090d16', border: '1px solid #1e293b', borderRadius: '8px', padding: '10px' }}>
+            <div style={{ background: '#090d16', border: '1px solid #1e293b', borderRadius: '8px', padding: '10px', width: '100%', boxSizing: 'border-box' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                 <div style={{ fontSize: '11px', color: '#c084fc', textTransform: 'uppercase', fontWeight: 800, letterSpacing: '0.3px' }}>
                   ISRO {mosdacData.satellite}
                 </div>
-                <span style={{ fontSize: '9px', color: '#34d399', background: 'rgba(52, 211, 153, 0.15)', border: '1px solid #059669', padding: '2px 5px', borderRadius: '3px', fontWeight: 700 }}>
+                <span style={{ fontSize: '9px', color: '#34d399', background: 'rgba(52, 211, 153, 0.15)', border: '1px solid #059669', padding: '2px 5px', borderRadius: '3px', fontWeight: 700, flexShrink: 0 }}>
                   AUTHENTICATED (acelabs)
                 </span>
               </div>
@@ -254,11 +261,11 @@ export const IMDWeatherPanel: React.FC<IMDWeatherPanelProps> = ({ activeCity }) 
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', marginTop: '6px', fontSize: '10px' }}>
-                <div style={{ background: '#111827', padding: '6px', borderRadius: '4px' }}>
+                <div style={{ background: '#111827', padding: '6px', borderRadius: '4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   <span style={{ color: '#94a3b8' }}>Convection:</span>{' '}
                   <strong style={{ color: '#fbbf24' }}>{mosdacData.convective_intensity}</strong>
                 </div>
-                <div style={{ background: '#111827', padding: '6px', borderRadius: '4px' }}>
+                <div style={{ background: '#111827', padding: '6px', borderRadius: '4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   <span style={{ color: '#94a3b8' }}>Pass Time:</span>{' '}
                   <strong style={{ color: '#38bdf8' }}>{mosdacData.acquisition_time_ist}</strong>
                 </div>
@@ -266,17 +273,30 @@ export const IMDWeatherPanel: React.FC<IMDWeatherPanelProps> = ({ activeCity }) 
             </div>
           )}
 
-          {/* MOSDAC Live Granule Browser */}
-          <div style={{ background: '#090d16', border: '1px solid #1e293b', borderRadius: '8px', padding: '10px' }}>
+          {/* MOSDAC Live Granule Browser (Stacked, 100% Width, Zero Cut-Off) */}
+          <div style={{ background: '#090d16', border: '1px solid #1e293b', borderRadius: '8px', padding: '10px', width: '100%', boxSizing: 'border-box' }}>
             <div style={{ fontSize: '10px', color: '#a78bfa', textTransform: 'uppercase', fontWeight: 800, marginBottom: '6px' }}>
               MOSDAC Live Granule Browser (mosdac.gov.in)
             </div>
 
-            <div style={{ display: 'flex', gap: '4px', marginBottom: '8px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '8px', width: '100%', boxSizing: 'border-box' }}>
               <select
                 value={searchDatasetId}
                 onChange={(e) => setSearchDatasetId(e.target.value)}
-                style={{ flex: 1, background: '#111827', color: '#38bdf8', border: '1px solid #1f2937', padding: '5px 6px', borderRadius: '4px', fontSize: '10px' }}
+                style={{
+                  width: '100%',
+                  background: '#111827',
+                  color: '#38bdf8',
+                  border: '1px solid #1f2937',
+                  padding: '7px 8px',
+                  borderRadius: '5px',
+                  fontSize: '10.5px',
+                  outline: 'none',
+                  boxSizing: 'border-box',
+                  maxWidth: '100%',
+                  textOverflow: 'ellipsis',
+                  cursor: 'pointer',
+                }}
               >
                 <option value="3SIMG_L2B_HEM">INSAT-3DS Hydro-Estimator Rain Rate (3SIMG_L2B_HEM)</option>
                 <option value="3SIMG_L2B_CTBT">INSAT-3DS Cloud Top Brightness Temp (3SIMG_L2B_CTBT)</option>
@@ -289,28 +309,59 @@ export const IMDWeatherPanel: React.FC<IMDWeatherPanelProps> = ({ activeCity }) 
               <button
                 onClick={handleSearchMosdac}
                 disabled={isSearchingMosdac}
-                style={{ background: '#7c3aed', color: '#ffffff', border: 'none', borderRadius: '4px', padding: '5px 10px', fontSize: '10px', fontWeight: 700, cursor: 'pointer' }}
+                style={{
+                  width: '100%',
+                  background: 'linear-gradient(135deg, #7c3aed, #6d28d9)',
+                  color: '#ffffff',
+                  border: '1px solid #a78bfa',
+                  borderRadius: '5px',
+                  padding: '7px 10px',
+                  fontSize: '11px',
+                  fontWeight: 800,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '6px',
+                  boxSizing: 'border-box',
+                }}
               >
-                {isSearchingMosdac ? 'Searching...' : 'Search'}
+                <span>🔍</span>
+                {isSearchingMosdac ? 'Querying MOSDAC Archive...' : 'Search Live MOSDAC Granules'}
               </button>
             </div>
 
             {mosdacSearchResults.length > 0 ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', width: '100%', boxSizing: 'border-box' }}>
                 <div style={{ fontSize: '9px', color: '#64748b' }}>Live Granules on MOSDAC Archive:</div>
                 {mosdacSearchResults.map((entry: any, i: number) => (
-                  <div key={i} style={{ background: '#111827', border: '1px solid #1f2937', padding: '5px 6px', borderRadius: '3px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '9.5px' }}>
-                    <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '240px' }}>
+                  <div
+                    key={i}
+                    style={{
+                      background: '#111827',
+                      border: '1px solid #1f2937',
+                      padding: '6px 8px',
+                      borderRadius: '4px',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      fontSize: '10px',
+                      gap: '6px',
+                      width: '100%',
+                      boxSizing: 'border-box',
+                    }}
+                  >
+                    <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, minWidth: 0 }}>
                       <strong style={{ color: '#e2e8f0' }}>{entry.identifier}</strong>
                     </div>
-                    <span style={{ color: '#c084fc', fontWeight: 700, flexShrink: 0 }}>
+                    <span style={{ color: '#c084fc', fontWeight: 700, flexShrink: 0, fontSize: '9.5px', background: 'rgba(192, 132, 252, 0.12)', padding: '2px 6px', borderRadius: '3px' }}>
                       ID: {entry.id}
                     </span>
                   </div>
                 ))}
               </div>
             ) : (
-              <div style={{ fontSize: '9.5px', color: '#64748b', textAlign: 'center', padding: '4px' }}>
+              <div style={{ fontSize: '9.5px', color: '#64748b', textAlign: 'center', padding: '6px' }}>
                 Click search to query live MOSDAC archive.
               </div>
             )}
