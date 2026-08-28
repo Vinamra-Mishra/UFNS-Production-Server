@@ -61,10 +61,12 @@ CITY_COORDS = {
 
 
 def sha256_bytes(data: bytes) -> str:
+    """Execute Sha256 Bytes operation and return result."""
     return hashlib.sha256(data).hexdigest()
 
 
 def main() -> None:
+    """Execute Main operation and return result."""
     parser = argparse.ArgumentParser(description="Fetch live open feeds for UFNS")
     parser.add_argument("--city", choices=list(CITY_COORDS) + ["all"], default="all")
     args = parser.parse_args()

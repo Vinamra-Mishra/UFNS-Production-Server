@@ -136,20 +136,24 @@ def set_active_provider_id(provider_id: str) -> None:
 
 
 def get_nowcast_config() -> NowcastConfig:
+    """Retrieve and return nowcast config."""
     return _nowcast_config
 
 
 def set_nowcast_config(config: NowcastConfig) -> None:
+    """Execute Set Nowcast Config operation and return result."""
     global _nowcast_config, _default_engine
     _nowcast_config = config
     _default_engine = PersistenceNowcast(config)
 
 
 def get_quality_config() -> QualityConfig:
+    """Retrieve and return quality config."""
     return _quality_config
 
 
 def get_nowcast_cache() -> NowcastCache:
+    """Retrieve and return nowcast cache."""
     return _nowcast_cache
 
 

@@ -56,6 +56,7 @@ class VerificationResult:
     notes: str = ""
 
     def to_dict(self) -> dict[str, Any]:
+        """Execute To Dict operation and return result."""
         return {
             "status": self.status,
             "metrics": self.metrics,

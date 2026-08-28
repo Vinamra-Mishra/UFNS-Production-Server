@@ -19,6 +19,7 @@ from services.optimization.cost_model import (
 
 @dataclass
 class ParetoPackage:
+    """Paretopackage schema and data model representation."""
     tier_id: str
     name: str
     target_budget_crores: float
@@ -36,6 +37,7 @@ class ParetoPackage:
     description: str
 
     def to_dict(self) -> dict[str, Any]:
+        """Execute To Dict operation and return result."""
         return {
             "tier_id": self.tier_id,
             "name": self.name,
@@ -59,6 +61,7 @@ class ParetoPackage:
 
 @dataclass
 class OptimizationResult:
+    """Optimizationresult schema and data model representation."""
     scenario_id: str
     lead_minutes: int
     max_budget_crores: float
@@ -67,6 +70,7 @@ class OptimizationResult:
     provenance: dict[str, Any]
 
     def to_dict(self) -> dict[str, Any]:
+        """Execute To Dict operation and return result."""
         return {
             "scenario_id": self.scenario_id,
             "lead_minutes": self.lead_minutes,
@@ -93,6 +97,7 @@ class InterventionOptimizer:
         lead_minutes: int,
         description: str,
     ) -> ParetoPackage:
+        """Execute  Evaluate Candidate operation and return result."""
         # Run counterfactual physical simulation
         cfg = InterventionConfig(
             scenario_id=scenario_id,

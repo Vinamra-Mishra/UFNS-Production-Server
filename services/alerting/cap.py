@@ -23,6 +23,7 @@ class OperationalAuthorizationError(PermissionError):
 
 
 class CAPStatus(str, Enum):
+    """Capstatus schema and data model representation."""
     EXERCISE = "Exercise"  # Standard demonstration / simulation mode
     TEST = "Test"          # Technical verification
     DRAFT = "Draft"        # Preliminary unreviewed bulletin
@@ -31,6 +32,7 @@ class CAPStatus(str, Enum):
 
 
 class CAPMsgType(str, Enum):
+    """Capmsgtype schema and data model representation."""
     ALERT = "Alert"        # Initial emergency bulletin
     UPDATE = "Update"      # Severity escalation / boundary expansion
     CANCEL = "Cancel"      # Hazard receded / cancellation
@@ -39,12 +41,14 @@ class CAPMsgType(str, Enum):
 
 
 class CAPScope(str, Enum):
+    """Capscope schema and data model representation."""
     PUBLIC = "Public"
     RESTRICTED = "Restricted"
     PRIVATE = "Private"
 
 
 class CAPCategory(str, Enum):
+    """Capcategory schema and data model representation."""
     GEO = "Geo"
     MET = "Met"
     SAFETY = "Safety"
@@ -60,6 +64,7 @@ class CAPCategory(str, Enum):
 
 
 class CAPUrgency(str, Enum):
+    """Capurgency schema and data model representation."""
     IMMEDIATE = "Immediate"  # Responsive action should be taken immediately
     EXPECTED = "Expected"    # Action within the next hour (nowcast lead)
     FUTURE = "Future"        # Action in subsequent hours
@@ -68,6 +73,7 @@ class CAPUrgency(str, Enum):
 
 
 class CAPSeverity(str, Enum):
+    """Capseverity schema and data model representation."""
     EXTREME = "Extreme"      # Extraordinary threat to life or property (>0.50m flood)
     SEVERE = "Severe"        # Significant threat to life or property (>0.30m flood)
     MODERATE = "Moderate"    # Possible threat (>0.15m flood / transit slowdown)
@@ -76,6 +82,7 @@ class CAPSeverity(str, Enum):
 
 
 class CAPCertainty(str, Enum):
+    """Capcertainty schema and data model representation."""
     OBSERVED = "Observed"    # Inundation confirmed by IoT depth gauges / sensors
     LIKELY = "Likely"        # High nowcast probability (>80%)
     POSSIBLE = "Possible"    # Moderate nowcast probability (50-80%)
@@ -99,6 +106,7 @@ class CAPArea:
         return " ".join(f"{lat:.6f},{lon:.6f}" for lat, lon in self.polygon)
 
     def to_dict(self) -> dict[str, Any]:
+        """Execute To Dict operation and return result."""
         return {
             "area_desc": self.area_desc,
             "polygon": [[round(lat, 6), round(lon, 6)] for lat, lon in self.polygon],
@@ -118,6 +126,7 @@ class CAPResource:
     digest: Optional[str] = None
 
     def to_dict(self) -> dict[str, Any]:
+        """Execute To Dict operation and return result."""
         return {
             "resource_desc": self.resource_desc,
             "mime_type": self.mime_type,
@@ -151,6 +160,7 @@ class CAPInfo:
     areas: list[CAPArea] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
+        """Execute To Dict operation and return result."""
         return {
             "language": self.language,
             "categories": [c.value for c in self.categories],
@@ -193,6 +203,7 @@ class CAPAlert:
     info: list[CAPInfo] = field(default_factory=list)
 
     def __post_init__(self) -> None:
+        """Execute   Post Init   operation and return result."""
         # Enforce strict civic safety governance: never allow Actual alerts from exercise/pilot models
         if self.status == CAPStatus.ACTUAL:
             raise OperationalAuthorizationError(

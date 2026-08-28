@@ -31,6 +31,7 @@ router = APIRouter(prefix="/api/v1/alerts", tags=["alerts"])
 
 
 class EvaluateAlertRequest(BaseModel):
+    """Evaluatealertrequest schema and data model representation."""
     scenario_id: str = Field(default="S4", description="Scenario ID (S1..S4)")
     lead_minutes: int = Field(default=0, ge=0, le=180, description="Lead time in minutes")
     status: CAPStatus = Field(default=CAPStatus.EXERCISE, description="CAP Status (Exercise / Test / Draft)")
@@ -38,10 +39,12 @@ class EvaluateAlertRequest(BaseModel):
 
 
 class CancelAlertRequest(BaseModel):
+    """Cancelalertrequest schema and data model representation."""
     reason: str = Field(default="Flood waters receded below caution threshold", description="Cancellation reason")
 
 
 class TestDispatchRequest(BaseModel):
+    """Testdispatchrequest schema and data model representation."""
     alert_id: str = Field(..., description="Alert ID to dispatch")
     channels: list[DispatchChannel] = Field(
         default=[DispatchChannel.SMS_BROADCAST, DispatchChannel.WHATSAPP_BROADCAST, DispatchChannel.WEBHOOK_PUSH],

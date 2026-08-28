@@ -21,6 +21,7 @@ router = APIRouter(prefix="/api/v1/validation", tags=["Scientific Validation & B
 
 
 class EvaluateBenchmarkRequest(BaseModel):
+    """Evaluatebenchmarkrequest schema and data model representation."""
     scenario_id: str = Field(default="S4", description="Scenario identifier (S1..S4)")
     lead_minutes: int = Field(default=110, ge=0, le=180, description="Lead time in minutes")
     benchmark_id: str = Field(default="BENCHMARK_S3_CLEAN", description="Reference benchmark ID")

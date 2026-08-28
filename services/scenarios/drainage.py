@@ -33,6 +33,7 @@ M4_DATUM_OFFSET_M = 10.0
 
 
 class DrainageStatus(str, Enum):
+    """Drainagestatus schema and data model representation."""
     NORMAL = "NORMAL"
     BLOCKED = "BLOCKED"
 
@@ -50,10 +51,12 @@ _BLOCKED_INP = ROOT / "data/demo/drainage_synthetic_m4_blocked.inp"
 
 
 def _sha256_text(s: str) -> str:
+    """Execute  Sha256 Text operation and return result."""
     return hashlib.sha256(s.encode("utf-8")).hexdigest()
 
 
 def _inp_fingerprint(path: Path) -> str:
+    """Execute  Inp Fingerprint operation and return result."""
     return hashlib.sha256(path.read_bytes()).hexdigest()[:16]
 
 
@@ -77,6 +80,7 @@ class DrainageCondition:
     parameter_status: str  # "SYNTHETIC" / "ASSUMED" / "measured" / ...
 
     def to_dict(self) -> dict[str, Any]:
+        """Execute To Dict operation and return result."""
         return {
             "condition_id": self.condition_id,
             "display_name": self.display_name,
@@ -100,6 +104,7 @@ class DrainageCondition:
 # ---------------------------------------------------------------------------
 
 def _build_conditions() -> dict[str, DrainageCondition]:
+    """Execute  Build Conditions operation and return result."""
     clean_inp_text = exact_fixture_inp(blocked=False, datum_offset_m=M4_DATUM_OFFSET_M,
                                         blocked_diameter_m=C1_DIAMETER)
     blocked_inp_text = exact_fixture_inp(blocked=True, datum_offset_m=M4_DATUM_OFFSET_M,

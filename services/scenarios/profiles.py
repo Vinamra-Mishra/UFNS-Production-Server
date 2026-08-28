@@ -29,6 +29,7 @@ from services.rainfall.scenarios import alternating_block_hyetograph
 # ---------------------------------------------------------------------------
 
 class ProfileStatus(str, Enum):
+    """Profilestatus schema and data model representation."""
     APPROVED = "APPROVED"          # hydrologist-reviewed, accepted for use
     PROVISIONAL = "PROVISIONAL"    # methodologically sound but not yet reviewed
     SIMULATED = "SIMULATED"        # synthetic test profile, no real-world claim
@@ -119,6 +120,7 @@ class RainfallProfileRecord:
     fingerprint: str
 
     def to_dict(self) -> dict[str, Any]:
+        """Execute To Dict operation and return result."""
         return {
             "profile_id": self.profile_id,
             "display_name": self.display_name,
@@ -148,6 +150,7 @@ _EXPONENT = 0.4  # PROVISIONAL depth-duration exponent; subject to D-016
 
 def _fingerprint(profile_id: str, total_mm: float, interval_min: int,
                  duration_min: int, exponent: float, intensities: tuple[float, ...]) -> str:
+    """Execute  Fingerprint operation and return result."""
     payload = json.dumps(
         {
             "profile_id": profile_id,

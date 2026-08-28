@@ -56,6 +56,7 @@ class WardImpactSummary:
     critical_facilities_at_risk: list[str] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
+        """Execute To Dict operation and return result."""
         return {
             "ward_id": self.ward_id,
             "ward_name": self.ward_name,
@@ -74,6 +75,7 @@ class EarlyWarningScreener:
     """Translates 2D flood depths and road impacts into standardized CAP v1.2 alerts."""
 
     def __init__(self, thresholds: Optional[AlertThresholds] = None) -> None:
+        """Execute   Init   operation and return result."""
         self.thresholds = thresholds or AlertThresholds()
 
     def screen_simulation_frame(

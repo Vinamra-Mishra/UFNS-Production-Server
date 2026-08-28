@@ -28,6 +28,7 @@ LATEST_DOSSIER_ID: str | None = None
 
 
 class GenerateReportRequest(BaseModel):
+    """Generatereportrequest schema and data model representation."""
     scenario_id: str = Field(default="S4", description="Scenario ID (S1..S4)")
     lead_minutes: int = Field(default=110, ge=0, le=180, description="Forecast lead time in minutes")
 

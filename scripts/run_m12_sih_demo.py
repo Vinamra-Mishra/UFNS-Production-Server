@@ -44,6 +44,7 @@ LIVE_DIR = REPO_ROOT / "data" / "live"
 
 
 def print_banner() -> None:
+    """Execute Print Banner operation and return result."""
     print("\n" + "=" * 78)
     print("  URBAN FLOOD NOWCASTING SYSTEM (UFNS) - SIH 26085 OPERATIONAL SUITE")
     print("  Ministry of Earth Sciences (MoES) | NCMRWF | Disaster Management")
@@ -51,6 +52,7 @@ def print_banner() -> None:
 
 
 def demonstrate_city(city: str) -> None:
+    """Execute Demonstrate City operation and return result."""
     city_key = city.lower()
     city_name = "Mumbai" if city_key == "mumbai" else "Vijayawada"
     crs = "EPSG:32643" if city_key == "mumbai" else "EPSG:32644"
@@ -133,6 +135,7 @@ def demonstrate_city(city: str) -> None:
 
 
 def main() -> None:
+    """Execute Main operation and return result."""
     parser = argparse.ArgumentParser(description="UFNS Master SIH Demonstration Suite")
     parser.add_argument("--city", choices=["mumbai", "vijayawada", "all"], default="all")
     args = parser.parse_args()

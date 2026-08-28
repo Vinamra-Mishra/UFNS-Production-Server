@@ -13,6 +13,7 @@ from services.mitigation.engine import InterventionConfig
 
 @dataclass(frozen=True)
 class MitigationStrategyPreset:
+    """Mitigationstrategypreset schema and data model representation."""
     strategy_id: str
     name: str
     category: str
@@ -20,6 +21,7 @@ class MitigationStrategyPreset:
     config: InterventionConfig
 
     def to_dict(self) -> dict[str, Any]:
+        """Execute To Dict operation and return result."""
         return {
             "strategy_id": self.strategy_id,
             "name": self.name,

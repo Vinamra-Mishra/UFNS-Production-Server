@@ -60,12 +60,14 @@ from services.ingestion.real_data import (
 
 
 def _fixture_dem_config():
+    """Execute  Fixture Dem Config operation and return result."""
     from services.ingestion.dem_real import DEMIngestionConfig
 
     return DEMIngestionConfig(source=FIXTURE_DEM_SOURCE)
 
 
 def _fixture_mapping_config():
+    """Execute  Fixture Mapping Config operation and return result."""
     from services.ingestion.drainage_real import DrainageMappingConfig
 
     return DrainageMappingConfig(source=FIXTURE_DRAINAGE_SOURCE)
@@ -82,6 +84,7 @@ def _write_drainage_parquet(path: Path) -> Path:
 
 
 def _sample_provenance(**overrides) -> SourceProvenance:
+    """Execute  Sample Provenance operation and return result."""
     base = {
         "source_name": "s",
         "dataset_name": "d",
@@ -109,6 +112,7 @@ class TestB02Audit:
     """B02 WB AMRUT data audit status."""
 
     def test_wb_amrut_source_provenance_complete(self):
+        """Test that wb amrut source provenance complete behaves as expected."""
         src = WB_AMRUT_SOURCE
         assert src.source_name
         assert src.dataset_name
@@ -153,6 +157,7 @@ class TestB02Audit:
         assert d["diameter_availability"] == "MISSING"
 
     def test_wb_amrut_expected_attributes_documented(self):
+        """Test that wb amrut expected attributes documented behaves as expected."""
         from services.ingestion.drainage_real import EXPECTED_WB_AMRUT_DRAIN_ATTRIBUTES
         assert len(EXPECTED_WB_AMRUT_DRAIN_ATTRIBUTES) > 0
         geom_attrs = [a for a in EXPECTED_WB_AMRUT_DRAIN_ATTRIBUTES if a["name"] == "geometry"]
@@ -170,6 +175,7 @@ class TestDEMIngestion:
     """Real DEM ingestion pipeline."""
 
     def test_copernicus_source_provenance_complete(self):
+        """Test that copernicus source provenance complete behaves as expected."""
         src = COPERNICUS_DEM_SOURCE
         assert src.source_name
         assert src.dataset_name
@@ -221,6 +227,7 @@ class TestDataContractAndProvenance:
     """Data contracts and provenance records."""
 
     def test_source_provenance_serialization(self):
+        """Test that source provenance serialization behaves as expected."""
         d = WB_AMRUT_SOURCE.to_dict()
         assert d["source_name"] == WB_AMRUT_SOURCE.source_name
         assert d["classification"] == "PROVISIONAL"
@@ -228,6 +235,7 @@ class TestDataContractAndProvenance:
         assert isinstance(d["known_limitations"], list)
 
     def test_schema_fingerprint_deterministic(self):
+        """Test that schema fingerprint deterministic behaves as expected."""
         columns = [
             {"name": "geometry", "dtype": "LineString"},
             {"name": "id", "dtype": "string"},
@@ -239,6 +247,7 @@ class TestDataContractAndProvenance:
         assert len(fp1) == 64  # SHA-256 hex
 
     def test_schema_fingerprint_changes_with_columns(self):
+        """Test that schema fingerprint changes with columns behaves as expected."""
         cols_a = [{"name": "geometry", "dtype": "LineString"}]
         cols_b = [{"name": "geometry", "dtype": "Point"}]
         assert compute_schema_fingerprint(cols_a) != compute_schema_fingerprint(cols_b)
@@ -256,6 +265,7 @@ class TestDataContractAndProvenance:
         assert compute_schema_fingerprint(cols_a) == compute_schema_fingerprint(cols_b)
 
     def test_crs_validation(self):
+        """Test that crs validation behaves as expected."""
         assert validate_crs("EPSG:4326") is True
         assert validate_crs("EPSG:32645") is True
         assert validate_crs("EPSG:4326", expected_epsg=4326) is True
@@ -272,6 +282,7 @@ class TestProvenanceImmutability:
     """frozen=True must mean deeply immutable: no nested mutable state."""
 
     def test_nested_spatial_bounds_cannot_be_mutated(self):
+        """Test that nested spatial bounds cannot be mutated behaves as expected."""
         prov = _sample_provenance()
         with pytest.raises(FrozenInstanceError):
             prov.spatial_extent.west = 99.0
@@ -283,6 +294,7 @@ class TestProvenanceImmutability:
             prov.validation_status = "VALIDATED"
 
     def test_to_dict_mutation_does_not_affect_provenance(self):
+        """Test that to dict mutation does not affect provenance behaves as expected."""
         prov = _sample_provenance()
         d = prov.to_dict()
         d["spatial_extent"]["west"] = 123.0
@@ -295,6 +307,7 @@ class TestProvenanceImmutability:
         assert d2["spatial_extent"] == {"west": 77.0, "south": 28.0, "east": 77.5, "north": 28.5}
 
     def test_provenance_equality_and_hash_deterministic(self):
+        """Test that provenance equality and hash deterministic behaves as expected."""
         p1 = _sample_provenance()
         p2 = _sample_provenance()
         assert p1 == p2
@@ -304,6 +317,7 @@ class TestProvenanceImmutability:
         assert p1 != p3
 
     def test_dataset_audit_spatial_coverage_immutable(self):
+        """Test that dataset audit spatial coverage immutable behaves as expected."""
         audit = DatasetAuditResult(
             source=WB_AMRUT_SOURCE,
             file_identity="f.parquet",
@@ -353,6 +367,7 @@ class TestResultProvenance:
     the global source templates must never be mutated or shared by identity."""
 
     def test_source_templates_unchanged_by_ingestion(self, tmp_path):
+        """Test that source templates unchanged by ingestion behaves as expected."""
         from services.ingestion.dem_real import ingest_dem
         from services.ingestion.drainage_real import audit_wb_amrut_drains
 
@@ -375,6 +390,7 @@ class TestResultProvenance:
         assert audit_wb_amrut_drains(source_path=pq).provenance is not WB_AMRUT_SOURCE
 
     def test_not_fetched_results_do_not_claim_validation(self):
+        """Test that not fetched results do not claim validation behaves as expected."""
         from services.ingestion.dem_real import ingest_dem
         from services.ingestion.drainage_real import audit_wb_amrut_drains
 
@@ -389,6 +405,7 @@ class TestResultProvenance:
             assert provenance.spatial_extent is None
 
     def test_validated_dem_provenance_carries_observed_state(self, tmp_path):
+        """Test that validated dem provenance carries observed state behaves as expected."""
         from services.ingestion.dem_real import ingest_dem
 
         tif = _write_dem_tif(tmp_path / "dem.tif")
@@ -411,6 +428,7 @@ class TestResultProvenance:
         assert any("normalization" in lim.lower() for lim in p.known_limitations)
 
     def test_fetched_drainage_provenance_carries_observed_state(self, tmp_path):
+        """Test that fetched drainage provenance carries observed state behaves as expected."""
         from services.ingestion.drainage_real import audit_wb_amrut_drains
 
         pq = _write_drainage_parquet(tmp_path / "drains.parquet")
@@ -429,6 +447,7 @@ class TestResultProvenance:
         assert not any("NOT_FETCHED" in lim for lim in p.known_limitations)
 
     def test_failed_dem_provenance_carries_observed_failure(self, tmp_path):
+        """Test that failed dem provenance carries observed failure behaves as expected."""
         from services.ingestion.dem_real import ingest_dem
 
         bad = tmp_path / "bad.tif"
@@ -486,6 +505,7 @@ class TestRealSyntheticLabelSemantics:
         assert labels == ["VALIDATED", classification.value, expected]
 
     def test_not_loaded_is_no_data_for_every_classification(self):
+        """Test that not loaded is no data for every classification behaves as expected."""
         from services.ingestion.real_data import result_labels
 
         for classification in DataSourceClassification:
@@ -495,6 +515,7 @@ class TestRealSyntheticLabelSemantics:
             assert labels == ["BLOCKED", classification.value, "NO_DATA"]
 
     def test_blocked_result_labeled_no_data(self, tmp_path):
+        """Test that blocked result labeled no data behaves as expected."""
         from services.ingestion.dem_real import ingest_dem
 
         bad = write_not_a_geotiff(tmp_path / "bad.tif")
@@ -551,6 +572,7 @@ class TestNoOperationalClaims:
     """M10 must not introduce operational forecasting/safety claims."""
 
     def test_dem_result_not_operational(self):
+        """Test that dem result not operational behaves as expected."""
         from services.ingestion.dem_real import ingest_dem
         result = ingest_dem(source_path=None)
         d = result.to_dict()
@@ -558,6 +580,7 @@ class TestNoOperationalClaims:
         assert "forecast" not in str(d["status"]).lower()
 
     def test_drainage_result_not_operational(self):
+        """Test that drainage result not operational behaves as expected."""
         from services.ingestion.drainage_real import audit_wb_amrut_drains
         result = audit_wb_amrut_drains(source_path=None)
         d = result.to_dict()
@@ -574,9 +597,11 @@ class TestRejectionOfInvalidData:
     """Invalid data must be rejected, not silently accepted."""
 
     def test_invalid_crs_rejected(self):
+        """Test that invalid crs rejected behaves as expected."""
         assert validate_crs("invalid-crs-string") is False
 
     def test_missing_source_returns_not_fetched(self):
+        """Test that missing source returns not fetched behaves as expected."""
         from services.ingestion.dem_real import ingest_dem
         result = ingest_dem(source_path=None)
         assert result.status == DataIngestionStatus.NOT_FETCHED
@@ -623,6 +648,7 @@ class TestDEMValidationGates:
     """ingest_dem must validate the actual artifact, not the source label."""
 
     def test_invalid_file_rejected(self, tmp_path):
+        """Test that invalid file rejected behaves as expected."""
         from services.ingestion.dem_real import ingest_dem
 
         result = ingest_dem(write_not_a_geotiff(tmp_path / "bad.tif"), _fixture_dem_config())
@@ -631,6 +657,7 @@ class TestDEMValidationGates:
         assert "failed to read" in result.validation_errors[0].lower()
 
     def test_missing_crs_rejected(self, tmp_path):
+        """Test that missing crs rejected behaves as expected."""
         import rasterio
         from affine import Affine
 
@@ -665,6 +692,7 @@ class TestDEMValidationGates:
         assert any("resolution" in e.lower() for e in result.validation_errors)
 
     def test_nodata_mismatch_warns_but_does_not_block(self, tmp_path):
+        """Test that nodata mismatch warns but does not block behaves as expected."""
         import rasterio
         from affine import Affine
 
@@ -683,6 +711,7 @@ class TestDEMValidationGates:
         assert any("nodata mismatch" in w for w in result.validation_warnings)
 
     def test_nonfinite_values_rejected(self, tmp_path):
+        """Test that nonfinite values rejected behaves as expected."""
         from services.ingestion.dem_real import ingest_dem
 
         result = ingest_dem(write_nan_dem_fixture(tmp_path / "nan.tif"), _fixture_dem_config())
@@ -690,6 +719,7 @@ class TestDEMValidationGates:
         assert any("non-finite" in e.lower() for e in result.validation_errors)
 
     def test_all_nodata_raster_rejected(self, tmp_path):
+        """Test that all nodata raster rejected behaves as expected."""
         import rasterio
         from affine import Affine
 
@@ -707,6 +737,7 @@ class TestDEMValidationGates:
         assert any("no valid" in e.lower() for e in result.validation_errors)
 
     def test_tiny_raster_rejected(self, tmp_path):
+        """Test that tiny raster rejected behaves as expected."""
         import rasterio
         from affine import Affine
 
@@ -741,6 +772,7 @@ class TestDEMNormalization:
     """normalize_dem adapts validated real data TO the pilot GridSpec."""
 
     def test_not_fetched_passthrough(self, tmp_path):
+        """Test that not fetched passthrough behaves as expected."""
         from services.ingestion.dem_real import normalize_dem
 
         result = normalize_dem(None, _fixture_dem_config())
@@ -749,6 +781,7 @@ class TestDEMNormalization:
         assert result.labels == ["NOT_FETCHED", "FIXTURE", "NO_DATA"]
 
     def test_invalid_source_never_normalized(self, tmp_path):
+        """Test that invalid source never normalized behaves as expected."""
         from services.ingestion.dem_real import normalize_dem
 
         result = normalize_dem(write_not_a_geotiff(tmp_path / "bad.tif"), _fixture_dem_config())
@@ -757,6 +790,7 @@ class TestDEMNormalization:
         assert any("VALIDATED source" in e for e in result.validation_errors)
 
     def test_no_spatial_overlap_blocked(self, tmp_path):
+        """Test that no spatial overlap blocked behaves as expected."""
         from services.ingestion.dem_real import normalize_dem
 
         far = write_dem_fixture_no_overlap(tmp_path / "far.tif")
@@ -765,6 +799,7 @@ class TestDEMNormalization:
         assert any("overlap" in e.lower() for e in result.validation_errors)
 
     def test_normalized_output_aligns_to_pilot_gridspec(self, tmp_path):
+        """Test that normalized output aligns to pilot gridspec behaves as expected."""
         from services.ingestion.dem_real import normalize_dem, pilot_grid_spec
 
         dem = write_dem_fixture(tmp_path / "pilot_dem.tif")
@@ -780,6 +815,7 @@ class TestDEMNormalization:
         assert result.grid.crs_wkt_or_epsg == "EPSG:32645"
 
     def test_normalized_elevation_values_plausible(self, tmp_path):
+        """Test that normalized elevation values plausible behaves as expected."""
         from services.ingestion.dem_real import normalize_dem
 
         dem = write_dem_fixture(tmp_path / "pilot_dem.tif")
@@ -792,6 +828,7 @@ class TestDEMNormalization:
         assert 80.0 < float(valid.min()) < float(valid.max()) < 120.0
 
     def test_nodata_preserved_not_filled_with_zero(self, tmp_path):
+        """Test that nodata preserved not filled with zero behaves as expected."""
         from services.ingestion.dem_real import normalize_dem
 
         dem = write_dem_fixture(tmp_path / "pilot_dem.tif")
@@ -805,6 +842,7 @@ class TestDEMNormalization:
         )
 
     def test_deterministic_output_and_processing_fingerprint(self, tmp_path):
+        """Test that deterministic output and processing fingerprint behaves as expected."""
         from services.ingestion.dem_real import normalize_dem
 
         dem = write_dem_fixture(tmp_path / "pilot_dem.tif")
@@ -846,6 +884,7 @@ class TestDEMNormalization:
         assert r1.processing_fingerprint != r2.processing_fingerprint
 
     def test_resampling_policy_is_bilinear_and_documented(self, tmp_path):
+        """Test that resampling policy is bilinear and documented behaves as expected."""
         from services.ingestion.dem_real import DEM_RESAMPLING, normalize_dem
 
         result = normalize_dem(write_dem_fixture(tmp_path / "d.tif"), _fixture_dem_config())
@@ -853,6 +892,7 @@ class TestDEMNormalization:
         assert "bilinear" in " ".join(result.provenance.known_limitations)
 
     def test_invalid_target_grid_blocked(self, tmp_path):
+        """Test that invalid target grid blocked behaves as expected."""
         from services.contracts import GridSpec
         from services.ingestion.dem_real import DEMIngestionConfig, normalize_dem
 
@@ -872,6 +912,7 @@ class TestDEMNormalization:
         assert any("projected metric" in e for e in result.validation_errors)
 
     def test_normalized_provenance_describes_processing(self, tmp_path):
+        """Test that normalized provenance describes processing behaves as expected."""
         from services.ingestion.dem_real import normalize_dem, pilot_grid_spec
 
         dem = write_dem_fixture(tmp_path / "pilot_dem.tif")
@@ -888,12 +929,14 @@ class TestDEMNormalization:
         assert p.acquisition_timestamp.tzinfo is not None
 
     def test_normalized_labels_synthetic_for_fixture(self, tmp_path):
+        """Test that normalized labels synthetic for fixture behaves as expected."""
         from services.ingestion.dem_real import normalize_dem
 
         result = normalize_dem(write_dem_fixture(tmp_path / "d.tif"), _fixture_dem_config())
         assert result.labels == ["NORMALIZED", "FIXTURE", "SYNTHETIC"]
 
     def test_gridspec_serializable_through_pydantic(self, tmp_path):
+        """Test that gridspec serializable through pydantic behaves as expected."""
         from services.ingestion.dem_real import normalize_dem, pilot_grid_spec
 
         result = normalize_dem(write_dem_fixture(tmp_path / "d.tif"), _fixture_dem_config())
@@ -913,6 +956,7 @@ class TestDrainageAudit:
     """audit_wb_amrut_drains on clearly-labelled SYNTHETIC TEST FIXTUREs."""
 
     def test_unreadable_parquet_blocked(self, tmp_path):
+        """Test that unreadable parquet blocked behaves as expected."""
         from services.ingestion.drainage_real import audit_wb_amrut_drains
 
         result = audit_wb_amrut_drains(write_not_a_parquet(tmp_path / "bad.parquet"))
@@ -920,6 +964,7 @@ class TestDrainageAudit:
         assert any("parquet" in b.lower() for b in result.blockers)
 
     def test_valid_fixture_audited_and_validated(self, tmp_path):
+        """Test that valid fixture audited and validated behaves as expected."""
         from services.ingestion.drainage_real import audit_wb_amrut_drains
 
         pq = write_drainage_fixture(tmp_path / "drains.parquet")
@@ -935,6 +980,7 @@ class TestDrainageAudit:
         assert result.schema_fingerprint
 
     def test_observed_schema_captured_with_null_rates(self, tmp_path):
+        """Test that observed schema captured with null rates behaves as expected."""
         from services.ingestion.drainage_real import audit_wb_amrut_drains
 
         pq = write_drainage_fixture(tmp_path / "drains.parquet")
@@ -958,6 +1004,7 @@ class TestDrainageAudit:
         assert any(a.startswith("capacity_m3s") for a in audit.missing_attributes)
 
     def test_non_numeric_hydraulic_column_rejected(self, tmp_path):
+        """Test that non numeric hydraulic column rejected behaves as expected."""
         from services.ingestion.drainage_real import audit_wb_amrut_drains
 
         pq = write_drainage_fixture(tmp_path / "strdiam.parquet", variant="non_numeric_diameter")
@@ -966,6 +1013,7 @@ class TestDrainageAudit:
         assert any("non-numeric" in r for r in result.schema_audit.rejected_attributes)
 
     def test_duplicate_ids_detected(self, tmp_path):
+        """Test that duplicate ids detected behaves as expected."""
         from services.ingestion.drainage_real import audit_wb_amrut_drains
 
         pq = write_drainage_fixture(tmp_path / "dup.parquet", variant="duplicate_ids")
@@ -974,6 +1022,7 @@ class TestDrainageAudit:
         assert result.audit.duplicate_count == 1
 
     def test_invalid_geometry_counted(self, tmp_path):
+        """Test that invalid geometry counted behaves as expected."""
         from services.ingestion.drainage_real import audit_wb_amrut_drains
 
         pq = write_drainage_fixture(tmp_path / "invalid.parquet", variant="invalid_geometry")
@@ -982,6 +1031,7 @@ class TestDrainageAudit:
         assert result.audit.invalid_geometry_count == 2  # unparseable + null
 
     def test_unsupported_geometry_counted(self, tmp_path):
+        """Test that unsupported geometry counted behaves as expected."""
         from services.ingestion.drainage_real import audit_wb_amrut_drains
 
         pq = write_drainage_fixture(tmp_path / "pts.parquet", variant="unsupported_geometry")
@@ -991,6 +1041,7 @@ class TestDrainageAudit:
         assert result.audit.geometry_type == "Point"
 
     def test_missing_crs_is_audit_partial_not_validated(self, tmp_path):
+        """Test that missing crs is audit partial not validated behaves as expected."""
         from services.ingestion.drainage_real import audit_wb_amrut_drains
 
         pq = write_drainage_fixture(tmp_path / "nocrs.parquet", crs=False)
@@ -1011,6 +1062,7 @@ class TestDrainageAudit:
         assert result.spatial_coverage is None
 
     def test_spatial_extent_reported(self, tmp_path):
+        """Test that spatial extent reported behaves as expected."""
         from services.ingestion.drainage_real import audit_wb_amrut_drains
 
         pq = write_drainage_fixture(tmp_path / "drains.parquet")
@@ -1022,6 +1074,7 @@ class TestDrainageAudit:
         assert 22.6 < cov.south < cov.north < 22.9
 
     def test_missing_hydraulics_reported_not_invented(self, tmp_path):
+        """Test that missing hydraulics reported not invented behaves as expected."""
         from services.ingestion.drainage_real import audit_wb_amrut_drains
 
         pq = write_drainage_fixture(tmp_path / "nohyd.parquet", variant="missing_hydraulics")
@@ -1032,6 +1085,7 @@ class TestDrainageAudit:
         assert "manning_n" in missing and "capacity_m3s" in missing
 
     def test_audit_report_serializes(self, tmp_path):
+        """Test that audit report serializes behaves as expected."""
         from services.ingestion.drainage_real import audit_wb_amrut_drains
 
         pq = write_drainage_fixture(tmp_path / "drains.parquet")
@@ -1042,6 +1096,7 @@ class TestDrainageAudit:
         json.dumps(d)
 
     def test_fetched_audit_provenance_carries_observed_state(self, tmp_path):
+        """Test that fetched audit provenance carries observed state behaves as expected."""
         from services.ingestion.drainage_real import audit_wb_amrut_drains
 
         pq = write_drainage_fixture(tmp_path / "drains.parquet")
@@ -1064,6 +1119,7 @@ class TestDrainageMapping:
     """map_drainage_entities: explicit rules, stable IDs, no fabrication."""
 
     def test_valid_fixture_maps_entities(self, tmp_path):
+        """Test that valid fixture maps entities behaves as expected."""
         from services.ingestion.drainage_real import map_drainage_entities
 
         pq = write_drainage_fixture(tmp_path / "drains.parquet")
@@ -1074,6 +1130,7 @@ class TestDrainageMapping:
         assert result.labels == ["NORMALIZED", "FIXTURE", "SYNTHETIC"]
 
     def test_source_id_and_type_preserved(self, tmp_path):
+        """Test that source id and type preserved behaves as expected."""
         from services.ingestion.drainage_real import map_drainage_entities
 
         pq = write_drainage_fixture(tmp_path / "drains.parquet")
@@ -1084,6 +1141,7 @@ class TestDrainageMapping:
         assert by_id["d2"].feature_type.value == "PIPE"
 
     def test_stable_entity_ids_deterministic(self, tmp_path):
+        """Test that stable entity ids deterministic behaves as expected."""
         from services.ingestion.drainage_real import map_drainage_entities
 
         pq = write_drainage_fixture(tmp_path / "drains.parquet")
@@ -1094,6 +1152,7 @@ class TestDrainageMapping:
         assert len(set(ids_a)) == len(ids_a)
 
     def test_geometry_wkt_roundtrip(self, tmp_path):
+        """Test that geometry wkt roundtrip behaves as expected."""
         from shapely import from_wkt
 
         from services.ingestion.drainage_real import map_drainage_entities
@@ -1107,6 +1166,7 @@ class TestDrainageMapping:
             assert geom.length > 0
 
     def test_unknown_type_not_guessed(self, tmp_path):
+        """Test that unknown type not guessed behaves as expected."""
         from services.ingestion.drainage_real import (
             DrainageFeatureType,
             EntityMappingStatus,
@@ -1123,6 +1183,7 @@ class TestDrainageMapping:
         assert set(result.unresolved_source_types) == {"mystery feature", "<empty type>"}
 
     def test_unsupported_geometry_rejected(self, tmp_path):
+        """Test that unsupported geometry rejected behaves as expected."""
         from services.ingestion.drainage_real import (
             EntityMappingStatus,
             map_drainage_entities,
@@ -1138,6 +1199,7 @@ class TestDrainageMapping:
         assert "Point" in result.rejections[0].detail
 
     def test_invalid_geometry_rejected(self, tmp_path):
+        """Test that invalid geometry rejected behaves as expected."""
         from services.ingestion.drainage_real import (
             EntityMappingStatus,
             map_drainage_entities,
@@ -1154,6 +1216,7 @@ class TestDrainageMapping:
         }
 
     def test_duplicate_ids_rejected(self, tmp_path):
+        """Test that duplicate ids rejected behaves as expected."""
         from services.ingestion.drainage_real import (
             EntityMappingStatus,
             map_drainage_entities,
@@ -1166,6 +1229,7 @@ class TestDrainageMapping:
         assert result.rejections[0].status == EntityMappingStatus.REJECTED_DUPLICATE
 
     def test_no_fabricated_hydraulic_attributes(self, tmp_path):
+        """Test that no fabricated hydraulic attributes behaves as expected."""
         from services.ingestion.drainage_real import (
             AttributeAvailability,
             map_drainage_entities,
@@ -1188,6 +1252,7 @@ class TestDrainageMapping:
         assert result.missing_hydraulic_parameters
 
     def test_hydraulic_extraction_with_documented_derivation(self, tmp_path):
+        """Test that hydraulic extraction with documented derivation behaves as expected."""
         from services.ingestion.drainage_real import (
             AttributeAvailability,
             map_drainage_entities,
@@ -1223,6 +1288,7 @@ class TestDrainageMapping:
         assert entity.attributes["invert_level_m"] == 100.5
 
     def test_mapping_requires_validated_source(self, tmp_path):
+        """Test that mapping requires validated source behaves as expected."""
         from services.ingestion.drainage_real import map_drainage_entities
 
         plain = map_drainage_entities(
@@ -1240,6 +1306,7 @@ class TestDrainageMapping:
         assert nocrs.entities == ()
 
     def test_mapping_not_fetched_passthrough(self):
+        """Test that mapping not fetched passthrough behaves as expected."""
         from services.ingestion.drainage_real import map_drainage_entities
 
         result = map_drainage_entities(None)
@@ -1248,6 +1315,7 @@ class TestDrainageMapping:
         assert result.labels == ["NOT_FETCHED", "PROVISIONAL", "NO_DATA"]
 
     def test_mapping_deterministic_processing_fingerprint(self, tmp_path):
+        """Test that mapping deterministic processing fingerprint behaves as expected."""
         from services.ingestion.drainage_real import map_drainage_entities
 
         pq = write_drainage_fixture(tmp_path / "drains.parquet")
@@ -1258,6 +1326,7 @@ class TestDrainageMapping:
         assert r1.processing_fingerprint != r1.source_fingerprint
 
     def test_mapping_provenance_describes_result(self, tmp_path):
+        """Test that mapping provenance describes result behaves as expected."""
         from services.ingestion.drainage_real import map_drainage_entities
 
         pq = write_drainage_fixture(tmp_path / "drains.parquet")
@@ -1271,6 +1340,7 @@ class TestDrainageMapping:
         assert "NOT_FETCHED" not in limitations
 
     def test_entity_attributes_immutable_and_serializable(self, tmp_path):
+        """Test that entity attributes immutable and serializable behaves as expected."""
         from services.ingestion.drainage_real import map_drainage_entities
 
         pq = write_drainage_fixture(tmp_path / "drains.parquet")
@@ -1283,6 +1353,7 @@ class TestDrainageMapping:
         json.dumps(entity.to_dict())
 
     def test_entity_ids_derived_from_geometry_without_id_column(self, tmp_path):
+        """Test that entity ids derived from geometry without id column behaves as expected."""
         from services.ingestion.drainage_real import map_drainage_entities
 
         pq = write_drainage_fixture(tmp_path / "noid.parquet", variant="no_id_column")
@@ -1299,7 +1370,9 @@ class TestDrainageMapping:
 
 
 class TestProcessingFingerprint:
+    """Testprocessingfingerprint schema and data model representation."""
     def test_deterministic(self):
+        """Test that deterministic behaves as expected."""
         from services.ingestion.real_data import compute_processing_fingerprint
 
         steps = ["a", "b"]
@@ -1317,6 +1390,7 @@ class TestProcessingFingerprint:
         assert fp1 == fp2
 
     def test_sensitive_to_steps_and_params(self):
+        """Test that sensitive to steps and params behaves as expected."""
         from services.ingestion.real_data import compute_processing_fingerprint
 
         base = compute_processing_fingerprint(["a"], {"x": 1})
@@ -1324,6 +1398,7 @@ class TestProcessingFingerprint:
         assert base != compute_processing_fingerprint(["a"], {"x": 2})
 
     def test_param_key_order_irrelevant(self):
+        """Test that param key order irrelevant behaves as expected."""
         from services.ingestion.real_data import compute_processing_fingerprint
 
         a = compute_processing_fingerprint(["s"], {"x": 1, "y": 2})
@@ -1337,7 +1412,9 @@ class TestProcessingFingerprint:
 
 
 class TestAcquisitionEvidence:
+    """Testacquisitionevidence schema and data model representation."""
     def test_fetch_success_records_artifact_identity(self, tmp_path):
+        """Test that fetch success records artifact identity behaves as expected."""
         from services.ingestion.acquisition import attempt_download
         from services.ingestion.provenance import sha256_file
 
@@ -1357,6 +1434,7 @@ class TestAcquisitionEvidence:
         assert attempt.failure_mode == ""
 
     def test_unreachable_source_blocked_with_failure_mode(self, tmp_path):
+        """Test that unreachable source blocked with failure mode behaves as expected."""
         from services.ingestion.acquisition import attempt_download
         from services.ingestion.real_data import AcquisitionOutcome
 
@@ -1375,6 +1453,7 @@ class TestAcquisitionEvidence:
         assert attempt.consequence == "gate stays blocked"
 
     def test_failed_attempt_leaves_no_partial_artifact(self, tmp_path):
+        """Test that failed attempt leaves no partial artifact behaves as expected."""
         from services.ingestion.acquisition import attempt_download
 
         dest = tmp_path / "f.bin"
@@ -1390,6 +1469,7 @@ class TestAcquisitionEvidence:
         assert not dest.exists()
 
     def test_evidence_record_serializes(self):
+        """Test that evidence record serializes behaves as expected."""
         from services.ingestion.real_data import AcquisitionAttempt, AcquisitionOutcome
 
         attempt = AcquisitionAttempt(
@@ -1407,6 +1487,7 @@ class TestAcquisitionEvidence:
         json.dumps(d)
 
     def test_wb_amrut_urls_are_the_documented_sources(self):
+        """Test that wb amrut urls are the documented sources behaves as expected."""
         from services.ingestion.acquisition import (
             COPERNICUS_DEM_STAC_URL,
             WB_AMRUT_DRAINS_URL,
@@ -1428,6 +1509,7 @@ class TestFixtureClassification:
     """Every M10 test fixture is classified FIXTURE and can never be REAL_DATA."""
 
     def test_fixture_classification_declared(self):
+        """Test that fixture classification declared behaves as expected."""
         from fixtures.m10 import generators
 
         assert generators.FIXTURE_CLASSIFICATION == DataSourceClassification.FIXTURE
@@ -1436,6 +1518,7 @@ class TestFixtureClassification:
         assert "SYNTHETIC" in generators.FIXTURE_DEM_SOURCE.source_name
 
     def test_fixture_pipeline_outputs_never_labeled_real(self, tmp_path):
+        """Test that fixture pipeline outputs never labeled real behaves as expected."""
         from services.ingestion.dem_real import normalize_dem
 
         dem = write_dem_fixture(tmp_path / "d.tif")
@@ -1460,6 +1543,7 @@ class TestFixtureClassification:
 
 
 def ingest_dem_fixture_labels(dem: Path) -> list[str]:
+    """Execute Ingest Dem Fixture Labels operation and return result."""
     from services.ingestion.dem_real import ingest_dem
 
     return ingest_dem(dem, _fixture_dem_config()).labels
@@ -1474,6 +1558,7 @@ class TestFailureStates:
     """NOT_FETCHED / BLOCKED / AUDIT_PARTIAL / VALIDATED / NORMALIZED labels."""
 
     def test_all_states_reachable_with_correct_labels(self, tmp_path):
+        """Test that all states reachable with correct labels behaves as expected."""
         from services.ingestion.dem_real import ingest_dem, normalize_dem
         from services.ingestion.drainage_real import (
             audit_wb_amrut_drains,
@@ -1496,6 +1581,7 @@ class TestFailureStates:
         assert normalized.labels == ["NORMALIZED", "FIXTURE", "SYNTHETIC"]
 
     def test_blocked_results_carry_explicit_errors(self, tmp_path):
+        """Test that blocked results carry explicit errors behaves as expected."""
         from services.ingestion.dem_real import ingest_dem
         from services.ingestion.drainage_real import audit_wb_amrut_drains
 
@@ -1534,6 +1620,7 @@ require_real_artifacts = pytest.mark.skipif(
 
 @pytest.fixture(scope="module")
 def real_drains_audit():
+    """Execute Real Drains Audit operation and return result."""
     from services.ingestion.drainage_real import audit_wb_amrut_drains
 
     return audit_wb_amrut_drains(REAL_DRAINS)
@@ -1541,6 +1628,7 @@ def real_drains_audit():
 
 @pytest.fixture(scope="module")
 def real_vents_audit():
+    """Execute Real Vents Audit operation and return result."""
     from services.ingestion.drainage_real import audit_wb_amrut_drains
 
     return audit_wb_amrut_drains(REAL_VENTS)
@@ -1551,6 +1639,7 @@ class TestRealPilotArtifactExecution:
 
     @require_real_artifacts
     def test_dem_real_validated_from_actual_raster_metadata(self):
+        """Test that dem real validated from actual raster metadata behaves as expected."""
         from services.ingestion.dem_real import ingest_dem
 
         result = ingest_dem(REAL_DEM)
@@ -1618,6 +1707,7 @@ class TestRealPilotArtifactExecution:
 
     @require_real_artifacts
     def test_drains_real_audit_partial_on_embedded_crs_gap(self, real_drains_audit):
+        """Test that drains real audit partial on embedded crs gap behaves as expected."""
         from services.ingestion.drainage_real import audit_wb_amrut_drains  # noqa: F401
 
         result = real_drains_audit
@@ -1638,6 +1728,7 @@ class TestRealPilotArtifactExecution:
 
     @require_real_artifacts
     def test_drains_real_hydraulics_confirmed_absent_not_fabricated(self, real_drains_audit):
+        """Test that drains real hydraulics confirmed absent not fabricated behaves as expected."""
         missing = " ".join(real_drains_audit.missing_hydraulic_parameters)
         for param in ("diameter_m", "invert_upstream_m", "invert_downstream_m", "manning_n", "capacity_m3s"):
             assert param in missing
@@ -1649,6 +1740,7 @@ class TestRealPilotArtifactExecution:
 
     @require_real_artifacts
     def test_vents_real_audit_partial_multipoint(self, real_vents_audit):
+        """Test that vents real audit partial multipoint behaves as expected."""
         result = real_vents_audit
         assert result.status == DataIngestionStatus.AUDIT_PARTIAL
         assert result.crs_valid is False
@@ -1662,6 +1754,7 @@ class TestRealPilotArtifactExecution:
 
     @require_real_artifacts
     def test_real_entity_mapping_blocked_by_validated_source_contract(self):
+        """Test that real entity mapping blocked by validated source contract behaves as expected."""
         from services.ingestion.drainage_real import map_drainage_entities
 
         for path in (REAL_DRAINS, REAL_VENTS):
@@ -1673,6 +1766,7 @@ class TestRealPilotArtifactExecution:
 
     @require_real_artifacts
     def test_real_audit_fingerprints_are_deterministic(self, real_drains_audit):
+        """Test that real audit fingerprints are deterministic behaves as expected."""
         from services.ingestion.drainage_real import audit_wb_amrut_drains
 
         again = audit_wb_amrut_drains(REAL_DRAINS)
@@ -1682,6 +1776,7 @@ class TestRealPilotArtifactExecution:
 
     @require_real_artifacts
     def test_acquisition_evidence_records_artifact_identity_and_history(self):
+        """Test that acquisition evidence records artifact identity and history behaves as expected."""
         from services.ingestion.provenance import sha256_file
 
         doc = json.loads(ACQUISITION_EVIDENCE.read_text())
@@ -1704,6 +1799,7 @@ class TestRealPilotArtifactExecution:
     def test_real_data_never_labeled_synthetic_and_fixtures_untouched(
         self, tmp_path, real_drains_audit, real_vents_audit
     ):
+        """Test that real data never labeled synthetic and fixtures untouched behaves as expected."""
         for labels in (real_drains_audit.labels, real_vents_audit.labels):
             assert "SYNTHETIC" not in labels
             assert "REAL_DATA" in labels
@@ -1834,6 +1930,7 @@ class TestSpatialReBaselineRegression:
 
 @pytest.fixture(scope="module")
 def real_drains_audit_with_crs_provenance():
+    """Execute Real Drains Audit With Crs Provenance operation and return result."""
     if not all(p.exists() for p in (REAL_DEM, REAL_DRAINS, REAL_VENTS)):
         pytest.skip("real pilot artifacts not present in data/raw")
     from services.ingestion.drainage_real import (
@@ -1846,6 +1943,7 @@ def real_drains_audit_with_crs_provenance():
 
 @pytest.fixture(scope="module")
 def real_vents_audit_with_crs_provenance():
+    """Execute Real Vents Audit With Crs Provenance operation and return result."""
     if not all(p.exists() for p in (REAL_DEM, REAL_DRAINS, REAL_VENTS)):
         pytest.skip("real pilot artifacts not present in data/raw")
     from services.ingestion.drainage_real import (

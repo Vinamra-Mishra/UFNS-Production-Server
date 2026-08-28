@@ -68,19 +68,23 @@ def render_png(
 
 # Convenience wrappers used by diagnostics and the M1 bundle builder.
 def render_dem(array: np.ndarray, path: Path, label: str = "SYNTHETIC DSM FIXTURE - NOT REAL TERRAIN") -> Path:
+    """Execute Render Dem operation and return result."""
     return render_png(array, path, lut=_LUT_ELEV, label=label)
 
 
 def render_rain(array: np.ndarray, path: Path, vmax: Optional[float] = None,
                 label: str = "SIMULATED RAINFALL (PROVISIONAL) - NOT OBSERVED") -> Path:
+    """Execute Render Rain operation and return result."""
     return render_png(array, path, lut=_LUT_RAIN, vmin=0.0, vmax=vmax, label=label)
 
 
 def render_depth(array: np.ndarray, path: Path, vmax: Optional[float] = None,
                  label: str = "MODEL PREDICTION (SYNTHETIC FIXTURE) - SIMULATED") -> Path:
+    """Execute Render Depth operation and return result."""
     return render_png(array, path, lut=_LUT_RAIN, vmin=0.0, vmax=vmax, label=label)
 
 
 def render_difference(array: np.ndarray, path: Path,
                       label: str = "MODEL DIFFERENCE (SYNTHETIC FIXTURE) - SIMULATED") -> Path:
+    """Execute Render Difference operation and return result."""
     return render_png(array, path, lut=_LUT_DIFF, symmetric=True, label=label)

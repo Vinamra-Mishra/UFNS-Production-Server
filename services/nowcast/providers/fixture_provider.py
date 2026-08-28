@@ -59,6 +59,7 @@ class FixtureRainfallProvider(RainfallProvider):
         spatial_resolution_m: float = 30.0,
         scenario_label: str = "FIXTURE_SCENARIO",
     ) -> None:
+        """Execute   Init   operation and return result."""
         if not profile_intensities_mmh:
             raise ValueError("profile_intensities_mmh must not be empty")
         if interval_minutes <= 0:
@@ -77,22 +78,27 @@ class FixtureRainfallProvider(RainfallProvider):
 
     @property
     def provider_id(self) -> str:
+        """Execute Provider Id operation and return result."""
         return self._provider_id
 
     @property
     def source_type(self) -> SourceType:
+        """Execute Source Type operation and return result."""
         return SourceType.FIXTURE
 
     @property
     def source_name(self) -> str:
+        """Execute Source Name operation and return result."""
         return f"UFNS Fixture Provider ({self._scenario_label})"
 
     @property
     def spatial_reference(self) -> str:
+        """Execute Spatial Reference operation and return result."""
         return self._spatial_reference
 
     @property
     def spatial_resolution_m(self) -> float:
+        """Execute Spatial Resolution M operation and return result."""
         return self._spatial_resolution_m
 
     def _observation_for_interval(self, interval_idx: int) -> RainfallObservation:
@@ -161,6 +167,7 @@ class FixtureRainfallProvider(RainfallProvider):
         return [self._observation_for_interval(i) for i in range(start_idx, end_idx)]
 
     def health(self) -> ProviderHealth:
+        """Execute Health operation and return result."""
         return ProviderHealth(
             provider_id=self._provider_id,
             status=ProviderStatus.HEALTHY,
@@ -178,6 +185,7 @@ class FixtureRainfallProvider(RainfallProvider):
         )
 
     def metadata(self) -> dict[str, Any]:
+        """Execute Metadata operation and return result."""
         return {
             "provider_id": self._provider_id,
             "source_type": self.source_type.value,

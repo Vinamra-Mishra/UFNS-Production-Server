@@ -14,6 +14,7 @@ SSL_CTX.check_hostname = False
 SSL_CTX.verify_mode = ssl.CERT_NONE
 
 def _http_get(url: str, headers: Optional[dict[str, str]] = None, timeout: float = 12.0) -> Any:
+    """Execute  Http Get operation and return result."""
     req_headers = {'User-Agent': USER_AGENT, 'Accept': 'application/json'}
     if headers:
         req_headers.update(headers)
@@ -22,12 +23,15 @@ def _http_get(url: str, headers: Optional[dict[str, str]] = None, timeout: float
         return json.loads(resp.read().decode('utf-8'))
 
 class OpenWeatherMapClient:
+    """Openweathermapclient schema and data model representation."""
     BASE_URL = 'https://api.openweathermap.org/data/2.5/weather'
 
     def __init__(self, api_key: Optional[str] = None) -> None:
+        """Execute   Init   operation and return result."""
         self.api_key = api_key or os.getenv('OPENWEATHERMAP_API_KEY', '')
 
     def get_weather(self, lat: float, lon: float) -> dict[str, Any]:
+        """Retrieve and return weather."""
         if not self.api_key:
             return self._fallback_weather(lat, lon)
 
@@ -63,6 +67,7 @@ class OpenWeatherMapClient:
             return self._fallback_weather(lat, lon)
 
     def _fallback_weather(self, lat: float, lon: float) -> dict[str, Any]:
+        """Execute  Fallback Weather operation and return result."""
         try:
             url = f'https://api.open-meteo.com/v1/forecast?latitude={lat:.4f}&longitude={lon:.4f}&current=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,rain,weather_code,surface_pressure,wind_speed_10m,wind_direction_10m,cloud_cover'
             data = _http_get(url, timeout=8.0)
@@ -108,12 +113,15 @@ class OpenWeatherMapClient:
             }
 
 class NASAClient:
+    """Nasaclient schema and data model representation."""
     CMR_URL = 'https://cmr.earthdata.nasa.gov/search/granules.json'
 
     def __init__(self, token: Optional[str] = None) -> None:
+        """Execute   Init   operation and return result."""
         self.token = token or os.getenv('NASA_EARTHDATA_TOKEN', '')
 
     def get_satellite_telemetry(self, lat: float, lon: float) -> dict[str, Any]:
+        """Retrieve and return satellite telemetry."""
         headers = {}
         if self.token:
             headers['Authorization'] = f'Bearer {self.token}'

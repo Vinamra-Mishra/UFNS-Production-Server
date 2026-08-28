@@ -21,6 +21,7 @@ client = TestClient(app)
 # ---------------------------------------------------------------------------
 
 def test_m7_16_frame_api():
+    """Test that m7 16 frame api behaves as expected."""
     r = client.get("/api/v1/scenarios/S4/frame?lead=110")
     assert r.status_code == 200
     f = r.json()
@@ -44,6 +45,7 @@ def test_m7_16_frame_api():
 # ---------------------------------------------------------------------------
 
 def test_m7_17_road_impact_api():
+    """Test that m7 17 road impact api behaves as expected."""
     r = client.get("/api/v1/scenarios/S4/road-impact?lead=110")
     assert r.status_code == 200
     body = r.json()
@@ -72,6 +74,7 @@ def test_m7_17_road_impact_api():
 # ---------------------------------------------------------------------------
 
 def test_m7_18_route_api():
+    """Test that m7 18 route api behaves as expected."""
     r = client.post("/api/v1/routes", json={
         "scenario_id": "S4", "lead": 110,
         "origin": [300615.0, 2503405.0], "destination": [303405.0, 2500615.0],
@@ -88,6 +91,7 @@ def test_m7_18_route_api():
 
 
 def test_m7_18b_route_avoid_impassable_mode():
+    """Test that m7 18b route avoid impassable mode behaves as expected."""
     r = client.post("/api/v1/routes", json={
         "scenario_id": "S4", "lead": 110,
         "origin": [300615.0, 2503405.0], "destination": [303405.0, 2500615.0],
@@ -102,6 +106,7 @@ def test_m7_18b_route_avoid_impassable_mode():
 # ---------------------------------------------------------------------------
 
 def test_m7_19_invalid_api_handling():
+    """Test that m7 19 invalid api handling behaves as expected."""
     # invalid scenario
     assert client.get("/api/v1/scenarios/S5/frame?lead=0").status_code == 404
     # invalid lead (7 is not a 5-min snapshot)
@@ -133,6 +138,7 @@ def test_m7_19_invalid_api_handling():
 # ---------------------------------------------------------------------------
 
 def test_m7_20_security_no_path_traversal():
+    """Test that m7 20 security no path traversal behaves as expected."""
     for bad in ("../../etc/passwd", "..%2F..%2Fetc", "S1/../..", "%2e%2e"):
         assert client.get(f"/api/v1/scenarios/{bad}/frame?lead=0").status_code == 404
         assert client.get(f"/api/v1/scenarios/{bad}/road-impact?lead=0").status_code == 404
@@ -149,6 +155,7 @@ def test_m7_20_security_no_path_traversal():
 # ---------------------------------------------------------------------------
 
 def test_m7_21_timeline_metadata():
+    """Test that m7 21 timeline metadata behaves as expected."""
     r = client.get("/api/v1/scenarios/S1/snapshots")
     assert r.status_code == 200
     leads = [s["lead_minutes"] for s in r.json()["snapshots"]]
@@ -165,6 +172,7 @@ def test_m7_21_timeline_metadata():
 # ---------------------------------------------------------------------------
 
 def test_m7_22_m6_regression_endpoints():
+    """Test that m7 22 m6 regression endpoints behaves as expected."""
     assert client.get("/api/v1/scenarios").json()["count"] == 4
     assert client.get("/api/v1/scenarios/S3/result").status_code == 200
     assert client.get("/api/v1/scenarios/S3/mass-balance").json()["gate"] == "PASS"
@@ -175,6 +183,7 @@ def test_m7_22_m6_regression_endpoints():
 
 
 def test_m7_policy_and_roads_endpoints():
+    """Test that m7 policy and roads endpoints behaves as expected."""
     p = client.get("/api/v1/policies").json()["policies"][0]
     assert p["policy_id"] == "B13-DEMO-V1"
     assert p["approved"] is False

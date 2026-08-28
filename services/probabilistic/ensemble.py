@@ -14,6 +14,7 @@ import numpy as np
 
 @dataclass(frozen=True)
 class EnsembleMember:
+    """Ensemblemember schema and data model representation."""
     member_id: str
     name: str
     percentile_tag: str  # P10 | P50 | P90 | STOCHASTIC
@@ -23,6 +24,7 @@ class EnsembleMember:
     weight: float
 
     def to_dict(self) -> dict[str, Any]:
+        """Execute To Dict operation and return result."""
         return asdict(self)
 
 
@@ -128,6 +130,7 @@ def generate_ensemble_members(count: int = 10) -> list[EnsembleMember]:
 
 @dataclass
 class EnsembleSimulationResult:
+    """Ensemblesimulationresult schema and data model representation."""
     scenario_id: str
     lead_minutes: int
     member_count: int
@@ -139,6 +142,7 @@ class EnsembleSimulationResult:
     interquartile_range_m: float
 
     def to_dict(self) -> dict[str, Any]:
+        """Execute To Dict operation and return result."""
         return {
             "scenario_id": self.scenario_id,
             "lead_minutes": self.lead_minutes,

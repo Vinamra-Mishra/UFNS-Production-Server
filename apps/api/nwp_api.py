@@ -34,10 +34,12 @@ router = APIRouter(prefix="/api/v1/nwp", tags=["NWP & Multi-Sensor Blending"])
 
 
 class IngestFilePathRequest(BaseModel):
+    """Ingestfilepathrequest schema and data model representation."""
     file_path: str = Field(..., description="Absolute or relative path to real NCMRWF NetCDF4/GRIB2 file")
 
 
 class BlendRequest(BaseModel):
+    """Blendrequest schema and data model representation."""
     lead_minutes: int = Field(default=60, ge=0, le=180, description="Forecast lead time in minutes")
     scenario_id: Optional[str] = Field(default="S4", description="Scenario ID to pull radar frame from")
 

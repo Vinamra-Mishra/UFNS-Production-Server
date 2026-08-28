@@ -25,6 +25,7 @@ class TestDossierCompilation:
     """Test incident dossier aggregation logic."""
 
     def test_compile_dossier_s4_110(self):
+        """Test that compile dossier s4 110 behaves as expected."""
         dossier = compile_dossier_from_scenario("S4", 110)
         assert dossier.dossier_id.startswith("UFNS-DOSSIER-")
         assert dossier.executive_summary.scenario_id == "S4"
@@ -57,6 +58,7 @@ class TestPDFDossierCompiler:
     """Test ReportLab PDF compilation."""
 
     def test_pdf_compilation_binary_header(self):
+        """Test that pdf compilation binary header behaves as expected."""
         dossier = compile_dossier_from_scenario("S4", 110)
         compiler = PDFDossierCompiler()
         pdf_bytes = compiler.compile_pdf(dossier)
@@ -70,6 +72,7 @@ class TestReportsAPI:
     """Test FastAPI /api/v1/reports endpoints."""
 
     def test_generate_report_endpoint(self):
+        """Test that generate report endpoint behaves as expected."""
         client = TestClient(app)
         res = client.post("/api/v1/reports/generate", json={"scenario_id": "S4", "lead_minutes": 110})
         assert res.status_code == 200
@@ -80,6 +83,7 @@ class TestReportsAPI:
         assert data["dossier"]["executive_summary"]["scenario_id"] == "S4"
 
     def test_get_latest_report_endpoint(self):
+        """Test that get latest report endpoint behaves as expected."""
         client = TestClient(app)
         res = client.get("/api/v1/reports/latest")
         assert res.status_code == 200
@@ -88,6 +92,7 @@ class TestReportsAPI:
         assert "dossier" in data
 
     def test_download_pdf_endpoint(self):
+        """Test that download pdf endpoint behaves as expected."""
         client = TestClient(app)
         # Generate first
         gen_res = client.post("/api/v1/reports/generate", json={"scenario_id": "S4", "lead_minutes": 110})
@@ -99,6 +104,7 @@ class TestReportsAPI:
         assert pdf_res.content.startswith(b"%PDF-")
 
     def test_get_report_json_endpoint(self):
+        """Test that get report json endpoint behaves as expected."""
         client = TestClient(app)
         res = client.get("/api/v1/reports/UFNS-DOSSIER-S4-110")
         assert res.status_code == 200

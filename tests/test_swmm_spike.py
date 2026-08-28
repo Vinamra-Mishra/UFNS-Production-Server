@@ -45,11 +45,13 @@ VENT = (3, 4)
 
 @pytest.fixture(scope="module")
 def fixtures(tmp_path_factory) -> dict[str, Path]:
+    """Execute Fixtures operation and return result."""
     d = tmp_path_factory.mktemp("swmm_fixtures")
     return write_fixtures(d)
 
 
 def _run(inp, minutes, rain=0.0, ext=0.0, dt=5, ao=AO_ORIFICE):
+    """Execute  Run operation and return result."""
     s = build_spike_surface()
     c = CoupledSpike(s, inp, INLET, VENT, dt_c=dt, ao=ao)
     c.run(minutes=minutes, rain_mmh=rain, external_inflow_m3s=ext)
@@ -61,6 +63,7 @@ def _run(inp, minutes, rain=0.0, ext=0.0, dt=5, ao=AO_ORIFICE):
 # ---------------------------------------------------------------------------
 
 def test_m3_01_swmm_standalone_smoke(fixtures):
+    """Test that m3 01 swmm standalone smoke behaves as expected."""
     from pyswmm import Links, Nodes, Simulation
 
     with Simulation(str(fixtures["clean"])) as sim:
@@ -94,6 +97,7 @@ def test_m3_01_swmm_standalone_smoke(fixtures):
 # ---------------------------------------------------------------------------
 
 def test_m3_02_zero_exchange(fixtures):
+    """Test that m3 02 zero exchange behaves as expected."""
     c = _run(fixtures["clean"], minutes=10)
     led = c.ledger
     assert led.S2D_m3 == 0.0
@@ -110,6 +114,7 @@ def test_m3_02_zero_exchange(fixtures):
 # ---------------------------------------------------------------------------
 
 def test_m3_03_surface_to_drainage(fixtures):
+    """Test that m3 03 surface to drainage behaves as expected."""
     c = _run(fixtures["clean"], minutes=15, rain=60.0)
     led = c.ledger
     assert led.S2D_m3 > 0, "capture must occur"
@@ -130,6 +135,7 @@ def test_m3_03_surface_to_drainage(fixtures):
 # ---------------------------------------------------------------------------
 
 def test_m3_04_drainage_to_surface(fixtures):
+    """Test that m3 04 drainage to surface behaves as expected."""
     c = _run(fixtures["blocked"], minutes=12, ext=0.06)
     led = c.ledger
     assert led.D2S_m3 > 0, "reverse exchange must occur"
@@ -147,6 +153,7 @@ def test_m3_04_drainage_to_surface(fixtures):
 # ---------------------------------------------------------------------------
 
 def test_m3_05_surcharge(fixtures):
+    """Test that m3 05 surcharge behaves as expected."""
     from pyswmm import Nodes, Simulation
 
     # the coupling run exports flooding to the surface
@@ -177,6 +184,7 @@ def test_m3_05_surcharge(fixtures):
 # ---------------------------------------------------------------------------
 
 def test_m3_06_blockage(fixtures):
+    """Test that m3 06 blockage behaves as expected."""
     cc = _run(fixtures["clean"], minutes=15, ext=0.15)
     cb = _run(fixtures["blocked"], minutes=15, ext=0.15)
     # identical forcing; observed differences (not pre-invented magnitudes):
@@ -195,6 +203,7 @@ def test_m3_06_blockage(fixtures):
 # ---------------------------------------------------------------------------
 
 def test_m3_07_no_drainage_control(fixtures):
+    """Test that m3 07 no drainage control behaves as expected."""
     coupled = _run(fixtures["clean"], minutes=15, rain=60.0)
     control = _run(fixtures["clean"], minutes=15, rain=60.0, ao=0.0)  # capture disabled
     # drainage coupling must change the surface solution: less water retained
@@ -208,6 +217,7 @@ def test_m3_07_no_drainage_control(fixtures):
 # ---------------------------------------------------------------------------
 
 def test_m3_08_timestep_halving(fixtures):
+    """Test that m3 08 timestep halving behaves as expected."""
     # Scenario chosen to exercise BOTH exchange directions substantially
     # (blocked fixture: capture + strong surcharge return, D2S ~ 96 m3).
     h10 = _run(fixtures["blocked"], minutes=20, rain=45.0, ext=0.1, dt=10)
@@ -229,6 +239,7 @@ def test_m3_08_timestep_halving(fixtures):
 # ---------------------------------------------------------------------------
 
 def test_m3_09_mass_conservation(fixtures):
+    """Test that m3 09 mass conservation behaves as expected."""
     c = _run(fixtures["clean"], minutes=20, rain=45.0, ext=0.1)
     led = c.ledger
     # full ledger report (not rounded for the calculation)
@@ -262,6 +273,7 @@ def test_m3_09_mass_conservation(fixtures):
 # ---------------------------------------------------------------------------
 
 def test_m3_10_reproducibility(fixtures):
+    """Test that m3 10 reproducibility behaves as expected."""
     a = _run(fixtures["clean"], minutes=12, rain=45.0, ext=0.1)
     b = _run(fixtures["clean"], minutes=12, rain=45.0, ext=0.1)
     assert len(a.exchange) == len(b.exchange)
@@ -278,6 +290,7 @@ def test_m3_10_reproducibility(fixtures):
 # ---------------------------------------------------------------------------
 
 def test_m3_11_failure_handling(fixtures, tmp_path):
+    """Test that m3 11 failure handling behaves as expected."""
     # invalid timestep
     with pytest.raises(CouplingError):
         CoupledSpike(build_spike_surface(), fixtures["clean"], INLET, VENT, dt_c=0)
@@ -308,6 +321,7 @@ def test_m3_11_failure_handling(fixtures, tmp_path):
 # ---------------------------------------------------------------------------
 
 def test_m3_12_unit_consistency():
+    """Test that m3 12 unit consistency behaves as expected."""
     # orifice rate spot value, computed with plain math (independent)
     eta, H = 11.0, 10.0
     expected = CD_ORIFICE * AO_ORIFICE * math.sqrt(2.0 * G * (eta - H))
@@ -325,6 +339,7 @@ def test_m3_12_unit_consistency():
 # ---------------------------------------------------------------------------
 
 def test_m3_13_causality(fixtures):
+    """Test that m3 13 causality behaves as expected."""
     from pyswmm import Nodes, Simulation
 
     # empirical regression of the PySWMM stride semantics established in M3:
@@ -353,6 +368,7 @@ def test_m3_13_causality(fixtures):
 # ---------------------------------------------------------------------------
 
 def test_m3_14_exchange_signs(fixtures):
+    """Test that m3 14 exchange signs behaves as expected."""
     cap = _run(fixtures["clean"], minutes=15, rain=60.0)      # surface->drainage
     ret = _run(fixtures["blocked"], minutes=12, ext=0.06)     # drainage->surface
     assert all(x.S2D_vol >= 0 for x in cap.exchange) and cap.ledger.S2D_m3 > 0
@@ -366,6 +382,7 @@ def test_m3_14_exchange_signs(fixtures):
 # ---------------------------------------------------------------------------
 
 def test_m3_15_extreme_state(fixtures):
+    """Test that m3 15 extreme state behaves as expected."""
     c = _run(fixtures["blocked"], minutes=15, rain=120.0, ext=0.5)
     led = c.ledger
     # stability: finite everywhere, no exception, physically bounded state

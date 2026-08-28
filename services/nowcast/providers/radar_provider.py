@@ -47,6 +47,7 @@ class RadarRainfallProvider(RainfallProvider):
         spatial_resolution_m: float = 30.0,
         temporal_resolution_minutes: int = 15,
     ) -> None:
+        """Execute   Init   operation and return result."""
         self._provider_id = provider_id
         self._source_name = source_name
         self._source_type = source_type
@@ -67,26 +68,32 @@ class RadarRainfallProvider(RainfallProvider):
 
     @property
     def provider_id(self) -> str:
+        """Execute Provider Id operation and return result."""
         return self._provider_id
 
     @property
     def source_type(self) -> SourceType:
+        """Execute Source Type operation and return result."""
         return self._source_type
 
     @property
     def source_name(self) -> str:
+        """Execute Source Name operation and return result."""
         return self._source_name
 
     @property
     def spatial_reference(self) -> str:
+        """Execute Spatial Reference operation and return result."""
         return self._spatial_reference
 
     @property
     def spatial_resolution_m(self) -> float:
+        """Execute Spatial Resolution M operation and return result."""
         return self._spatial_resolution_m
 
     @property
     def parser(self) -> RadarRasterParser:
+        """Execute Parser operation and return result."""
         return self._parser
 
     def ingest_frame(
@@ -169,11 +176,13 @@ class RadarRainfallProvider(RainfallProvider):
         )
 
     def fetch_latest(self) -> Optional[RainfallObservation]:
+        """Execute Fetch Latest operation and return result."""
         if self._latest_time is None or self._latest_time not in self._observations:
             self.prewarm_radar_buffer()
         return self._observations.get(self._latest_time)
 
     def fetch_observation(self, target_time: datetime) -> Optional[RainfallObservation]:
+        """Execute Fetch Observation operation and return result."""
         if target_time.tzinfo is None:
             target_time = target_time.replace(tzinfo=timezone.utc)
         
@@ -198,6 +207,7 @@ class RadarRainfallProvider(RainfallProvider):
         return self.fetch_latest()
 
     def health(self) -> ProviderHealth:
+        """Execute Health operation and return result."""
         if not self._observations:
             self.prewarm_radar_buffer()
             
@@ -234,6 +244,7 @@ class RadarRainfallProvider(RainfallProvider):
         )
 
     def metadata(self) -> dict[str, Any]:
+        """Execute Metadata operation and return result."""
         return {
             "provider_id": self._provider_id,
             "source_type": self._source_type.value,

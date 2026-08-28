@@ -71,16 +71,19 @@ ISSUE = datetime(2026, 8, 21, tzinfo=timezone.utc)
 
 @pytest.fixture(scope="module")
 def dem() -> np.ndarray:
+    """Execute Dem operation and return result."""
     return synthetic_dem()
 
 
 @pytest.fixture(scope="module")
 def m5_results(dem) -> dict[str, ScenarioResult]:
+    """Execute M5 Results operation and return result."""
     return run_all_scenarios(dem, issue_time=ISSUE)
 
 
 @pytest.fixture(scope="module")
 def m5_comparison(m5_results) -> ScenarioComparison:
+    """Execute M5 Comparison operation and return result."""
     return compare(m5_results)
 
 
@@ -118,6 +121,7 @@ def test_m5_01_scenario_schema():
 # ---------------------------------------------------------------------------
 
 def test_m5_02_required_scenario_ids_and_metadata():
+    """Test that m5 02 required scenario ids and metadata behaves as expected."""
     assert set(M5_SCENARIOS.keys()) == {"S1", "S2", "S3", "S4"}
     assert required_scenario_ids() == ("S1", "S2", "S3", "S4")
     # S1: normal rain + normal drainage
@@ -143,6 +147,7 @@ def test_m5_02_required_scenario_ids_and_metadata():
 # ---------------------------------------------------------------------------
 
 def test_m5_03_rainfall_profile_provenance_and_status():
+    """Test that m5 03 rainfall profile provenance and status behaves as expected."""
     profiles = all_profiles()
     assert set(profiles.keys()) == {"P_NORMAL", "P_HEAVY", "P_EXTREME"}
     for pid, p in profiles.items():
@@ -174,6 +179,7 @@ def test_m5_03_rainfall_profile_provenance_and_status():
 # ---------------------------------------------------------------------------
 
 def test_m5_04_normal_execution(m5_results):
+    """Test that m5 04 normal execution behaves as expected."""
     r = m5_results["S1"]
     assert r.acceptance["overall"] == "PASS"
     assert r.peak_depth_m > 0.01
@@ -191,6 +197,7 @@ def test_m5_04_normal_execution(m5_results):
 # ---------------------------------------------------------------------------
 
 def test_m5_05_heavy_execution(m5_results):
+    """Test that m5 05 heavy execution behaves as expected."""
     r = m5_results["S2"]
     assert r.acceptance["overall"] == "PASS"
     assert r.peak_depth_m > m5_results["S1"].peak_depth_m  # more rain -> deeper
@@ -205,6 +212,7 @@ def test_m5_05_heavy_execution(m5_results):
 # ---------------------------------------------------------------------------
 
 def test_m5_06_extreme_execution(m5_results):
+    """Test that m5 06 extreme execution behaves as expected."""
     r = m5_results["S3"]
     assert r.acceptance["overall"] == "PASS"
     assert r.peak_depth_m > m5_results["S2"].peak_depth_m
@@ -221,6 +229,7 @@ def test_m5_06_extreme_execution(m5_results):
 # ---------------------------------------------------------------------------
 
 def test_m5_07_extreme_blocked_execution(m5_results):
+    """Test that m5 07 extreme blocked execution behaves as expected."""
     r = m5_results["S4"]
     assert r.acceptance["overall"] == "PASS"
     assert r.mass_ledger["gate"] == "PASS"
@@ -235,6 +244,7 @@ def test_m5_07_extreme_blocked_execution(m5_results):
 # ---------------------------------------------------------------------------
 
 def test_m5_08_paired_comparison_controls(m5_results, m5_comparison):
+    """Test that m5 08 paired comparison controls behaves as expected."""
     ctrls = m5_comparison.comparability_controls
     # All scenarios share surface config, timestep, duration, seed, etc.
     sw = ctrls["suite_wide"]

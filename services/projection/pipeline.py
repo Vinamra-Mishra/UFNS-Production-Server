@@ -43,6 +43,7 @@ class ProjectionUnavailableError(RuntimeError):
 
 @dataclass(frozen=True)
 class ProjectionBundle:
+    """Projectionbundle schema and data model representation."""
     config: ProjectionConfigRecord
     observation: RainfallObservation
     quality: QualityResult
@@ -56,6 +57,7 @@ class ProjectionBundle:
     cache_hit: bool
 
     def summary(self) -> dict[str, Any]:
+        """Execute Summary operation and return result."""
         return {
             "config": self.config.to_dict(),
             "observation": self.observation.to_dict(),
@@ -80,14 +82,17 @@ class ProjectionPipeline:
     """Build and cache M9 persistence-impact projection bundles."""
 
     def __init__(self, ttl_seconds: int = 300) -> None:
+        """Execute   Init   operation and return result."""
         self._cache = ProjectionCache(ttl_seconds=ttl_seconds)
         self._compute_lock = threading.RLock()
 
     @property
     def cache(self) -> ProjectionCache:
+        """Execute Cache operation and return result."""
         return self._cache
 
     def build_from_latest(self, config_id: str) -> ProjectionBundle:
+        """Execute Build From Latest operation and return result."""
         get_projection_config(config_id)
         nowcast_t0 = perf_counter()
         _provider, observation, quality, records = fetch_latest_nowcast_records()
@@ -117,6 +122,7 @@ class ProjectionPipeline:
         nowcast_records: list[Any] | None = None,
         base_timings_ms: dict[str, float] | None = None,
     ) -> ProjectionBundle:
+        """Execute Build From Observation operation and return result."""
         config = get_projection_config(config_id)
         quality = quality or validate_observation(observation)
         if not quality.valid:
@@ -222,6 +228,7 @@ class ProjectionPipeline:
         destination_xy: tuple[float, float],
         mode: str,
     ) -> RouteProjection:
+        """Execute Route operation and return result."""
         if lead_minutes not in bundle.road_projections:
             raise KeyError(lead_minutes)
         road_projection = bundle.road_projections[lead_minutes]
@@ -263,6 +270,7 @@ class ProjectionPipeline:
 
     @staticmethod
     def _combine_nowcast_fingerprints(records: list[Any]) -> str:
+        """Execute  Combine Nowcast Fingerprints operation and return result."""
         canon = json.dumps(
             [record.fingerprint or record.compute_fingerprint() for record in records],
             separators=(",", ":"),
@@ -277,6 +285,7 @@ class ProjectionPipeline:
         config_fingerprint: str,
         runconfig_fingerprint: str,
     ) -> str:
+        """Execute  Bundle Key operation and return result."""
         payload = {
             "observation_fingerprint": observation_fingerprint,
             "nowcast_fingerprint": nowcast_fingerprint,
@@ -297,6 +306,7 @@ class ProjectionPipeline:
         *,
         configuration_fingerprint: str,
     ) -> dict[int, FloodImpactProjection]:
+        """Execute  Build Flood Projections operation and return result."""
         frame_by_lead = {frame.lead_minutes: frame for frame in frames}
         snapshot_by_lead = {snapshot.lead_minutes: snapshot for snapshot in result.snapshots}
         out: dict[int, FloodImpactProjection] = {}
@@ -363,6 +373,7 @@ class ProjectionPipeline:
         config: ProjectionConfigRecord,
         flood_projections: dict[int, FloodImpactProjection],
     ) -> dict[int, RoadImpactProjection]:
+        """Execute  Build Road Projections operation and return result."""
         grids = {lead: projection.depth_m for lead, projection in flood_projections.items()}
         valid_times = {lead: projection.valid_time.isoformat() for lead, projection in flood_projections.items()}
         index = build_index(NETWORK, grids, config.config_id, valid_times)

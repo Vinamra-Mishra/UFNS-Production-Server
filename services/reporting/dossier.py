@@ -45,6 +45,7 @@ from services.nowcast.blending import compute_blending_weights
 
 @dataclass
 class ExecutiveSummarySection:
+    """Executivesummarysection schema and data model representation."""
     scenario_id: str
     lead_minutes: int
     severity_level: str  # "EXTREME RED", "SEVERE ORANGE", "MODERATE AMBER", "MINOR GREEN"
@@ -58,6 +59,7 @@ class ExecutiveSummarySection:
 
 @dataclass
 class MassBalanceAuditSection:
+    """Massbalanceauditsection schema and data model representation."""
     cumulative_rainfall_inflow_m3: float
     cumulative_swmm_outfall_m3: float
     surface_storage_m3: float
@@ -70,6 +72,7 @@ class MassBalanceAuditSection:
 
 @dataclass
 class TransportationSection:
+    """Transportationsection schema and data model representation."""
     total_roads_inspected: int
     impassable_roads_count: int
     caution_roads_count: int
@@ -80,6 +83,7 @@ class TransportationSection:
 
 @dataclass
 class CAPAlertSection:
+    """Capalertsection schema and data model representation."""
     alert_identifier: str
     headline: str
     instruction: str
@@ -91,6 +95,7 @@ class CAPAlertSection:
 
 @dataclass
 class ProvenanceSection:
+    """Provenancesection schema and data model representation."""
     dem_source: str
     spatial_crs: str
     grid_resolution_m: float
@@ -103,6 +108,7 @@ class ProvenanceSection:
 
 @dataclass
 class FloodIncidentDossier:
+    """Floodincidentdossier schema and data model representation."""
     dossier_id: str
     generated_at_utc: datetime
     executive_summary: ExecutiveSummarySection
@@ -112,6 +118,7 @@ class FloodIncidentDossier:
     provenance: ProvenanceSection
 
     def to_dict(self) -> dict[str, Any]:
+        """Execute To Dict operation and return result."""
         return {
             "dossier_id": self.dossier_id,
             "generated_at_utc": self.generated_at_utc.isoformat(),
@@ -338,10 +345,12 @@ class PDFDossierCompiler:
     """Compiles a FloodIncidentDossier into a publication-quality vector PDF."""
 
     def __init__(self) -> None:
+        """Execute   Init   operation and return result."""
         self.styles = getSampleStyleSheet()
         self._init_custom_styles()
 
     def _init_custom_styles(self) -> None:
+        """Execute  Init Custom Styles operation and return result."""
         self.style_title = ParagraphStyle(
             "DocTitle",
             parent=self.styles["Heading1"],

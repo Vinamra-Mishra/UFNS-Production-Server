@@ -53,8 +53,10 @@ def run_isolated_forward_simulation(
             lines = inp_content.splitlines(keepends=True)
             replaced = False
             for idx, line in enumerate(lines):
-                if line.startswith("C1") and str(C1_MANNING) in line:
-                    lines[idx] = line.replace(str(C1_MANNING), f"{n_pipe:.4f}", 1)
+                parts = line.split()
+                if parts and parts[0] == "C1" and len(parts) >= 5:
+                    parts[4] = f"{n_pipe:.4f}"
+                    lines[idx] = " ".join(parts) + "\n"
                     replaced = True
                     break
             if not replaced:

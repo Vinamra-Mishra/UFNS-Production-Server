@@ -19,6 +19,7 @@ router = APIRouter(prefix="/api/v1/probabilistic", tags=["Probabilistic Flood Fo
 
 
 class SimulateProbabilisticRequest(BaseModel):
+    """Simulateprobabilisticrequest schema and data model representation."""
     scenario_id: str = Field(default="S4", description="Scenario identifier (S1..S4)")
     lead_minutes: int = Field(default=110, ge=0, le=180, description="Lead time in minutes")
     member_count: int = Field(default=10, ge=3, le=10, description="Number of ensemble members (3..10)")

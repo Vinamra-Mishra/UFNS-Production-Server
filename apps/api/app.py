@@ -68,6 +68,7 @@ app.include_router(probabilistic_api.router)
 # ---------------------------------------------------------------------------
 
 def _error(status_code: int, code: str, message: str, **details: Any) -> HTTPException:
+    """Execute  Error operation and return result."""
     return HTTPException(
         status_code=status_code,
         detail={"error": {"code": code, "message": message, **details}},
@@ -75,6 +76,7 @@ def _error(status_code: int, code: str, message: str, **details: Any) -> HTTPExc
 
 
 def _require_scenario(scenario_id: str) -> None:
+    """Execute  Require Scenario operation and return result."""
     valid = list(store.VALID_SCENARIO_IDS) + ["REALTIME"]
     if scenario_id not in valid:
         raise _error(
@@ -85,6 +87,7 @@ def _require_scenario(scenario_id: str) -> None:
 
 
 def _store_not_ready() -> HTTPException:
+    """Execute  Store Not Ready operation and return result."""
     return _error(
         503, "ARTIFACTS_UNAVAILABLE",
         "precomputed M5 scenario artifacts are missing or malformed",
@@ -100,6 +103,7 @@ _DOMAIN_XMIN, _DOMAIN_YMIN, _DOMAIN_XMAX, _DOMAIN_YMAX = 300000.0, 2500000.0, 30
 
 
 def _require_lead(lead: int) -> None:
+    """Execute  Require Lead operation and return result."""
     if not (0 <= lead <= 180):
         raise _error(
             400, "INVALID_LEAD",
@@ -109,6 +113,7 @@ def _require_lead(lead: int) -> None:
 
 
 def _require_projection_config(config_id: str) -> None:
+    """Execute  Require Projection Config operation and return result."""
     if config_id not in VALID_PROJECTION_CONFIG_IDS:
         raise _error(
             404,
@@ -119,6 +124,7 @@ def _require_projection_config(config_id: str) -> None:
 
 
 def _require_projection_lead(lead: int) -> None:
+    """Execute  Require Projection Lead operation and return result."""
     if lead not in VALID_PROJECTION_LEADS:
         raise _error(
             400,
@@ -148,6 +154,7 @@ def _validate_xy(name: str, xy: list[float]) -> tuple[float, float]:
 
 
 class RouteRequest(BaseModel):
+    """Routerequest schema and data model representation."""
     scenario_id: str
     lead: int = Field(ge=0, le=180)
     origin: list[float] = Field(min_length=2, max_length=2)
@@ -158,6 +165,7 @@ class RouteRequest(BaseModel):
 
 
 class ProjectionRouteRequest(BaseModel):
+    """Projectionrouterequest schema and data model representation."""
     lead: int = Field(ge=0, le=180)
     origin: list[float] = Field(min_length=2, max_length=2)
     destination: list[float] = Field(min_length=2, max_length=2)
@@ -176,6 +184,7 @@ ProjectionRouteRequest.model_rebuild()
 
 @app.get("/", response_class=HTMLResponse, include_in_schema=False)
 def dashboard() -> HTMLResponse:
+    """Execute Dashboard operation and return result."""
     if not INDEX_HTML.exists():
         raise _error(500, "DASHBOARD_MISSING", "dashboard index.html not found")
     return HTMLResponse(INDEX_HTML.read_text(encoding="utf-8"))
@@ -187,6 +196,7 @@ def dashboard() -> HTMLResponse:
 
 @app.get("/health")
 def health() -> dict[str, Any]:
+    """Execute Health operation and return result."""
     try:
         results = store.load_results()
         artifacts_ok = all(sid in results for sid in store.VALID_SCENARIO_IDS)
@@ -245,6 +255,7 @@ def health() -> dict[str, Any]:
 
 @app.get("/api/v1/version")
 def version() -> dict[str, Any]:
+    """Execute Version operation and return result."""
     return {
         "api_version": API_VERSION,
         "model_version": MODEL_VERSION,
@@ -266,6 +277,7 @@ def version() -> dict[str, Any]:
 
 @app.get("/api/v1/scenarios")
 def list_scenarios() -> dict[str, Any]:
+    """Execute List Scenarios operation and return result."""
     try:
         scenarios = store.list_scenarios()
     except store.StoreError as exc:
@@ -281,6 +293,7 @@ def list_scenarios() -> dict[str, Any]:
 
 @app.get("/api/v1/scenarios/{scenario_id}")
 def scenario_metadata(scenario_id: str) -> dict[str, Any]:
+    """Execute Scenario Metadata operation and return result."""
     _require_scenario(scenario_id)
     try:
         meta = store.scenario_metadata(scenario_id)
@@ -293,6 +306,7 @@ def scenario_metadata(scenario_id: str) -> dict[str, Any]:
 
 @app.get("/api/v1/scenarios/{scenario_id}/result")
 def scenario_result(scenario_id: str) -> dict[str, Any]:
+    """Execute Scenario Result operation and return result."""
     _require_scenario(scenario_id)
     try:
         result = store.scenario_result(scenario_id)
@@ -305,6 +319,7 @@ def scenario_result(scenario_id: str) -> dict[str, Any]:
 
 @app.get("/api/v1/scenarios/{scenario_id}/snapshots")
 def scenario_snapshots(scenario_id: str) -> dict[str, Any]:
+    """Execute Scenario Snapshots operation and return result."""
     _require_scenario(scenario_id)
     try:
         timeline = store.snapshot_timeline(scenario_id)
@@ -356,6 +371,7 @@ def scenario_mass_balance(scenario_id: str) -> dict[str, Any]:
 # ---------------------------------------------------------------------------
 
 def _map_image(scenario_id: str, lead_minutes: int, extent: bool) -> Response:
+    """Execute  Map Image operation and return result."""
     _require_scenario(scenario_id)
     try:
         tif_path = store.artifact_tif_path(scenario_id, lead_minutes)
@@ -384,11 +400,13 @@ def _map_image(scenario_id: str, lead_minutes: int, extent: bool) -> Response:
 
 @app.get("/api/v1/scenarios/{scenario_id}/flood-depth")
 def flood_depth(scenario_id: str, lead: int = Query(..., ge=0, le=180)) -> Response:
+    """Execute Flood Depth operation and return result."""
     return _map_image(scenario_id, lead, extent=False)
 
 
 @app.get("/api/v1/scenarios/{scenario_id}/flood-extent")
 def flood_extent(scenario_id: str, lead: int = Query(..., ge=0, le=180)) -> Response:
+    """Execute Flood Extent operation and return result."""
     return _map_image(scenario_id, lead, extent=True)
 
 
@@ -398,6 +416,7 @@ def flood_extent(scenario_id: str, lead: int = Query(..., ge=0, le=180)) -> Resp
 
 @app.get("/api/v1/comparison/s3s4")
 def comparison_s3s4() -> dict[str, Any]:
+    """Execute Comparison S3S4 operation and return result."""
     try:
         return store.s3s4_comparison()
     except store.StoreError as exc:
@@ -675,16 +694,19 @@ def nowcast_at_lead(lead_minutes: int) -> dict[str, Any]:
 
 @app.get("/api/v1/projections/nowcast/status")
 def nowcast_projection_status() -> dict[str, Any]:
+    """Execute Nowcast Projection Status operation and return result."""
     return projections.projection_status()
 
 
 @app.get("/api/v1/projections/nowcast/cache")
 def nowcast_projection_cache() -> dict[str, Any]:
+    """Execute Nowcast Projection Cache operation and return result."""
     return projections.cache_stats()
 
 
 @app.get("/api/v1/projections/nowcast/configs")
 def nowcast_projection_configs() -> dict[str, Any]:
+    """Execute Nowcast Projection Configs operation and return result."""
     return {
         "configs": [projections.projection_config_detail(cid) for cid in VALID_PROJECTION_CONFIG_IDS],
         "count": len(VALID_PROJECTION_CONFIG_IDS),
@@ -695,6 +717,7 @@ def nowcast_projection_configs() -> dict[str, Any]:
 
 @app.get("/api/v1/projections/nowcast/{config_id}")
 def nowcast_projection_summary(config_id: str) -> dict[str, Any]:
+    """Execute Nowcast Projection Summary operation and return result."""
     _require_projection_config(config_id)
     try:
         return projections.projection_summary(config_id)
@@ -704,6 +727,7 @@ def nowcast_projection_summary(config_id: str) -> dict[str, Any]:
 
 @app.get("/api/v1/projections/nowcast/{config_id}/frame")
 def nowcast_projection_frame(config_id: str, lead: int = Query(..., ge=0, le=180)) -> dict[str, Any]:
+    """Execute Nowcast Projection Frame operation and return result."""
     _require_projection_config(config_id)
     _require_projection_lead(lead)
     try:
@@ -714,6 +738,7 @@ def nowcast_projection_frame(config_id: str, lead: int = Query(..., ge=0, le=180
 
 @app.get("/api/v1/projections/nowcast/{config_id}/rainfall")
 def nowcast_projection_rainfall(config_id: str, lead: int = Query(..., ge=0, le=180)) -> dict[str, Any]:
+    """Execute Nowcast Projection Rainfall operation and return result."""
     _require_projection_config(config_id)
     _require_projection_lead(lead)
     try:
@@ -724,6 +749,7 @@ def nowcast_projection_rainfall(config_id: str, lead: int = Query(..., ge=0, le=
 
 @app.get("/api/v1/projections/nowcast/{config_id}/flood")
 def nowcast_projection_flood(config_id: str, lead: int = Query(..., ge=0, le=180)) -> dict[str, Any]:
+    """Execute Nowcast Projection Flood operation and return result."""
     _require_projection_config(config_id)
     _require_projection_lead(lead)
     try:
@@ -734,6 +760,7 @@ def nowcast_projection_flood(config_id: str, lead: int = Query(..., ge=0, le=180
 
 @app.get("/api/v1/projections/nowcast/{config_id}/road-impact")
 def nowcast_projection_road_impact(config_id: str, lead: int = Query(..., ge=0, le=180)) -> dict[str, Any]:
+    """Execute Nowcast Projection Road Impact operation and return result."""
     _require_projection_config(config_id)
     _require_projection_lead(lead)
     try:
@@ -744,6 +771,7 @@ def nowcast_projection_road_impact(config_id: str, lead: int = Query(..., ge=0, 
 
 @app.get("/api/v1/projections/nowcast/{config_id}/road-impact/{road_id}")
 def nowcast_projection_road_timeline(config_id: str, road_id: str) -> dict[str, Any]:
+    """Execute Nowcast Projection Road Timeline operation and return result."""
     _require_projection_config(config_id)
     try:
         return projections.road_projection_timeline(config_id, road_id)
@@ -755,6 +783,7 @@ def nowcast_projection_road_timeline(config_id: str, road_id: str) -> dict[str, 
 
 @app.post("/api/v1/projections/nowcast/{config_id}/routes")
 def nowcast_projection_routes(config_id: str, req: ProjectionRouteRequest) -> dict[str, Any]:
+    """Execute Nowcast Projection Routes operation and return result."""
     _require_projection_config(config_id)
     _require_projection_lead(req.lead)
     origin = _validate_xy("origin", req.origin)
@@ -772,6 +801,7 @@ def nowcast_projection_routes(config_id: str, req: ProjectionRouteRequest) -> di
 # ---------------------------------------------------------------------------
 
 def _pilot_not_ready() -> HTTPException:
+    """Execute  Pilot Not Ready operation and return result."""
     return _error(
         503, "PILOT_INSPECTION_UNAVAILABLE",
         "M11 real-pilot inspection artifact missing — run "
@@ -795,6 +825,7 @@ def pilot_real_overview() -> dict[str, Any]:
 
 @app.get("/api/v1/pilot/real/dem")
 def pilot_real_dem() -> dict[str, Any]:
+    """Execute Pilot Real Dem operation and return result."""
     try:
         return pilot.pilot_dem()
     except pilot.PilotStoreError as exc:
@@ -825,6 +856,7 @@ def pilot_real_hydraulic_readiness() -> dict[str, Any]:
 
 @app.exception_handler(pilot.PilotStoreError)
 async def _pilot_error_handler(request, exc: pilot.PilotStoreError):
+    """Execute  Pilot Error Handler operation and return result."""
     return JSONResponse(
         status_code=503,
         content={"error": {"code": "PILOT_INSPECTION_UNAVAILABLE", "message": str(exc)}},
@@ -837,6 +869,7 @@ async def _pilot_error_handler(request, exc: pilot.PilotStoreError):
 
 @app.exception_handler(HTTPException)
 async def _http_exception_handler(request, exc: HTTPException):
+    """Execute  Http Exception Handler operation and return result."""
     detail = exc.detail
     if isinstance(detail, dict) and "error" in detail:
         return JSONResponse(status_code=exc.status_code, content=detail)
@@ -851,6 +884,7 @@ from fastapi.exceptions import RequestValidationError
 
 @app.exception_handler(RequestValidationError)
 async def _validation_error_handler(request, exc: RequestValidationError):
+    """Execute  Validation Error Handler operation and return result."""
     safe_details = []
     for err in exc.errors():
         safe_details.append({
@@ -871,6 +905,7 @@ async def _validation_error_handler(request, exc: RequestValidationError):
 
 @app.exception_handler(store.StoreError)
 async def _store_error_handler(request, exc: store.StoreError):
+    """Execute  Store Error Handler operation and return result."""
     return JSONResponse(
         status_code=503,
         content={"error": {"code": "ARTIFACTS_UNAVAILABLE", "message": str(exc)}},

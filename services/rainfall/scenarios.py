@@ -101,6 +101,7 @@ def alternating_block_hyetograph(total_mm: float, duration_min: int, interval_mi
 
 
 def build_profile(scenario_id: str, total_mm: float) -> RainfallProfile:
+    """Execute Build Profile operation and return result."""
     return RainfallProfile(
         profile_id=f"{scenario_id}_v1",
         derivation=DERIVATION_NOTE,
@@ -120,6 +121,7 @@ def build_demo_scenarios(
     """The four approved demo scenarios (M5 preview; provisional rainfall)."""
 
     def _scenario(scenario_id: str, name: str, description: str, blockage: BlockageConfiguration | None) -> ScenarioDefinition:
+        """Execute  Scenario operation and return result."""
         return ScenarioDefinition(
             scenario_id=scenario_id,
             name=name,

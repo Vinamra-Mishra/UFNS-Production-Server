@@ -30,6 +30,7 @@ class TestNonMutatingBaselineIntegrity:
     """Ensure baseline simulation artifacts are strictly preserved and never mutated."""
 
     def test_baseline_arrays_unaltered_after_mitigation_runs(self):
+        """Test that baseline arrays unaltered after mitigation runs behaves as expected."""
         engine = InterventionScenarioEngine()
         
         # Capture baseline state before simulation
@@ -63,6 +64,7 @@ class TestInterventionPhysics:
     """Test dynamic counterfactual physics formulations."""
 
     def test_null_intervention_matches_baseline(self):
+        """Test that null intervention matches baseline behaves as expected."""
         engine = InterventionScenarioEngine()
         config = InterventionConfig(
             scenario_id="S4",
@@ -82,6 +84,7 @@ class TestInterventionPhysics:
         assert res.mitigation_effectiveness_index == 0.0
 
     def test_lid_permeable_pavement_reduces_depth_and_area(self):
+        """Test that lid permeable pavement reduces depth and area behaves as expected."""
         engine = InterventionScenarioEngine()
         config = InterventionConfig(
             scenario_id="S4",
@@ -100,6 +103,7 @@ class TestInterventionPhysics:
         assert 0.0 < res.mitigation_effectiveness_index <= 1.0
 
     def test_detention_basin_captures_volume(self):
+        """Test that detention basin captures volume behaves as expected."""
         engine = InterventionScenarioEngine()
         config = InterventionConfig(
             scenario_id="S4",
@@ -115,6 +119,7 @@ class TestInterventionPhysics:
         assert res.deltas["depth_reduction_m"] > 0.0
 
     def test_emergency_pumping_reopens_roads(self):
+        """Test that emergency pumping reopens roads behaves as expected."""
         engine = InterventionScenarioEngine()
         config = InterventionConfig(
             scenario_id="S4",
@@ -130,6 +135,7 @@ class TestInterventionPhysics:
         assert res.mitigated_metrics["impassable_count"] <= res.baseline_metrics["impassable_count"]
 
     def test_culvert_unblocking_relieves_surcharge(self):
+        """Test that culvert unblocking relieves surcharge behaves as expected."""
         engine = InterventionScenarioEngine()
         config = InterventionConfig(
             scenario_id="S4",
@@ -147,6 +153,7 @@ class TestInterventionPhysics:
         assert res.mitigation_effectiveness_index > 0.0
 
     def test_effectiveness_index_bounds(self):
+        """Test that effectiveness index bounds behaves as expected."""
         mei_zero = calculate_effectiveness_index(0.0, 0.0, 0.0)
         assert mei_zero == 0.0
 
@@ -161,6 +168,7 @@ class TestMitigationAPIEndpoints:
     """Test FastAPI /api/v1/mitigation endpoints."""
 
     def test_list_strategies_endpoint(self):
+        """Test that list strategies endpoint behaves as expected."""
         client = TestClient(app)
         res = client.get("/api/v1/mitigation/strategies")
         assert res.status_code == 200
@@ -173,6 +181,7 @@ class TestMitigationAPIEndpoints:
         assert "hybrid_max_mitigation" in strategy_ids
 
     def test_simulate_mitigation_endpoint(self):
+        """Test that simulate mitigation endpoint behaves as expected."""
         client = TestClient(app)
         payload = {
             "scenario_id": "S4",
@@ -195,6 +204,7 @@ class TestMitigationAPIEndpoints:
         assert data["deltas"]["volume_reduction_pct"] > 0.0
 
     def test_simulate_preset_strategy_endpoint(self):
+        """Test that simulate preset strategy endpoint behaves as expected."""
         client = TestClient(app)
         res = client.get("/api/v1/mitigation/strategies/sponge_city_green/simulate?scenario_id=S4&lead_minutes=110")
         assert res.status_code == 200
@@ -204,6 +214,7 @@ class TestMitigationAPIEndpoints:
         assert data["mitigation_effectiveness_index"] > 0.0
 
     def test_unknown_strategy_returns_404(self):
+        """Test that unknown strategy returns 404 behaves as expected."""
         client = TestClient(app)
         res = client.get("/api/v1/mitigation/strategies/nonexistent_package/simulate")
         assert res.status_code == 404

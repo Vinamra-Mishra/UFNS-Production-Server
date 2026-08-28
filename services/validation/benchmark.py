@@ -22,6 +22,7 @@ from services.validation.metrics import (
 
 @dataclass(frozen=True)
 class BenchmarkDataset:
+    """Benchmarkdataset schema and data model representation."""
     benchmark_id: str
     name: str
     source: str
@@ -29,6 +30,7 @@ class BenchmarkDataset:
     description: str
 
     def to_dict(self) -> dict[str, Any]:
+        """Execute To Dict operation and return result."""
         return asdict(self)
 
 
@@ -59,6 +61,7 @@ BENCHMARK_CATALOG: dict[str, BenchmarkDataset] = {
 
 @dataclass
 class BenchmarkEvaluationResult:
+    """Benchmarkevaluationresult schema and data model representation."""
     scenario_id: str
     lead_minutes: int
     benchmark_id: str
@@ -71,6 +74,7 @@ class BenchmarkEvaluationResult:
     provenance: dict[str, Any]
 
     def to_dict(self) -> dict[str, Any]:
+        """Execute To Dict operation and return result."""
         return {
             "scenario_id": self.scenario_id,
             "lead_minutes": self.lead_minutes,

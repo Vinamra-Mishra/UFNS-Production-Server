@@ -68,6 +68,7 @@ class TestZRRelationship:
     """PA-01: Z-R power-law conversions and meteorological filtering."""
 
     def test_marshall_palmer_conversion(self):
+        """Test that marshall palmer conversion behaves as expected."""
         zr = ZR_MARSHALL_PALMER
         # 30 dBZ => Z = 1000 => R = (1000 / 200)^(1/1.6) = 5^(0.625) ~ 2.734 mm/h
         dbz = np.array([[30.0]])
@@ -76,6 +77,7 @@ class TestZRRelationship:
         assert rate[0, 0] == pytest.approx(expected_rate, rel=1e-3)
 
     def test_convective_conversion(self):
+        """Test that convective conversion behaves as expected."""
         zr = ZR_CONVECTIVE
         # 45 dBZ => Z = 31622.77 => R = (31622.77 / 300)^(1/1.4) ~ 27.94 mm/h
         dbz = np.array([[45.0]])
@@ -84,6 +86,7 @@ class TestZRRelationship:
         assert rate[0, 0] == pytest.approx(expected_rate, rel=1e-3)
 
     def test_minimum_threshold_masking(self):
+        """Test that minimum threshold masking behaves as expected."""
         zr = ZRRelationship(a=200.0, b=1.6, min_dbz=15.0)
         dbz = np.array([[5.0, 10.0, 14.9, 15.1]])
         rate = zr.dbz_to_rate(dbz)
@@ -93,6 +96,7 @@ class TestZRRelationship:
         assert rate[0, 3] > 0.0
 
     def test_hail_capping(self):
+        """Test that hail capping behaves as expected."""
         zr = ZRRelationship(a=200.0, b=1.6, max_dbz=55.0)
         dbz_extreme = np.array([[75.0]])
         rate_75 = zr.dbz_to_rate(dbz_extreme)
@@ -100,6 +104,7 @@ class TestZRRelationship:
         assert rate_75[0, 0] == pytest.approx(rate_55[0, 0], rel=1e-5)
 
     def test_roundtrip_rate_to_dbz(self):
+        """Test that roundtrip rate to dbz behaves as expected."""
         zr = ZR_MARSHALL_PALMER
         initial_rate = np.array([[5.0, 25.0, 60.0]])
         dbz = zr.rate_to_dbz(initial_rate)
@@ -115,6 +120,7 @@ class TestRadarRasterParser:
     """PA-02: Ingestion of radar arrays, resampling and metadata creation."""
 
     def test_parse_reflectivity_array(self):
+        """Test that parse reflectivity array behaves as expected."""
         parser = RadarRasterParser(default_target_shape=(32, 32))
         raw_dbz = np.full((32, 32), 35.0)
         t = datetime(2026, 8, 25, 12, 0, tzinfo=timezone.utc)
@@ -131,6 +137,7 @@ class TestRadarRasterParser:
         assert meta.is_real_data is True
 
     def test_parse_with_resampling(self):
+        """Test that parse with resampling behaves as expected."""
         parser = RadarRasterParser(default_target_shape=(64, 64))
         raw_sri = np.full((16, 16), 20.0)
         t = datetime(2026, 8, 25, 12, 0, tzinfo=timezone.utc)
@@ -151,6 +158,7 @@ class TestRadarRainfallProvider:
     """PA-03: Radar provider integration."""
 
     def test_ingest_and_fetch_observation(self):
+        """Test that ingest and fetch observation behaves as expected."""
         provider = RadarRainfallProvider(grid_shape=(32, 32))
         t1 = datetime(2026, 8, 25, 10, 0, tzinfo=timezone.utc)
         t2 = datetime(2026, 8, 25, 10, 15, tzinfo=timezone.utc)
@@ -174,6 +182,7 @@ class TestOpticalFlowMotionField:
     """PA-04: Calculation of storm motion vectors (u, v)."""
 
     def test_compute_motion_field_displacement(self):
+        """Test that compute motion field displacement behaves as expected."""
         # Create a moving Gaussian rain cell
         grid_size = 64
         cell_size = 30.0
@@ -208,6 +217,7 @@ class TestSemiLagrangianAdvection:
     """PA-05: Extrapolating rainfall fields forward in time."""
 
     def test_advection_centroid_movement(self):
+        """Test that advection centroid movement behaves as expected."""
         grid_size = 64
         cell_size = 30.0
         y, x = np.mgrid[0:grid_size, 0:grid_size]
@@ -235,6 +245,7 @@ class TestSemiLagrangianAdvection:
         assert max_idx_adv[1] == pytest.approx(60, abs=1)
 
     def test_convective_decay(self):
+        """Test that convective decay behaves as expected."""
         grid = np.full((32, 32), 20.0)
         lead = 60.0
         tau = 60.0
@@ -257,6 +268,7 @@ class TestAdvectionNowcastEngine:
     """PA-06: 0–180 min nowcast record generation."""
 
     def test_full_0_to_180_min_records(self):
+        """Test that full 0 to 180 min records behaves as expected."""
         engine = AdvectionNowcastEngine()
         t = datetime(2026, 8, 25, 14, 0, tzinfo=timezone.utc)
         rate = np.full((134, 134), 15.0)
@@ -296,6 +308,7 @@ class TestNeuralNowcastEngine:
     """PA-07: Neural nowcaster interface and fallback."""
 
     def test_neural_fallback_execution(self):
+        """Test that neural fallback execution behaves as expected."""
         engine = NeuralNowcastEngine()
         t = datetime(2026, 8, 25, 14, 0, tzinfo=timezone.utc)
         rate = np.full((134, 134), 10.0)
@@ -329,6 +342,7 @@ class TestVerificationMetrics:
     """PA-08: Meteorological skill score evaluation."""
 
     def test_perfect_forecast_scores(self):
+        """Test that perfect forecast scores behaves as expected."""
         field = np.array([[0.0, 5.0], [10.0, 20.0]])
         assert compute_mae(field, field) == 0.0
         assert compute_rmse(field, field) == 0.0
@@ -339,6 +353,7 @@ class TestVerificationMetrics:
         assert compute_fss(field, field, threshold=1.0) == 1.0
 
     def test_multi_threshold_verification(self):
+        """Test that multi threshold verification behaves as expected."""
         f = np.array([[0.0, 10.0], [15.0, 30.0]])
         o = np.array([[0.0, 12.0], [8.0, 35.0]])
         res = compute_multi_threshold_verification(f, o, thresholds=(5.0, 15.0))
@@ -355,21 +370,25 @@ class TestProjectionHorizonExtension:
     """PA-09: Projection horizon up to 180 min."""
 
     def test_valid_leads_contains_180(self):
+        """Test that valid leads contains 180 behaves as expected."""
         from services.projection import VALID_LEADS_3H
         assert 180 in VALID_LEADS_3H
         assert VALID_LEADS_3H[-1] == 180
 
     def test_projection_config_horizon_180(self):
+        """Test that projection config horizon 180 behaves as expected."""
         cfg = get_projection_config("P_NORMAL_3H")
         assert cfg.duration_minutes == 180
         assert 180 in cfg.lead_times_minutes
 
     def test_projection_configs_available(self):
+        """Test that projection configs available behaves as expected."""
         from services.projection.configs import PROJECTION_CONFIGS
         assert "P_NORMAL_3H" in PROJECTION_CONFIGS
         assert "P_BLOCKED_3H" in PROJECTION_CONFIGS
 
     def test_advection_and_neural_engines_support_180_min(self):
+        """Test that advection and neural engines support 180 min behaves as expected."""
         adv_engine = AdvectionNowcastEngine(AdvectionConfig())
         assert 180 in adv_engine.config.lead_times_minutes
 

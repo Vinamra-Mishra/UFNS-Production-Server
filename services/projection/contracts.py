@@ -14,6 +14,7 @@ from services.routing.router import RouteResult
 
 
 def _field_hash(rate_mmh: np.ndarray) -> str:
+    """Execute  Field Hash operation and return result."""
     return hashlib.sha256(np.ascontiguousarray(rate_mmh).tobytes()).hexdigest()
 
 
@@ -44,6 +45,7 @@ class ForecastRainfallFrame:
     metadata: dict[str, Any] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
+        """Execute   Post Init   operation and return result."""
         if self.initialization_time.tzinfo is None or self.valid_time.tzinfo is None:
             raise ValueError("initialization_time and valid_time must be timezone-aware")
         if self.valid_from.tzinfo is None or self.valid_to.tzinfo is None:
@@ -75,6 +77,7 @@ class ForecastRainfallFrame:
         interval_minutes: int,
         provenance_status: tuple[str, ...],
     ) -> ForecastRainfallFrame:
+        """Execute From Nowcast Record operation and return result."""
         obs_fp = str(record.metadata.get("observation_fingerprint", ""))
         frame = cls(
             initialization_time=record.initialization_time,
@@ -106,6 +109,7 @@ class ForecastRainfallFrame:
         return frame
 
     def compute_fingerprint(self) -> str:
+        """Compute and evaluate fingerprint."""
         payload = {
             "initialization_time": self.initialization_time.isoformat(),
             "valid_time": self.valid_time.isoformat(),
@@ -131,6 +135,7 @@ class ForecastRainfallFrame:
         return hashlib.sha256(canon.encode("utf-8")).hexdigest()
 
     def to_dict(self, include_values: bool = False) -> dict[str, Any]:
+        """Execute To Dict operation and return result."""
         data = {
             "initialization_time": self.initialization_time.isoformat(),
             "valid_time": self.valid_time.isoformat(),
@@ -187,6 +192,7 @@ class FloodImpactProjection:
     labels: tuple[str, ...]
 
     def __post_init__(self) -> None:
+        """Execute   Post Init   operation and return result."""
         if self.depth_m.ndim != 2:
             raise ValueError("depth_m must be 2-D")
         if self.depth_m.shape != (self.rainfall_frame.height, self.rainfall_frame.width):
@@ -195,6 +201,7 @@ class FloodImpactProjection:
             raise ValueError("depth_m must be finite and non-negative within tolerance")
 
     def to_dict(self, include_depth_values: bool = False) -> dict[str, Any]:
+        """Execute To Dict operation and return result."""
         data = {
             "config_id": self.config_id,
             "initialization_time": self.initialization_time.isoformat(),
@@ -226,6 +233,7 @@ class FloodImpactProjection:
 
 @dataclass(frozen=True)
 class RoadImpactProjection:
+    """Roadimpactprojection schema and data model representation."""
     config_id: str
     initialization_time: datetime
     valid_time: datetime
@@ -240,6 +248,7 @@ class RoadImpactProjection:
     labels: tuple[str, ...]
 
     def to_dict(self) -> dict[str, Any]:
+        """Execute To Dict operation and return result."""
         return {
             "config_id": self.config_id,
             "initialization_time": self.initialization_time.isoformat(),
@@ -258,6 +267,7 @@ class RoadImpactProjection:
 
 @dataclass(frozen=True)
 class RouteProjection:
+    """Routeprojection schema and data model representation."""
     config_id: str
     lead_minutes: int
     valid_time: datetime
@@ -268,6 +278,7 @@ class RouteProjection:
     timings_ms: dict[str, float]
 
     def to_dict(self) -> dict[str, Any]:
+        """Execute To Dict operation and return result."""
         return {
             "config_id": self.config_id,
             "lead_minutes": self.lead_minutes,

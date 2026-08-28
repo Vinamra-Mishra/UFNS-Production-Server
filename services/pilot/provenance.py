@@ -53,6 +53,7 @@ class CRSSourceProvenance:
     authority: str = ""
 
     def to_dict(self) -> dict[str, Any]:
+        """Execute To Dict operation and return result."""
         return {
             "source_crs": self.source_crs,
             "modelling_crs": self.modelling_crs,
@@ -83,11 +84,13 @@ class RealPilotProvenance:
     extra: Mapping[str, Any] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
+        """Execute   Post Init   operation and return result."""
         # Independent read-only view of the caller's mapping so later
         # mutation of the caller's dict cannot reach this provenance.
         object.__setattr__(self, "extra", MappingProxyType(dict(self.extra)))
 
     def to_dict(self) -> dict[str, Any]:
+        """Execute To Dict operation and return result."""
         return {
             "raw_dem_sha256": self.raw_dem_sha256,
             "raw_dem_path": self.raw_dem_path,

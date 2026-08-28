@@ -196,6 +196,7 @@ CITY_STATION_MAP = {
 
 
 def _resolve_city_key(key: Optional[str]) -> str:
+    """Execute  Resolve City Key operation and return result."""
     if not key:
         return "MUMBAI"
     k = key.upper()
@@ -212,11 +213,13 @@ class IMDClient:
     """Official India Meteorological Department API client with resilient fallbacks & caching."""
 
     def __init__(self, timeout_sec: float = 6.0) -> None:
+        """Execute   Init   operation and return result."""
         self.timeout_sec = timeout_sec
         self._cache: dict[str, tuple[float, Any]] = {}
         self._ttl_sec = 300
 
     def _fetch_json(self, endpoint: str, params: Optional[dict[str, Any]] = None) -> Optional[Any]:
+        """Execute  Fetch Json operation and return result."""
         query_str = f"?{urllib.parse.urlencode(params)}" if params else ""
         cache_key = f"{endpoint}{query_str}"
         now = time.time()
@@ -249,6 +252,7 @@ class IMDClient:
 
     # 1. 7-Day City Forecast
     def get_city_forecast(self, station_id: str = "43003") -> dict[str, Any]:
+        """Retrieve and return city forecast."""
         data = self._fetch_json("cityforecast", {"id": station_id})
         if data:
             return {"status": "LIVE_IMD", "data": data}
@@ -371,6 +375,7 @@ class IMDClient:
 
     # 2. 7-Day City Forecast with Lat/Lon
     def get_city_forecast_loc(self, station_id: str = "43003") -> dict[str, Any]:
+        """Retrieve and return city forecast loc."""
         data = self._fetch_json("cityforecastloc", {"id": station_id})
         if data:
             return {"status": "LIVE_IMD", "data": data}
@@ -384,6 +389,7 @@ class IMDClient:
 
     # 3. Current Weather API
     def get_current_weather(self, station_id: str = "43003") -> dict[str, Any]:
+        """Retrieve and return current weather."""
         data = self._fetch_json("current_wx", {"id": station_id})
         if data and isinstance(data, list) and len(data) > 0:
             rec = data[0]
@@ -468,6 +474,7 @@ class IMDClient:
 
     # 4. District-wise Nowcast (3-Hour Lead Warnings)
     def get_district_nowcast(self, district_id: str = "518") -> dict[str, Any]:
+        """Retrieve and return district nowcast."""
         data = self._fetch_json("districtnowcast", {"id": district_id})
         if data:
             return {"status": "LIVE_IMD", "data": data}
@@ -532,6 +539,7 @@ class IMDClient:
 
     # 5. District-wise Rainfall
     def get_district_rainfall(self, district_id: str = "518") -> dict[str, Any]:
+        """Retrieve and return district rainfall."""
         data = self._fetch_json("districtrainfall", {"id": district_id})
         if data:
             return {"status": "LIVE_IMD", "data": data}
@@ -605,6 +613,7 @@ class IMDClient:
 
     # 6. District-wise Warnings (5-Day Matrix)
     def get_district_warnings(self, district_id: str = "518") -> dict[str, Any]:
+        """Retrieve and return district warnings."""
         data = self._fetch_json("districtwarning", {"id": district_id})
         if data:
             return {"status": "LIVE_IMD", "data": data}
@@ -696,6 +705,7 @@ class IMDClient:
 
     # 7. Station-wise Nowcast
     def get_station_nowcast(self, station_name: str = "MUMBAI") -> dict[str, Any]:
+        """Retrieve and return station nowcast."""
         data = self._fetch_json("stationnowcast", {"id": station_name})
         if data:
             return {"status": "LIVE_IMD", "data": data}
@@ -719,6 +729,7 @@ class IMDClient:
 
     # 8. State-wise Rainfall
     def get_state_rainfall(self, state_name: str = "MAHARASHTRA") -> dict[str, Any]:
+        """Retrieve and return state rainfall."""
         data = self._fetch_json("staterainfall", {"id": state_name})
         if data:
             return {"status": "LIVE_IMD", "data": data}
@@ -777,6 +788,7 @@ class IMDClient:
 
     # 9. AWS / ARG Automated Weather Stations Data
     def get_aws_data(self, call_sign: Optional[str] = None, state_id: Optional[str] = None) -> dict[str, Any]:
+        """Retrieve and return aws data."""
         params: dict[str, Any] = {}
         if call_sign:
             params["id"] = call_sign
@@ -873,6 +885,7 @@ class IMDClient:
 
     # 10. River Basin QPF (Quantitative Precipitation Forecast)
     def get_basin_qpf(self, basin_id: str = "100") -> dict[str, Any]:
+        """Retrieve and return basin qpf."""
         data = self._fetch_json("basinqpf", {"id": basin_id})
         if data:
             return {"status": "LIVE_IMD", "data": data}
@@ -943,6 +956,7 @@ class IMDClient:
 
     # 11. Port Warning
     def get_port_warnings(self, port_id: str = "MUMBAI_PORT") -> dict[str, Any]:
+        """Retrieve and return port warnings."""
         data = self._fetch_json("portwarning", {"id": port_id})
         if data:
             return {"status": "LIVE_IMD", "data": data}
@@ -992,6 +1006,7 @@ class IMDClient:
 
     # 12. Sea Area Bulletin
     def get_sea_bulletin(self, bulletin_id: str = "108") -> dict[str, Any]:
+        """Retrieve and return sea bulletin."""
         data = self._fetch_json("seabulletin", {"id": bulletin_id})
         if data:
             return {"status": "LIVE_IMD", "data": data}
@@ -1019,6 +1034,7 @@ class IMDClient:
 
     # 13. Coastal Bulletin
     def get_coastal_bulletin(self, city_key: Optional[str] = "MUMBAI") -> dict[str, Any]:
+        """Retrieve and return coastal bulletin."""
         data = self._fetch_json("coastalbulletin")
         if data:
             return {"status": "LIVE_IMD", "data": data}
@@ -1045,6 +1061,7 @@ class IMDClient:
 
     # 14. Subdivisional-wise Warnings
     def get_subdivision_warnings(self, city_key: Optional[str] = "MUMBAI") -> dict[str, Any]:
+        """Retrieve and return subdivision warnings."""
         data = self._fetch_json("subdivisionwarning")
         if data:
             return {"status": "LIVE_IMD", "data": data}
@@ -1074,6 +1091,7 @@ class IMDClient:
 
     # 15. Sun & Moon (Rise / Set) Times
     def get_sun_moon(self, lat: float = 19.0760, lon: float = 72.8777) -> dict[str, Any]:
+        """Retrieve and return sun moon."""
         data = self._fetch_json("sunmoon", {"lat": round(lat, 4), "lon": round(lon, 4)})
         if data:
             return {"status": "LIVE_IMD", "data": data}
@@ -1121,6 +1139,7 @@ class IMDClient:
 
     # 16. Subdivisional Rainfall Forecast (7-Days)
     def get_subdivision_rainfall_forecast(self, city_key: Optional[str] = "MUMBAI") -> dict[str, Any]:
+        """Retrieve and return subdivision rainfall forecast."""
         data = self._fetch_json("subdivision_rainfall_forecast")
         if data:
             return {"status": "LIVE_IMD", "data": data}
@@ -1154,6 +1173,7 @@ class IMDClient:
 
     # 17. State District Rainfall Forecast (5-Days)
     def get_state_district_rainfall_forecast(self, city_key: Optional[str] = "MUMBAI") -> dict[str, Any]:
+        """Retrieve and return state district rainfall forecast."""
         data = self._fetch_json("state_district_rainfall_forecast")
         if data:
             return {"status": "LIVE_IMD", "data": data}
@@ -1184,6 +1204,7 @@ class IMDClient:
 
     # 18. Cyclone Track (Observed & Forecast)
     def get_cyclone_track(self, city_key: Optional[str] = "MUMBAI") -> dict[str, Any]:
+        """Retrieve and return cyclone track."""
         data = self._fetch_json("cyclone_track")
         if data:
             return {"status": "LIVE_IMD", "data": data}
@@ -1320,6 +1341,7 @@ class IMDClient:
 
     # 19. Cyclone Wind Warning Polygons
     def get_cyclone_wind(self, city_key: Optional[str] = "MUMBAI") -> dict[str, Any]:
+        """Retrieve and return cyclone wind."""
         data = self._fetch_json("cyclone_wind")
         if data:
             return {"status": "LIVE_IMD", "data": data}
@@ -1365,6 +1387,7 @@ class IMDClient:
 
     # 20. Cyclone Cone of Uncertainty
     def get_cyclone_cou(self, city_key: Optional[str] = "MUMBAI") -> dict[str, Any]:
+        """Retrieve and return cyclone cou."""
         data = self._fetch_json("cyclone_cou")
         if data:
             return {"status": "LIVE_IMD", "data": data}
@@ -1395,6 +1418,7 @@ class IMDClient:
 
     # Unified City Overview Aggregator
     def get_unified_city_overview(self, city_name: str = "MUMBAI") -> dict[str, Any]:
+        """Retrieve and return unified city overview."""
         c_key = _resolve_city_key(city_name)
         meta = CITY_STATION_MAP[c_key]
 

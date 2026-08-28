@@ -87,6 +87,7 @@ class QualityResult:
     checked_at: datetime
 
     def to_dict(self) -> dict[str, Any]:
+        """Execute To Dict operation and return result."""
         return {
             "freshness": self.freshness.value,
             "valid": self.valid,

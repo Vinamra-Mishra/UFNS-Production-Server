@@ -12,6 +12,7 @@ from services.routing.roads import NETWORK
 
 
 def projection_status() -> dict[str, Any]:
+    """Execute Projection Status operation and return result."""
     return {
         "projection_version": MODEL_VERSION,
         "projection_method": PROJECTION_METHOD,
@@ -28,20 +29,24 @@ def projection_status() -> dict[str, Any]:
 
 
 def projection_config_detail(config_id: str) -> dict[str, Any]:
+    """Execute Projection Config Detail operation and return result."""
     cfg = get_projection_config(config_id)
     return cfg.to_dict()
 
 
 def projection_bundle(config_id: str) -> ProjectionBundle:
+    """Execute Projection Bundle operation and return result."""
     return PIPELINE.build_from_latest(config_id)
 
 
 def projection_summary(config_id: str) -> dict[str, Any]:
+    """Execute Projection Summary operation and return result."""
     bundle = projection_bundle(config_id)
     return bundle.summary()
 
 
 def rainfall_frame(config_id: str, lead: int) -> dict[str, Any]:
+    """Execute Rainfall Frame operation and return result."""
     bundle = projection_bundle(config_id)
     projection = bundle.flood_projections[lead]
     data = projection.rainfall_frame.to_dict(include_values=True)
@@ -56,6 +61,7 @@ def rainfall_frame(config_id: str, lead: int) -> dict[str, Any]:
 
 
 def flood_projection(config_id: str, lead: int) -> dict[str, Any]:
+    """Execute Flood Projection operation and return result."""
     bundle = projection_bundle(config_id)
     data = bundle.flood_projections[lead].to_dict(include_depth_values=True)
     data["timings_ms"] = bundle.timings_ms
@@ -64,6 +70,7 @@ def flood_projection(config_id: str, lead: int) -> dict[str, Any]:
 
 
 def road_projection(config_id: str, lead: int) -> dict[str, Any]:
+    """Execute Road Projection operation and return result."""
     bundle = projection_bundle(config_id)
     data = bundle.road_projections[lead].to_dict()
     data["timings_ms"] = bundle.timings_ms
@@ -72,6 +79,7 @@ def road_projection(config_id: str, lead: int) -> dict[str, Any]:
 
 
 def road_projection_timeline(config_id: str, road_id: str) -> dict[str, Any]:
+    """Execute Road Projection Timeline operation and return result."""
     bundle = projection_bundle(config_id)
     seg = NETWORK.by_id().get(road_id)
     if seg is None:
@@ -103,6 +111,7 @@ def road_projection_timeline(config_id: str, road_id: str) -> dict[str, Any]:
 
 
 def frame(config_id: str, lead: int) -> dict[str, Any]:
+    """Execute Frame operation and return result."""
     bundle = projection_bundle(config_id)
     flood = bundle.flood_projections[lead]
     road = bundle.road_projections[lead]
@@ -171,6 +180,7 @@ def compute_route_request(
     destination: list[float],
     mode: str,
 ) -> dict[str, Any]:
+    """Compute and evaluate route request."""
     bundle = projection_bundle(config_id)
     route = PIPELINE.route(
         bundle,
@@ -183,4 +193,5 @@ def compute_route_request(
 
 
 def cache_stats() -> dict[str, Any]:
+    """Execute Cache Stats operation and return result."""
     return PIPELINE.cache.stats()

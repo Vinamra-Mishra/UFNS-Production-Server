@@ -29,6 +29,7 @@ passed_tests = 0
 total_tests = 0
 
 def assert_benchmark(name: str, condition: bool, detail: str = ""):
+    """Execute Assert Benchmark operation and return result."""
     global passed_tests, total_tests
     total_tests += 1
     if condition:

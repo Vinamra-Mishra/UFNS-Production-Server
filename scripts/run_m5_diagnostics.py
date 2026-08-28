@@ -42,6 +42,7 @@ ISSUE = datetime(2026, 8, 21, tzinfo=timezone.utc)
 
 
 def main() -> None:
+    """Execute Main operation and return result."""
     OUT.mkdir(parents=True, exist_ok=True)
     dem = synthetic_dem()
 

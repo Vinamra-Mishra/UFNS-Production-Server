@@ -20,10 +20,12 @@ N = 134
 
 
 def _grid(value: float) -> np.ndarray:
+    """Execute  Grid operation and return result."""
     return np.full((N, N), value, dtype=np.float64)
 
 
 def _read_s4_depth(lead: int) -> np.ndarray:
+    """Execute  Read S4 Depth operation and return result."""
     import rasterio
 
     with rasterio.open(f"data/demo/m5/s4/depth_t{lead:03d}.tif") as src:
@@ -31,6 +33,7 @@ def _read_s4_depth(lead: int) -> np.ndarray:
 
 
 def _s4_index():
+    """Execute  S4 Index operation and return result."""
     leads = list(range(0, 181, 5))
     grids = {l: _read_s4_depth(l) for l in leads}
     valid = {l: f"2026-08-21T00:{l:02d}:00+00:00" for l in leads}
@@ -46,6 +49,7 @@ SE = cell_to_projected(113, 113)    # south-east corner
 # ---------------------------------------------------------------------------
 
 def test_m7_09_baseline_route():
+    """Test that m7 09 baseline route behaves as expected."""
     graph = build_graph(NETWORK)
     idx = _s4_index()
     r = compute_route(NETWORK, idx[0], NW, SE, "flood_aware", "S4", 0, "t0")
@@ -64,6 +68,7 @@ def test_m7_09_baseline_route():
 # ---------------------------------------------------------------------------
 
 def test_m7_10_flood_aware_route():
+    """Test that m7 10 flood aware route behaves as expected."""
     idx = _s4_index()
     r = compute_route(NETWORK, idx[110], NW, SE, "flood_aware", "S4", 110, "t110")
     assert r.status == "OK"
@@ -77,6 +82,7 @@ def test_m7_10_flood_aware_route():
 # ---------------------------------------------------------------------------
 
 def test_m7_11_impassable_road_avoidance():
+    """Test that m7 11 impassable road avoidance behaves as expected."""
     # Force the central diagonal impassable: flood every cell on R-051/R-052.
     grid = _grid(0.0)
     for rid in ("R-051", "R-052"):
@@ -103,6 +109,7 @@ def test_m7_11_impassable_road_avoidance():
 # ---------------------------------------------------------------------------
 
 def test_m7_12_route_comparison():
+    """Test that m7 12 route comparison behaves as expected."""
     idx = _s4_index()
     r = compute_route(NETWORK, idx[110], NW, SE, "flood_aware", "S4", 110, "t110")
     assert r.status == "OK"
@@ -122,6 +129,7 @@ def test_m7_12_route_comparison():
 # ---------------------------------------------------------------------------
 
 def test_m7_13_no_safe_route_handling():
+    """Test that m7 13 no safe route handling behaves as expected."""
     # Flood every road -> no passable route exists.
     grid = _grid(0.7)
     from services.routing.impact import compute_road_impact
@@ -140,6 +148,7 @@ def test_m7_13_no_safe_route_handling():
 # ---------------------------------------------------------------------------
 
 def test_m7_14_routing_determinism():
+    """Test that m7 14 routing determinism behaves as expected."""
     idx = _s4_index()
     a = compute_route(NETWORK, idx[110], NW, SE, "flood_aware", "S4", 110, "t110")
     b = compute_route(NETWORK, idx[110], NW, SE, "flood_aware", "S4", 110, "t110")
@@ -155,6 +164,7 @@ def test_m7_14_routing_determinism():
 # ---------------------------------------------------------------------------
 
 def test_m7_15_policy_fingerprint():
+    """Test that m7 15 policy fingerprint behaves as expected."""
     p = POLICY.to_dict()
     assert p["policy_id"] == "B13-DEMO-V1"
     assert p["status"] == "PROVISIONAL_DEMONSTRATION"

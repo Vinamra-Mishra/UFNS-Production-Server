@@ -21,6 +21,7 @@ router = APIRouter(prefix="/api/v1/mosdac", tags=["ISRO MOSDAC Satellite Ingesti
 
 
 class MOSDACSearchRequest(BaseModel):
+    """Mosdacsearchrequest schema and data model representation."""
     datasetId: str = "3SIMG_L2B_HEM"
     startTime: Optional[str] = None
     endTime: Optional[str] = None

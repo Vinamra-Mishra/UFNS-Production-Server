@@ -35,6 +35,7 @@ class ScenarioComparison:
     labels: list[str]
 
     def to_dict(self) -> dict[str, Any]:
+        """Execute To Dict operation and return result."""
         return {
             "generated_at": self.generated_at,
             "model_version": self.model_version,
@@ -46,12 +47,14 @@ class ScenarioComparison:
         }
 
     def write_json(self, path: Path) -> Path:
+        """Execute Write Json operation and return result."""
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(json.dumps(self.to_dict(), indent=2, sort_keys=True, default=str))
         return path
 
 
 def _row(r: ScenarioResult) -> dict[str, Any]:
+    """Execute  Row operation and return result."""
     s = r.scenario
     led = r.m4_result.ledger
     return {
@@ -157,6 +160,7 @@ def _comparability_controls(results: dict[str, ScenarioResult]) -> dict[str, Any
     """Verify that non-scenario variables are held fixed across the suite."""
     rows = [results[sid] for sid in ("S1", "S2", "S3", "S4")]
     def _tuplify(v):
+        """Execute  Tuplify operation and return result."""
         return tuple(v) if isinstance(v, list) else v
     fps = {
         "surface_config": sorted({r.scenario.surface_config_fingerprint for r in rows}),

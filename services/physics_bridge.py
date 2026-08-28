@@ -14,6 +14,7 @@ import numpy as np
 DLL_PATH = Path(__file__).parent.parent / "cpp_core" / ("libufns_physics.dll" if sys.platform == "win32" else "libufns_physics.so")
 
 class MassBalanceReportStruct(ctypes.Structure):
+    """Massbalancereportstruct schema and data model representation."""
     _fields_ = [
         ("total_rainfall_m3", ctypes.c_double),
         ("total_infiltration_m3", ctypes.c_double),
@@ -87,10 +88,13 @@ try:
 
         _HAS_NATIVE_CPP = True
 except Exception as e:
+    import logging
+    logging.getLogger(__name__).warning("Native C++ engine load failure from %s: %s", DLL_PATH, e)
     _HAS_NATIVE_CPP = False
 
 
 def has_native_cpp_engine() -> bool:
+    """Execute Has Native Cpp Engine operation and return result."""
     return _HAS_NATIVE_CPP
 
 

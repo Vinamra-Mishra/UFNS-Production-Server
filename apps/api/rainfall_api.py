@@ -144,6 +144,7 @@ def set_active_provider(provider_id: str) -> bool:
 # ---------------------------------------------------------------------------
 
 def _missing_quality(message: str) -> QualityResult:
+    """Execute  Missing Quality operation and return result."""
     return QualityResult(
         observation=None,
         freshness=DataFreshness.MISSING,

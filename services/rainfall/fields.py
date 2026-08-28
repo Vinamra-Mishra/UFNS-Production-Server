@@ -17,10 +17,12 @@ MS_TO_MMH = 1000.0 * 3600.0
 
 
 def mmh_to_ms(rate_mmh: float | np.ndarray) -> float | np.ndarray:
+    """Execute Mmh To Ms operation and return result."""
     return rate_mmh * MMH_TO_MS
 
 
 def ms_to_mmh(rate_ms: float | np.ndarray) -> float | np.ndarray:
+    """Execute Ms To Mmh operation and return result."""
     return rate_ms * MS_TO_MMH
 
 
@@ -40,6 +42,7 @@ class FieldInterval:
     rate_mmh: np.ndarray  # shape (height, width)
 
     def __post_init__(self) -> None:
+        """Execute   Post Init   operation and return result."""
         if self.valid_to <= self.valid_from:
             raise ValueError("valid_to must be after valid_from")
         if np.any(self.rate_mmh < 0):
@@ -49,10 +52,12 @@ class FieldInterval:
 
     @property
     def mean_rate_mmh(self) -> float:
+        """Execute Mean Rate Mmh operation and return result."""
         return float(np.mean(self.rate_mmh))
 
 
 def uniform_field(shape: tuple[int, int], rate_mmh: float) -> np.ndarray:
+    """Execute Uniform Field operation and return result."""
     return np.full(shape, rate_mmh, dtype=np.float32)
 
 

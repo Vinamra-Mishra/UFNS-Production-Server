@@ -37,6 +37,7 @@ from services.ingestion.grib_netcdf import (
 
 
 class BlendingMode(str, Enum):
+    """Blendingmode schema and data model representation."""
     RADAR_ONLY = "RADAR_ONLY"
     NWP_ONLY = "NWP_ONLY"
     BLENDED_LINEAR = "BLENDED_LINEAR"
@@ -96,6 +97,7 @@ class MultiSensorBlender:
     """Engine for fusing Doppler radar extrapolation with NCMRWF/IMD NWP forecasts."""
 
     def __init__(self, target_grid: GridSpec | None = None) -> None:
+        """Execute   Init   operation and return result."""
         self.target_grid = target_grid or get_authoritative_bagjola_grid()
 
     def blend(

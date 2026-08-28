@@ -35,6 +35,7 @@ class NowcastCache:
     """
 
     def __init__(self, ttl_seconds: int = 300) -> None:
+        """Execute   Init   operation and return result."""
         self._ttl_seconds = ttl_seconds
         self._lock = threading.RLock()
         self._observation_cache: dict[str, tuple[RainfallObservation, datetime]] = {}
@@ -45,9 +46,11 @@ class NowcastCache:
     # ------------------------------------------------------------------
 
     def _obs_key(self, obs: RainfallObservation) -> str:
+        """Execute  Obs Key operation and return result."""
         return f"{obs.source_provider_id}:{obs.observation_time.isoformat()}:{obs.fingerprint()}"
 
     def _nowcast_key(self, obs: RainfallObservation, method: str, leads: tuple[int, ...]) -> str:
+        """Execute  Nowcast Key operation and return result."""
         return (
             f"{obs.source_provider_id}:{obs.observation_time.isoformat()}:"
             f"{obs.fingerprint()}:{method}:{leads}"
@@ -80,6 +83,7 @@ class NowcastCache:
         return copy.deepcopy(records)
 
     def _is_expired(self, cached_at: datetime, now: datetime) -> bool:
+        """Execute  Is Expired operation and return result."""
         age = (now - cached_at).total_seconds()
         return age > self._ttl_seconds
 

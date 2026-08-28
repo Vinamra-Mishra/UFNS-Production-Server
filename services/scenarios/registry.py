@@ -60,6 +60,7 @@ M5_SPATIAL_PATTERN = "convective_cell"
 
 
 class ScenarioStatus(str, Enum):
+    """Scenariostatus schema and data model representation."""
     DEFINED = "DEFINED"
     EXECUTED = "EXECUTED"
     FAILED = "FAILED"
@@ -100,6 +101,7 @@ class ScenarioRecord:
     external_inflow_m3s: float = 0.0
 
     def to_dict(self) -> dict[str, Any]:
+        """Execute To Dict operation and return result."""
         return {
             "scenario_id": self.scenario_id,
             "display_name": self.display_name,
@@ -139,6 +141,7 @@ class ScenarioRecord:
 # ---------------------------------------------------------------------------
 
 def _surface_fingerprint() -> str:
+    """Execute  Surface Fingerprint operation and return result."""
     payload = {
         "manning_n": M5_M_ANNING,
         "alpha": 0.5, "theta": 0.8,
@@ -161,6 +164,7 @@ def _surface_fingerprint() -> str:
 def _scenario_fingerprint(scenario_id: str, profile_id: str, profile_fp: str,
                           drainage_id: str, surface_fp: str,
                           swmm_fp: str) -> str:
+    """Execute  Scenario Fingerprint operation and return result."""
     payload = {
         "scenario_id": scenario_id,
         "rainfall_profile": profile_id,
@@ -211,6 +215,7 @@ COMMON_LIMITATIONS = (
 
 
 def _build_scenarios() -> dict[str, ScenarioRecord]:
+    """Execute  Build Scenarios operation and return result."""
     surface_fp = _surface_fingerprint()
 
     p_normal = build_profile_record("P_NORMAL")
@@ -304,10 +309,12 @@ M5_SCENARIOS = _build_scenarios()
 
 
 def required_scenario_ids() -> tuple[str, ...]:
+    """Execute Required Scenario Ids operation and return result."""
     return ("S1", "S2", "S3", "S4")
 
 
 def get_scenario(sid: str) -> ScenarioRecord:
+    """Retrieve and return scenario."""
     if sid not in M5_SCENARIOS:
         raise KeyError(f"unknown M5 scenario id {sid!r}; known: {sorted(M5_SCENARIOS)}")
     return M5_SCENARIOS[sid]

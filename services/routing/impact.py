@@ -54,6 +54,7 @@ class RoadImpact:
     policy_fingerprint: str
 
     def to_dict(self) -> dict[str, Any]:
+        """Execute To Dict operation and return result."""
         return {
             "road_id": self.road_id,
             "scenario_id": self.scenario_id,
@@ -157,6 +158,7 @@ def compute_road_impact(
 
 
 def _reason(cls: str, max_d: float, policy: PassabilityPolicy) -> str:
+    """Execute  Reason operation and return result."""
     t = policy.thresholds
     if cls == "DRY":
         return f"max depth {max_d:.3f} m is at or below the dry threshold {t['dry_m']:.2f} m"
@@ -228,7 +230,7 @@ def time_aggregates(
     """Scenario-wide road-impact time aggregates (first/peak impact time)."""
     first_impact = None
     peak_impact = None
-    peak_count = -1
+    peak_count = 0
     for lead in sorted(index):
         impacts = index[lead]
         n_impacted = sum(1 for i in impacts.values() if i.classification != "DRY")
@@ -241,5 +243,5 @@ def time_aggregates(
     return {
         "first_impact_lead_minutes": first_impact,
         "peak_impassable_lead_minutes": peak_impact,
-        "peak_impassable_segments": peak_count if peak_count >= 0 else 0,
+        "peak_impassable_segments": peak_count,
     }

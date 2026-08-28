@@ -18,6 +18,7 @@ class CalibrationLedger:
     """In-memory and file-backed audit ledger for calibration sessions."""
 
     def __init__(self, storage_path: Optional[Path] = None) -> None:
+        """Execute   Init   operation and return result."""
         self.storage_path = storage_path
         self._records: dict[str, CalibrationResult] = {}
         if storage_path and storage_path.exists():
@@ -38,12 +39,15 @@ class CalibrationLedger:
         return sorted(self._records.values(), key=lambda r: r.created_at_epoch, reverse=True)
 
     def count(self) -> int:
+        """Execute Count operation and return result."""
         return len(self._records)
 
     def clear(self) -> None:
+        """Execute Clear operation and return result."""
         self._records.clear()
 
     def _save_to_disk(self) -> None:
+        """Execute  Save To Disk operation and return result."""
         if not self.storage_path:
             return
         self.storage_path.parent.mkdir(parents=True, exist_ok=True)
@@ -51,6 +55,7 @@ class CalibrationLedger:
         self.storage_path.write_text(json.dumps(serialized, indent=2), encoding="utf-8")
 
     def _load_from_disk(self) -> None:
+        """Execute  Load From Disk operation and return result."""
         if not self.storage_path or not self.storage_path.exists():
             return
         try:
@@ -62,9 +67,11 @@ class CalibrationLedger:
                 try:
                     self._records[cid] = CalibrationResult.from_dict(item)
                 except Exception:
-                    pass
-        except Exception:
-            pass
+                    import logging
+                    logging.getLogger(__name__).warning("Skipping unreadable calibration record %s", cid, exc_info=True)
+        except (OSError, ValueError):
+            import logging
+            logging.getLogger(__name__).warning("Could not load calibration ledger from %s", self.storage_path, exc_info=True)
 
 
 # Global singleton instance for the API layer

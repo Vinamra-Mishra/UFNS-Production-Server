@@ -1,3 +1,4 @@
+import numpy as np
 """Calibration API router (Phase B).
 
 Exposes endpoints for triggering automated drainage calibration, retrieving
@@ -145,6 +146,7 @@ def analyze_sensitivity(req: SensitivityRequest) -> list[dict[str, Any]]:
     )
 
     def obj_fn(pset: CalibrationParameterSet) -> float:
+        """Execute Obj Fn operation and return result."""
         t_sim, q_sim = run_forward_calibration_simulation(
             params=pset,
             duration_minutes=req.duration_minutes,
@@ -154,7 +156,6 @@ def analyze_sensitivity(req: SensitivityRequest) -> list[dict[str, Any]]:
         fit = evaluate_composite_fit(target_obs.value_array, q_res)
         return float(fit.composite_loss)
 
-    import numpy as np
 
     analyzer = SensitivityAnalyzer(perturbation_fraction=req.perturbation_fraction)
     sensitivities = analyzer.analyze(

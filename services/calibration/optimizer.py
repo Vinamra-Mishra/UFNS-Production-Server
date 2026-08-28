@@ -25,6 +25,7 @@ from services.calibration.parameters import (
 
 
 class OptimizationStrategy(str, Enum):
+    """Optimizationstrategy schema and data model representation."""
     NELDER_MEAD = "NELDER_MEAD"                   # Fast local simplex on bounded parameter space
     DIFFERENTIAL_EVOLUTION = "DIFF_EVOLUTION"     # Global stochastic search for non-convex landscapes
     GRID_SEARCH = "GRID_SEARCH"                   # Systematic multi-dimensional grid sweep
@@ -58,11 +59,13 @@ class OptimizationResult:
 
     @property
     def improvement_pct(self) -> float:
+        """Execute Improvement Pct operation and return result."""
         if abs(self.initial_loss) < 1e-12:
             return 0.0
         return float((self.initial_loss - self.final_loss) / self.initial_loss * 100.0)
 
     def to_dict(self) -> dict[str, Any]:
+        """Execute To Dict operation and return result."""
         return {
             "strategy": self.strategy.value,
             "optimal_parameters": self.optimal_parameters.to_dict(),
@@ -92,6 +95,7 @@ class ParameterOptimizer:
         tolerance: float = 1e-4,
         definitions: Optional[dict[str, ParameterDefinition]] = None,
     ) -> None:
+        """Execute   Init   operation and return result."""
         self.strategy = strategy
         self.param_names = list(target_param_names or ["pipe_manning_n", "blockage_ratio"])
         self.max_evaluations = max_evaluations
@@ -131,6 +135,7 @@ class ParameterOptimizer:
         eval_count = 1
 
         def wrapped_loss(u_vec: np.ndarray) -> float:
+            """Execute Wrapped Loss operation and return result."""
             nonlocal eval_count, best_so_far, best_param_set
             if eval_count >= self.max_evaluations:
                 return best_so_far
@@ -263,6 +268,7 @@ class SensitivityAnalyzer:
         definitions: Optional[dict[str, ParameterDefinition]] = None,
         perturbation_fraction: float = 0.15,
     ) -> None:
+        """Execute   Init   operation and return result."""
         self.definitions = definitions or DEFAULT_PARAMETER_DEFINITIONS
         self.fraction = perturbation_fraction
 

@@ -81,6 +81,7 @@ def synthetic_dem(
 
 
 def write_geotiff(z: np.ndarray, out_path: Path, origin_x: float = ORIGIN_X, origin_y: float = ORIGIN_Y) -> Path:
+    """Execute Write Geotiff operation and return result."""
     import rasterio
 
     transform = grid_affine(origin_x, origin_y)

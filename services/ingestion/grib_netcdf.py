@@ -172,6 +172,7 @@ class RealNWPIngestionEngine:
     ]
 
     def __init__(self, target_grid: GridSpec | None = None) -> None:
+        """Execute   Init   operation and return result."""
         self.target_grid = target_grid or get_authoritative_bagjola_grid()
         self._cached_dataset: RealNWPDataset | None = None
 

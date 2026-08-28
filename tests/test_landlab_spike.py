@@ -113,6 +113,7 @@ def test_spatial_rainfall_mapping():
 
 
 def test_horton_losses_removed_and_accounted():
+    """Test that horton losses removed and accounted behaves as expected."""
     m = SurfaceModel(_bowl(), cell_size_m=CELL, closed_boundaries=True)
     h = HortonLoss(f0_ms=30e-3 / 3600, fmin_ms=3e-3 / 3600, k_s1=1 / 900)
     mb = _run(m, 10.0, duration_s=1800, horton=h)
@@ -126,6 +127,7 @@ def test_horton_losses_removed_and_accounted():
 
 
 def test_timestep_halving_convergence():
+    """Test that timestep halving convergence behaves as expected."""
     m1 = SurfaceModel(_bowl(), cell_size_m=CELL, closed_boundaries=True)
     _run(m1, 20.0, duration_s=600, dt_s=2.0)
     m2 = SurfaceModel(_bowl(), cell_size_m=CELL, closed_boundaries=True)
@@ -152,6 +154,7 @@ def test_open_boundary_outflow_occurs_and_closes():
 
 
 def test_reproducibility_bitwise():
+    """Test that reproducibility bitwise behaves as expected."""
     m1 = SurfaceModel(_bowl(), cell_size_m=CELL, closed_boundaries=False)
     _run(m1, 25.0, duration_s=900, dt_s=2.0)
     m2 = SurfaceModel(_bowl(), cell_size_m=CELL, closed_boundaries=False)
@@ -160,6 +163,7 @@ def test_reproducibility_bitwise():
 
 
 def test_material_negative_depth_fails_fast():
+    """Test that material negative depth fails fast behaves as expected."""
     m = SurfaceModel(_plane(), cell_size_m=CELL, closed_boundaries=True)
     m.grid.at_node["surface_water__depth"][np.argwhere(m.core)[0]] = -0.5
     with pytest.raises(RuntimeError):

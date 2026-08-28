@@ -43,12 +43,14 @@ VENTS_PATH = DATA_RAW / "WB_AMRUT_Stormwater_vents.parquet"
 
 
 def _wgs_overlap(a: tuple[float, ...], b: tuple[float, ...]) -> bool:
+    """Execute  Wgs Overlap operation and return result."""
     if not a or not b or len(a) < 4 or len(b) < 4:
         return False
     return min(a[2], b[2]) - max(a[0], b[0]) > 0 and min(a[3], b[3]) - max(a[1], b[1]) > 0
 
 
 def _pilot_grid_wgs() -> tuple[float, float, float, float]:
+    """Execute  Pilot Grid Wgs operation and return result."""
     from rasterio.warp import transform_bounds
 
     grid = pilot_grid_spec()
@@ -56,6 +58,7 @@ def _pilot_grid_wgs() -> tuple[float, float, float, float]:
 
 
 def main() -> int:
+    """Execute Main operation and return result."""
     missing = [p.name for p in (DEM_PATH, DRAINS_PATH, VENTS_PATH) if not p.exists()]
     if missing:
         print(f"real artifacts missing from {DATA_RAW}: {missing}")

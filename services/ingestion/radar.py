@@ -105,6 +105,7 @@ class RadarRasterMetadata:
     metadata: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
+        """Execute To Dict operation and return result."""
         return {
             "source_id": self.source_id,
             "source_name": self.source_name,
@@ -135,6 +136,7 @@ class RadarRasterParser:
         default_resolution_m: float = 30.0,
         default_crs: str = "EPSG:32645",
     ) -> None:
+        """Execute   Init   operation and return result."""
         self.zr = zr_relationship or ZR_MARSHALL_PALMER
         self.target_shape = default_target_shape
         self.target_resolution_m = default_resolution_m

@@ -25,13 +25,8 @@ from services.mitigation.evaluator import (
 router = APIRouter(prefix="/api/v1/mitigation", tags=["Mitigation & Sponge City"])
 
 
-class SimulateMitigationRequest(BaseModel):
-    scenario_id: str = Field(default="S4", description="Base scenario identifier (S1..S4)")
-    lead_minutes: int = Field(default=110, ge=0, le=180, description="Lead time snapshot to mitigate")
-    lid_permeable_fraction: float = Field(default=0.0, ge=0.0, le=0.50, description="Permeable pavement / green roof coverage (0.0 to 0.50)")
-    detention_basin_m3: float = Field(default=0.0, ge=0.0, le=100000.0, description="Detention basin volume in m³")
-    emergency_pump_m3s: float = Field(default=0.0, ge=0.0, le=10.0, description="Dewatering pump rate in m³/s")
-    unblock_culvert_in004: bool = Field(default=False, description="Desilt and unblock Culvert IN-004")
+class SimulateMitigationRequest(InterventionConfig):
+    """Simulatemitigationrequest schema and data model representation."""
     include_raster: bool = Field(default=False, description="Whether to include the full 2D mitigated depth grid")
 
 
@@ -51,14 +46,7 @@ def list_strategies() -> dict[str, Any]:
 @router.post("/simulate")
 def simulate_mitigation(req: SimulateMitigationRequest) -> dict[str, Any]:
     """Execute dynamic counterfactual flood mitigation simulation on a baseline scenario."""
-    config = InterventionConfig(
-        scenario_id=req.scenario_id,
-        lead_minutes=req.lead_minutes,
-        lid_permeable_fraction=req.lid_permeable_fraction,
-        detention_basin_m3=req.detention_basin_m3,
-        emergency_pump_m3s=req.emergency_pump_m3s,
-        unblock_culvert_in004=req.unblock_culvert_in004,
-    )
+    config = InterventionConfig(**req.model_dump(exclude={"include_raster"}))
 
     engine = GLOBAL_MITIGATION_ENGINE
     res = engine.simulate(config, return_raster=req.include_raster)

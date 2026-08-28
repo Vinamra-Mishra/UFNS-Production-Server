@@ -76,6 +76,7 @@ class TestRealNWPIngestion:
     """Test Real NetCDF4 parsing and reprojection onto Bagjola GridSpec."""
 
     def test_reprojection_to_authoritative_bagjola_grid(self, sample_ncmrwf_netcdf: Path):
+        """Test that reprojection to authoritative bagjola grid behaves as expected."""
         bagjola_grid = get_authoritative_bagjola_grid()
         assert bagjola_grid.width == 846
         assert bagjola_grid.height == 934
@@ -99,6 +100,7 @@ class TestRealNWPIngestion:
         assert step0.max_rate_mmh > 0.0
 
     def test_reprojection_to_m1_grid_compatibility(self, sample_ncmrwf_netcdf: Path):
+        """Test that reprojection to m1 grid compatibility behaves as expected."""
         from services.contracts import GridSpec
         m1_grid = GridSpec(
             grid_id="m1-synthetic-grid",
@@ -123,6 +125,7 @@ class TestMultiSensorBlending:
     """Test blending weights and multi-sensor fusion math."""
 
     def test_blending_weights_schedule(self):
+        """Test that blending weights schedule behaves as expected."""
         w0 = compute_blending_weights(0)
         assert w0.w_radar == 1.0
         assert w0.w_nwp == 0.0
@@ -144,6 +147,7 @@ class TestMultiSensorBlending:
         assert w180.w_nwp == 1.0
 
     def test_blender_fallback_when_nwp_unavailable(self):
+        """Test that blender fallback when nwp unavailable behaves as expected."""
         blender = MultiSensorBlender()
         radar_mat = np.ones((134, 134)) * 25.0
 
@@ -154,6 +158,7 @@ class TestMultiSensorBlending:
         assert np.isclose(res.mean_rate_mmh, 25.0)
 
     def test_blender_linear_fusion(self, sample_ncmrwf_netcdf: Path):
+        """Test that blender linear fusion behaves as expected."""
         engine = RealNWPIngestionEngine()
         dataset = engine.ingest_file(sample_ncmrwf_netcdf)
 
@@ -174,6 +179,7 @@ class TestNWPAPIEndpoints:
     """Test FastAPI /api/v1/nwp endpoints."""
 
     def test_nwp_status_when_no_file(self):
+        """Test that nwp status when no file behaves as expected."""
         client = TestClient(app)
         res = client.get("/api/v1/nwp/status")
         assert res.status_code == 200
@@ -182,6 +188,7 @@ class TestNWPAPIEndpoints:
         assert "target_grid" in data
 
     def test_nwp_forecast_503_when_no_real_file(self):
+        """Test that nwp forecast 503 when no real file behaves as expected."""
         client = TestClient(app)
         from services.ingestion.grib_netcdf import GLOBAL_REAL_NWP_ENGINE
         GLOBAL_REAL_NWP_ENGINE._cached_dataset = None
@@ -194,6 +201,7 @@ class TestNWPAPIEndpoints:
             assert code == "REAL_NWP_DATA_UNAVAILABLE"
 
     def test_nwp_blend_endpoint(self):
+        """Test that nwp blend endpoint behaves as expected."""
         client = TestClient(app)
         res = client.post("/api/v1/nwp/blend", json={"lead_minutes": 45, "scenario_id": "S4"})
         assert res.status_code == 200
@@ -205,6 +213,7 @@ class TestNWPAPIEndpoints:
         assert "provenance_class" in data
 
     def test_nwp_upload_invalid_preserves_target_file(self, tmp_path: Path):
+        """Test that nwp upload invalid preserves target file behaves as expected."""
         client = TestClient(app)
         # Upload corrupted .nc file
         res = client.post(
@@ -220,6 +229,7 @@ class TestNWPAPIEndpoints:
         assert not target_path.exists()
 
     def test_nwp_ingest_path_traversal_forbidden(self):
+        """Test that nwp ingest path traversal forbidden behaves as expected."""
         client = TestClient(app)
         res = client.post("/api/v1/nwp/ingest", json={"file_path": "../../windows/system32/cmd.exe"})
         assert res.status_code == 403
@@ -228,6 +238,7 @@ class TestNWPAPIEndpoints:
         assert code == "FORBIDDEN_PATH"
 
     def test_grib2_empty_element_rejected(self, tmp_path: Path):
+        """Test that grib2 empty element rejected behaves as expected."""
         import rasterio
         from rasterio.transform import from_bounds
         from services.ingestion.grib_netcdf import RealNWPIngestionEngine

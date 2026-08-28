@@ -11,12 +11,14 @@ from services.ingestion.provenance import sha256_file
 
 
 def _build(tmp_path, sub):
+    """Execute  Build operation and return result."""
     bdd.DATA_DIR = tmp_path / sub
     bdd.DATA_DIR.mkdir(parents=True)
     bdd.main()
 
 
 def test_bundle_builds_and_loads(tmp_path):
+    """Test that bundle builds and loads behaves as expected."""
     _build(tmp_path, "b1")
     d = bdd.DATA_DIR
     assert (d / "dem.tif").exists() and (d / "manifest.json").exists()
@@ -39,6 +41,7 @@ def test_bundle_builds_and_loads(tmp_path):
 
 
 def test_bundle_rebuild_is_identical(tmp_path):
+    """Test that bundle rebuild is identical behaves as expected."""
     _build(tmp_path, "b1")
     first = {p.name: sha256_file(p) for p in bdd.DATA_DIR.rglob("*") if p.is_file()}
     _build(tmp_path, "b2")
@@ -47,6 +50,7 @@ def test_bundle_rebuild_is_identical(tmp_path):
 
 
 def test_rainfall_fields_carry_interval_metadata(tmp_path):
+    """Test that rainfall fields carry interval metadata behaves as expected."""
     _build(tmp_path, "b1")
     p = bdd.DATA_DIR / "rain" / "rain_000.tif"
     with rasterio.open(p) as src:
@@ -60,6 +64,7 @@ def test_rainfall_fields_carry_interval_metadata(tmp_path):
 
 
 def test_scenario_json_reproducible_provenance(tmp_path):
+    """Test that scenario json reproducible provenance behaves as expected."""
     _build(tmp_path, "b1")
     doc = json.loads((bdd.DATA_DIR / "scenarios.json").read_text())
     assert set(doc.keys()) == {"normal", "heavy", "extreme", "extreme_blockage"}

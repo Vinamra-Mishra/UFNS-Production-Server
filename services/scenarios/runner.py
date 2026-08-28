@@ -67,6 +67,7 @@ class ScenarioResult:
     run_fingerprint: str
 
     def to_dict(self) -> dict[str, Any]:
+        """Execute To Dict operation and return result."""
         return {
             "scenario_id": self.scenario.scenario_id,
             "display_name": self.scenario.display_name,
@@ -165,6 +166,7 @@ def scenario_to_runconfig(
 
 def _summarize_result(scenario: ScenarioRecord, res: M4RunResult,
                       cfg: RunConfig) -> ScenarioResult:
+    """Execute  Summarize Result operation and return result."""
     led = res.ledger
     mb = res.mass_balance
 

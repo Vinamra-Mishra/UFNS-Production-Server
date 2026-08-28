@@ -29,6 +29,7 @@ from services.scenarios.artifacts import get_depth_grid
 
 @dataclass(frozen=True)
 class CivicShelter:
+    """Civicshelter schema and data model representation."""
     shelter_id: str
     name: str
     category: str
@@ -38,6 +39,7 @@ class CivicShelter:
     grid_cell: tuple[int, int]
 
     def to_dict(self) -> dict[str, Any]:
+        """Execute To Dict operation and return result."""
         return {
             "shelter_id": self.shelter_id,
             "name": self.name,
@@ -110,6 +112,7 @@ DESIGNATED_SHELTERS: list[CivicShelter] = SYNTHETIC_SHELTERS + MUMBAI_SHELTERS +
 
 @dataclass
 class EvacuationRouteResult:
+    """Evacuationrouteresult schema and data model representation."""
     is_viable: bool
     profile: dict[str, Any]
     origin_utm: list[float]
@@ -127,6 +130,7 @@ class EvacuationRouteResult:
     status_message: str
 
     def to_dict(self) -> dict[str, Any]:
+        """Execute To Dict operation and return result."""
         return {
             "is_viable": self.is_viable,
             "profile": self.profile,
@@ -154,6 +158,7 @@ class EvacuationEngine:
     """Computes vehicle-specific, flood-aware optimal evacuation routes."""
 
     def __init__(self) -> None:
+        """Execute   Init   operation and return result."""
         self.network = NETWORK
 
     MAX_SNAP_DISTANCE_M = 3000.0

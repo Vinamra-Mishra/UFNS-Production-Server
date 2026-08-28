@@ -135,9 +135,11 @@ class DEMIngestionResult:
 
     @property
     def labels(self) -> list[str]:
+        """Execute Labels operation and return result."""
         return result_labels(self.status, self.provenance.classification)
 
     def to_dict(self) -> dict[str, Any]:
+        """Execute To Dict operation and return result."""
         return {
             "status": self.status.value,
             "provenance": self.provenance.to_dict(),
@@ -173,9 +175,11 @@ class DEMNormalizationResult:
 
     @property
     def labels(self) -> list[str]:
+        """Execute Labels operation and return result."""
         return result_labels(self.status, self.provenance.classification)
 
     def to_dict(self) -> dict[str, Any]:
+        """Execute To Dict operation and return result."""
         return {
             "status": self.status.value,
             "provenance": self.provenance.to_dict(),
@@ -299,6 +303,7 @@ def _ground_resolution_m(
 
 
 def _array_sha256(arr: np.ndarray) -> str:
+    """Execute  Array Sha256 operation and return result."""
     h = hashlib.sha256()
     h.update(np.ascontiguousarray(arr).tobytes())
     return h.hexdigest()

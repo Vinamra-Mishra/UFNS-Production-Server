@@ -86,6 +86,7 @@ def _preview_png(array: np.ndarray, path: Path, vmin=None, vmax=None, lut=_LUT_E
 
 
 def main() -> None:
+    """Execute Main operation and return result."""
     DATA_DIR.mkdir(parents=True, exist_ok=True)
     manifest = Manifest(PILOT_ID, base_dir=DATA_DIR)
 
@@ -138,7 +139,7 @@ def main() -> None:
     intervals = forecast_intervals(ISSUE_TIME, DURATION_MINUTES, INTERVAL_MINUTES)
     first = None
     rain_index = {"profile": profile.model_dump(mode="json"), "files": []}
-    for (vf, vt, lead), rate in zip(intervals, profile.intensities_mmh):
+    for (vf, vt, lead), rate in zip(intervals, profile.intensities_mmh, strict=True):
         field = render_interval((GRID_CELLS, GRID_CELLS), FIXTURE_PATTERN, rate, lead // INTERVAL_MINUTES, SEED)
         rp = rain_dir / f"rain_{lead:03d}.tif"
         import rasterio

@@ -28,6 +28,7 @@ require_inspection = pytest.mark.skipif(
 
 @pytest.fixture(autouse=True)
 def _reset_pilot_cache():
+    """Execute  Reset Pilot Cache operation and return result."""
     pilot_store.reset_cache()
     yield
     pilot_store.reset_cache()
@@ -35,7 +36,9 @@ def _reset_pilot_cache():
 
 @require_inspection
 class TestPilotInspectionAPI:
+    """Testpilotinspectionapi schema and data model representation."""
     def test_overview_endpoints_succeed_and_are_truthful(self):
+        """Test that overview endpoints succeed and are truthful behaves as expected."""
         for path in ("/api/v1/pilot/real", "/api/v1/pilot/real/dem",
                      "/api/v1/pilot/real/drainage",
                      "/api/v1/pilot/real/hydraulic-readiness"):
@@ -47,6 +50,7 @@ class TestPilotInspectionAPI:
             assert "operational" not in str(body).lower() or "not_for_operational_use" in body
 
     def test_overview_reports_gridspec_and_readiness(self):
+        """Test that overview reports gridspec and readiness behaves as expected."""
         r = client.get("/api/v1/pilot/real")
         assert r.status_code == 200
         body = r.json()
@@ -60,6 +64,7 @@ class TestPilotInspectionAPI:
         }
 
     def test_drainage_counts_present(self):
+        """Test that drainage counts present behaves as expected."""
         r = client.get("/api/v1/pilot/real/drainage")
         body = r.json()
         cov = body["drainage_coverage"]
@@ -68,6 +73,7 @@ class TestPilotInspectionAPI:
         assert "UNRESOLVED" in body["labels"]
 
     def test_hydraulic_readiness_marks_missing(self):
+        """Test that hydraulic readiness marks missing behaves as expected."""
         r = client.get("/api/v1/pilot/real/hydraulic-readiness")
         body = r.json()
         hr = body["hydraulic_readiness"]
@@ -83,6 +89,7 @@ class TestPilotInspectionAPI:
         assert "MISSING" in body["labels"]
 
     def test_rainfall_not_promoted(self):
+        """Test that rainfall not promoted behaves as expected."""
         r = client.get("/api/v1/pilot/real")
         rs = r.json()["rainfall_status"]
         assert rs["d016_status"] == "PREPARED"
@@ -91,13 +98,16 @@ class TestPilotInspectionAPI:
         assert rs["validated_forecast"] is False
 
     def test_health_reports_pilot_availability(self):
+        """Test that health reports pilot availability behaves as expected."""
         r = client.get("/health")
         assert r.status_code == 200
         assert "real_pilot_inspection_available" in r.json()
 
 
 class TestPilotInspectionMissing:
+    """Testpilotinspectionmissing schema and data model representation."""
     def test_endpoints_503_when_artifact_missing(self, monkeypatch, tmp_path):
+        """Test that endpoints 503 when artifact missing behaves as expected."""
         # Point the store at a non-existent artifact location.
         monkeypatch.setattr(pilot_store, "INSPECTION_JSON", tmp_path / "nope.json")
         pilot_store.reset_cache()

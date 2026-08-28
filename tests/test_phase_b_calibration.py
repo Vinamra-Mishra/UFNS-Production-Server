@@ -56,14 +56,17 @@ from services.calibration import (
 # ===========================================================================
 
 class TestCalibrationMetrics:
+    """Testcalibrationmetrics schema and data model representation."""
 
     def test_nse_exact_match(self):
+        """Test that nse exact match behaves as expected."""
         obs = np.array([1.0, 2.0, 5.0, 8.0, 3.0, 1.0])
         sim = np.array([1.0, 2.0, 5.0, 8.0, 3.0, 1.0])
         nse = nash_sutcliffe_efficiency(obs, sim)
         assert pytest.approx(nse, abs=1e-6) == 1.0
 
     def test_nse_known_imperfect(self):
+        """Test that nse known imperfect behaves as expected."""
         obs = np.array([2.0, 4.0, 6.0, 8.0])
         # mean_obs = 5.0, denom = 9 + 1 + 1 + 9 = 20.0
         # sim differs by 1.0 everywhere: num = 1 + 1 + 1 + 1 = 4.0
@@ -73,10 +76,12 @@ class TestCalibrationMetrics:
         assert pytest.approx(nse, abs=1e-6) == 0.80
 
     def test_nse_mismatch_shape_raises(self):
+        """Test that nse mismatch shape raises behaves as expected."""
         with pytest.raises(ValueError, match="Shape mismatch"):
             nash_sutcliffe_efficiency([1, 2, 3], [1, 2])
 
     def test_kge_exact_match(self):
+        """Test that kge exact match behaves as expected."""
         obs = np.array([1.0, 3.0, 7.0, 12.0, 4.0, 1.0])
         sim = np.array([1.0, 3.0, 7.0, 12.0, 4.0, 1.0])
         kge, r, alpha, beta = kling_gupta_efficiency(obs, sim)
@@ -86,6 +91,7 @@ class TestCalibrationMetrics:
         assert pytest.approx(beta, abs=1e-6) == 1.0
 
     def test_kge_decomposition(self):
+        """Test that kge decomposition behaves as expected."""
         obs = np.array([2.0, 4.0, 6.0, 8.0])
         # Scaled by 2: r=1, alpha=2, beta=2
         sim = obs * 2.0
@@ -97,6 +103,7 @@ class TestCalibrationMetrics:
         assert pytest.approx(kge, abs=1e-4) == 1.0 - math.sqrt(2.0)
 
     def test_pfe_and_tpe(self):
+        """Test that pfe and tpe behaves as expected."""
         obs = np.array([0.0, 1.0, 5.0, 10.0, 3.0, 0.5])  # peak at index 3 (t=30m if dt=10m)
         sim = np.array([0.0, 1.0, 6.0, 12.0, 2.0, 0.5])  # peak 12.0 at index 3
         pfe = peak_flow_error(obs, sim)
@@ -110,6 +117,7 @@ class TestCalibrationMetrics:
         assert pytest.approx(tpe, abs=1e-4) == 5.0
 
     def test_pbias_and_rmse(self):
+        """Test that pbias and rmse behaves as expected."""
         obs = np.array([10.0, 20.0, 30.0])  # sum = 60
         sim = np.array([12.0, 22.0, 32.0])  # sum = 66
         pbias = percent_bias(obs, sim)
@@ -121,6 +129,7 @@ class TestCalibrationMetrics:
         assert pytest.approx(rmse, abs=1e-4) == 2.0
 
     def test_spatial_depth_rmse(self):
+        """Test that spatial depth rmse behaves as expected."""
         obs_2d = np.array([[0.0, 0.5], [1.0, 2.0]])
         sim_2d = np.array([[0.0, 0.6], [1.1, 2.0]])
         mask = np.array([[False, True], [True, True]])
@@ -130,6 +139,7 @@ class TestCalibrationMetrics:
         assert pytest.approx(s_rmse, abs=1e-4) == math.sqrt(0.02 / 3.0)
 
     def test_composite_fit_evaluation(self):
+        """Test that composite fit evaluation behaves as expected."""
         obs = np.array([1.0, 2.0, 5.0, 10.0, 4.0, 1.0])
         sim = np.array([1.0, 2.1, 4.9, 9.8, 4.1, 1.0])
         fit = evaluate_composite_fit(obs, sim, dt_minutes=1.0)
@@ -146,8 +156,10 @@ class TestCalibrationMetrics:
 # ===========================================================================
 
 class TestCalibrationParameters:
+    """Testcalibrationparameters schema and data model representation."""
 
     def test_parameter_bounds_and_clipping(self):
+        """Test that parameter bounds and clipping behaves as expected."""
         p_pipe = DEFAULT_PARAMETER_DEFINITIONS["pipe_manning_n"]
         assert p_pipe.min_bound == 0.009
         assert p_pipe.max_bound == 0.040
@@ -156,6 +168,7 @@ class TestCalibrationParameters:
         assert p_pipe.validate_and_clip(0.015) == 0.015
 
     def test_normalization_roundtrip(self):
+        """Test that normalization roundtrip behaves as expected."""
         p_surf = DEFAULT_PARAMETER_DEFINITIONS["surface_manning_n"]
         orig_val = 0.045
         norm = p_surf.normalize(orig_val)
@@ -164,6 +177,7 @@ class TestCalibrationParameters:
         assert pytest.approx(denorm, abs=1e-6) == orig_val
 
     def test_effective_conduit_diameter_blockage(self):
+        """Test that effective conduit diameter blockage behaves as expected."""
         pset = CalibrationParameterSet(blockage_ratio=0.0)
         # Clean: D_eff == D_0
         assert pytest.approx(pset.get_effective_conduit_diameter(0.30), abs=1e-6) == 0.30
@@ -174,6 +188,7 @@ class TestCalibrationParameters:
         assert pytest.approx(pset_blocked.get_effective_conduit_diameter(0.30), abs=1e-4) == expected_d
 
     def test_vector_conversion_and_recovery(self):
+        """Test that vector conversion and recovery behaves as expected."""
         pset = CalibrationParameterSet(
             pipe_manning_n=0.018,
             blockage_ratio=0.35,
@@ -192,6 +207,7 @@ class TestCalibrationParameters:
         assert recovered.cd_orifice == 0.72  # preserved from base
 
     def test_deterministic_fingerprint(self):
+        """Test that deterministic fingerprint behaves as expected."""
         p1 = CalibrationParameterSet(pipe_manning_n=0.015, blockage_ratio=0.2)
         p2 = CalibrationParameterSet(pipe_manning_n=0.015, blockage_ratio=0.2)
         p3 = CalibrationParameterSet(pipe_manning_n=0.016, blockage_ratio=0.2)
@@ -204,8 +220,10 @@ class TestCalibrationParameters:
 # ===========================================================================
 
 class TestCalibrationObservations:
+    """Testcalibrationobservations schema and data model representation."""
 
     def test_synthetic_benchmark_generation(self):
+        """Test that synthetic benchmark generation behaves as expected."""
         ts = SyntheticBenchmarkGenerator.generate_synthetic_hydrograph(
             duration_minutes=45.0,
             dt_minutes=1.0,
@@ -220,6 +238,7 @@ class TestCalibrationObservations:
         assert pytest.approx(ts.time_to_peak_minutes, abs=1.0) == 20.0
 
     def test_observation_resampling(self):
+        """Test that observation resampling behaves as expected."""
         ts = SyntheticBenchmarkGenerator.generate_synthetic_hydrograph(
             duration_minutes=30.0,
             dt_minutes=5.0,  # [0, 5, 10, 15, 20, 25, 30]
@@ -235,11 +254,13 @@ class TestCalibrationObservations:
 # ===========================================================================
 
 class TestCalibrationOptimizer:
+    """Testcalibrationoptimizer schema and data model representation."""
 
     def test_best_so_far_monotonic_invariant(self):
         """Verify that the optimizer guarantees best_so_far_loss decreases monotonically."""
         # Multi-modal objective function with local spikes
         def noisy_obj(p: CalibrationParameterSet) -> float:
+            """Execute Noisy Obj operation and return result."""
             x = p.pipe_manning_n
             y = p.blockage_ratio
             # Paraboloid with noise
@@ -263,10 +284,12 @@ class TestCalibrationOptimizer:
         assert res.final_loss <= res.initial_loss
 
     def test_nelder_mead_convex_convergence(self):
+        """Test that nelder mead convex convergence behaves as expected."""
         # Target: pipe_manning_n = 0.022, blockage_ratio = 0.30
         target_x, target_y = 0.022, 0.30
 
         def convex_obj(p: CalibrationParameterSet) -> float:
+            """Execute Convex Obj operation and return result."""
             # Scaled by parameter spans so both dimensions have balanced loss gradients
             dx = (p.pipe_manning_n - target_x) / 0.031
             dy = (p.blockage_ratio - target_y) / 0.90
@@ -284,9 +307,11 @@ class TestCalibrationOptimizer:
         assert res.final_loss < 1e-3
 
     def test_differential_evolution_global_convergence(self):
+        """Test that differential evolution global convergence behaves as expected."""
         target_x, target_y = 0.018, 0.50
 
         def global_obj(p: CalibrationParameterSet) -> float:
+            """Execute Global Obj operation and return result."""
             dx = (p.pipe_manning_n - target_x) / 0.031
             dy = (p.blockage_ratio - target_y) / 0.90
             return float(dx ** 2 + dy ** 2)
@@ -301,7 +326,9 @@ class TestCalibrationOptimizer:
         assert pytest.approx(res.optimal_parameters.blockage_ratio, abs=0.10) == target_y
 
     def test_sensitivity_analyzer_oat(self):
+        """Test that sensitivity analyzer oat behaves as expected."""
         def sample_obj(p: CalibrationParameterSet) -> float:
+            """Execute Sample Obj operation and return result."""
             # Blockage has 10x higher impact than pipe roughness
             return float(10.0 * p.blockage_ratio + 1.0 * (p.pipe_manning_n * 100.0))
 
@@ -321,8 +348,10 @@ class TestCalibrationOptimizer:
 # ===========================================================================
 
 class TestCalibrationEngine:
+    """Testcalibrationengine schema and data model representation."""
 
     def test_forward_calibration_simulation(self):
+        """Test that forward calibration simulation behaves as expected."""
         params = CalibrationParameterSet(pipe_manning_n=0.013, blockage_ratio=0.0)
         t_arr, q_arr = run_forward_calibration_simulation(
             params=params,
@@ -363,6 +392,7 @@ class TestCalibrationEngine:
         assert result.final_metrics.composite_loss <= result.initial_metrics.composite_loss + 1e-4
 
     def test_provenance_labeling_governance(self):
+        """Test that provenance labeling governance behaves as expected."""
         # Real field observation on assumed network fixture
         field_obs = ObservedTimeSeries(
             target_type=ObservationTarget.OUTFALL_DISCHARGE,
@@ -391,8 +421,10 @@ class TestCalibrationEngine:
 # ===========================================================================
 
 class TestCalibrationLedger:
+    """Testcalibrationledger schema and data model representation."""
 
     def test_ledger_record_and_query(self):
+        """Test that ledger record and query behaves as expected."""
         ledger = CalibrationLedger()
         assert ledger.count() == 0
 
@@ -430,12 +462,15 @@ class TestCalibrationLedger:
 # ===========================================================================
 
 class TestCalibrationAPI:
+    """Testcalibrationapi schema and data model representation."""
 
     @pytest.fixture(autouse=True)
     def setup_client(self):
+        """Execute Setup Client operation and return result."""
         self.client = TestClient(app)
 
     def test_api_run_calibration_endpoint(self):
+        """Test that api run calibration endpoint behaves as expected."""
         payload = {
             "scenario_id": "D_NORMAL_CAL",
             "strategy": "NELDER_MEAD",
@@ -457,6 +492,7 @@ class TestCalibrationAPI:
         assert data["validation_status"] == "ALGORITHMIC_RECOVERY_VALIDATED"
 
     def test_api_history_and_get_record(self):
+        """Test that api history and get record behaves as expected."""
         # 1. Fetch history
         resp_list = self.client.get("/api/v1/calibration/history")
         assert resp_list.status_code == 200
@@ -469,11 +505,13 @@ class TestCalibrationAPI:
             assert resp_item.json()["calibration_id"] == cid
 
     def test_api_calibration_not_found(self):
+        """Test that api calibration not found behaves as expected."""
         resp = self.client.get("/api/v1/calibration/CAL-NONEXISTENT-999")
         assert resp.status_code == 404
         assert resp.json()["error"]["code"] == "CALIBRATION_NOT_FOUND"
 
     def test_api_sensitivity_endpoint(self):
+        """Test that api sensitivity endpoint behaves as expected."""
         payload = {
             "param_names": ["pipe_manning_n", "blockage_ratio"],
             "perturbation_fraction": 0.15,

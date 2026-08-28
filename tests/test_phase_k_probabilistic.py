@@ -32,6 +32,7 @@ class TestEnsembleGeneration:
     """Test stochastic ensemble member specifications."""
 
     def test_ensemble_count_and_anchors(self):
+        """Test that ensemble count and anchors behaves as expected."""
         members = generate_ensemble_members(10)
         assert len(members) == 10
 
@@ -54,16 +55,19 @@ class TestProbabilisticRiskCalculations:
     """Test spatial exceedance probabilities, confidence bounds, and Brier score."""
 
     def test_brier_score_perfect(self):
+        """Test that brier score perfect behaves as expected."""
         prob = np.array([1.0, 0.0, 1.0, 0.0])
         obs = np.array([1.0, 0.0, 1.0, 0.0])
         assert calculate_brier_score(prob, obs) == 0.0
 
     def test_brier_score_worst(self):
+        """Test that brier score worst behaves as expected."""
         prob = np.array([1.0, 1.0])
         obs = np.array([0.0, 0.0])
         assert calculate_brier_score(prob, obs) == 1.0
 
     def test_exceedance_probabilities_synthetic(self):
+        """Test that exceedance probabilities synthetic behaves as expected."""
         stack = np.array([
             [[0.05, 0.15], [0.35, 0.55]],
             [[0.12, 0.25], [0.45, 0.65]],
@@ -77,6 +81,7 @@ class TestProbabilisticRiskCalculations:
         assert 0.0 <= res["prob_exceed_10cm"]["mean_exceedance_prob"] <= 1.0
 
     def test_probabilistic_simulation_engine(self):
+        """Test that probabilistic simulation engine behaves as expected."""
         engine = ProbabilisticRiskEngine()
         res = engine.simulate(scenario_id="S4", lead_minutes=110, member_count=10)
 
@@ -99,6 +104,7 @@ class TestProbabilisticAPIEndpoints:
     """Test FastAPI /api/v1/probabilistic endpoints."""
 
     def test_list_members_endpoint(self):
+        """Test that list members endpoint behaves as expected."""
         client = TestClient(app)
         res = client.get("/api/v1/probabilistic/members")
         assert res.status_code == 200
@@ -107,6 +113,7 @@ class TestProbabilisticAPIEndpoints:
         assert len(data["members"]) == 10
 
     def test_simulate_endpoint(self):
+        """Test that simulate endpoint behaves as expected."""
         client = TestClient(app)
         payload = {
             "scenario_id": "S4",

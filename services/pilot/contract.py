@@ -67,6 +67,7 @@ class AttributeReadiness:
     basis: str = ""             # documented reason / derivation rule
 
     def to_dict(self) -> dict[str, Any]:
+        """Execute To Dict operation and return result."""
         return {
             "name": self.name,
             "availability": self.availability.value,
@@ -107,6 +108,7 @@ class HydraulicReadinessContract:
         return self.real_hydraulic_network_ready
 
     def to_dict(self) -> dict[str, Any]:
+        """Execute To Dict operation and return result."""
         return {
             "dataset": self.dataset,
             "required_attributes": list(REQUIRED_HYDRAULIC_ATTRIBUTES),

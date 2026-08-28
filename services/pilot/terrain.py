@@ -69,6 +69,7 @@ class RealTerrain:
     # -- provenance answers (Section 4) ------------------------------------
     @property
     def nodata_present(self) -> bool:
+        """Execute Nodata Present operation and return result."""
         return self.nodata_cells > 0
 
     def provenance_answers(self) -> dict[str, Any]:
@@ -85,6 +86,7 @@ class RealTerrain:
         }
 
     def to_dict(self) -> dict[str, Any]:
+        """Execute To Dict operation and return result."""
         valid = self.elevation[self.elevation != self.nodata]
         return {
             "normalization_status": self.normalization_status,
@@ -116,12 +118,14 @@ class RealTerrainAdapter:
     """
 
     def __init__(self, source_path: Path | None = None) -> None:
+        """Execute   Init   operation and return result."""
         self.source_path = source_path
 
     def load(
         self,
         source_path: Path | None = None,
     ) -> RealTerrain:
+        """Execute Load operation and return result."""
         path = source_path or self.source_path
         if path is None:
             raise ValueError("a real DEM source path is required")

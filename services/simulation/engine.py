@@ -146,6 +146,7 @@ class RunConfig:
     grid_origin_xy: tuple[float, float] | None = None
 
     def validate(self) -> None:
+        """Execute Validate operation and return result."""
         dem = self.dem
         if not isinstance(dem, np.ndarray) or dem.ndim != 2 or min(dem.shape) < 3:
             raise CouplingError("dem must be a 2D array of at least 3x3")
@@ -224,6 +225,7 @@ class RunConfig:
             raise CouplingError("invalid loss parameters")
 
     def fingerprint(self) -> str:
+        """Execute Fingerprint operation and return result."""
         rainfall_payload = dict(self.rainfall.__dict__)
         # Invariant: the fingerprint payload for legacy rainfall kinds must
         # stay byte-identical to the pre-M9 format. explicit_fields_mmh is
@@ -279,6 +281,7 @@ class RunConfig:
 
     @property
     def vent_area(self) -> float:
+        """Execute Vent Area operation and return result."""
         return self.ao_vent if self.ao_vent is not None else self.ao_per_inlet * max(len(self.inlet_cells), 1)
 
     def model_affine(self) -> Affine:
@@ -310,12 +313,14 @@ class RunLedger(CoupledLedger):
 
     @property
     def residual_surface(self) -> float:
+        """Execute Residual Surface operation and return result."""
         return (self.rain_m3 - self.losses_m3 - self.surf_out_m3 - self.S2D_m3
                 + self.D2S_m3 + self.flood_export_m3
                 - (self.S_s1 - self.S_s0) - self.microstore_final_m3)
 
     @property
     def residual_total(self) -> float:
+        """Execute Residual Total operation and return result."""
         return (self.rain_m3 + self.ext_in_m3 - self.losses_m3 - self.surf_out_m3
                 - self.outfall_m3 - (self.S_s1 - self.S_s0) - (self.S_d1 - self.S_d0)
                 - self.microstore_final_m3)
@@ -343,6 +348,7 @@ class RunLedger(CoupledLedger):
 
 @dataclass
 class M4RunResult:
+    """M4Runresult schema and data model representation."""
     config: RunConfig
     snapshots: list[FloodSnapshot]
     depth_arrays: dict[int, np.ndarray]          # lead_minutes -> depth (m)
@@ -367,12 +373,14 @@ class CoupledFloodModel:
     """The M4 coupled simulation engine (fixture-scale, deterministic)."""
 
     def __init__(self, config: RunConfig) -> None:
+        """Execute   Init   operation and return result."""
         config.validate()
         self.config = config
 
     # -- helpers --------------------------------------------------------------
     @staticmethod
     def _add_depth(surface: SurfaceModel, cell: tuple[int, int], depth_m: float) -> None:
+        """Execute  Add Depth operation and return result."""
         h = surface.depth
         h[cell] += depth_m
         if h[cell] < -1e-12:
@@ -380,12 +388,14 @@ class CoupledFloodModel:
 
     @staticmethod
     def _remove_depth(surface: SurfaceModel, cell: tuple[int, int], depth_m: float) -> None:
+        """Execute  Remove Depth operation and return result."""
         h = surface.depth
         if h[cell] < depth_m - 1e-12:
             raise CouplingError(f"removing {depth_m:.3e} m from cell {cell} with only {h[cell]:.3e} m available")
         h[cell] -= depth_m
 
     def _build_fields(self) -> list[np.ndarray]:
+        """Execute  Build Fields operation and return result."""
         cfg = self.config
         shape = cfg.dem.shape
         n = cfg.duration_minutes // cfg.rainfall.interval_minutes
@@ -406,6 +416,7 @@ class CoupledFloodModel:
         ]
 
     def _grid_spec(self) -> GridSpec:
+        """Execute  Grid Spec operation and return result."""
         cfg = self.config
         a = cfg.model_affine()
         return GridSpec(
@@ -423,6 +434,7 @@ class CoupledFloodModel:
 
     # -- main loop ------------------------------------------------------------
     def run(self) -> M4RunResult:
+        """Execute Run operation and return result."""
         from pyswmm import Links, Nodes, Simulation
         from pyswmm.swmm5 import PYSWMMException
 
@@ -466,6 +478,7 @@ class CoupledFloodModel:
         time_to_peak = 0.0
 
         def _snapshot(lead_min: int, st1_head_m: float, st1_depth_m: float) -> None:
+            """Execute  Snapshot operation and return result."""
             nonlocal peak_depth, max_flooded_area, time_to_peak
             depth = surface.depth.copy()
             wet_mask = depth > cfg.extent_threshold_m
@@ -791,6 +804,7 @@ class CoupledFloodModel:
 
     @staticmethod
     def _drain_storage(st1, vent, c1, c2) -> float:
+        """Execute  Drain Storage operation and return result."""
         return float(st1.volume) + float(vent.volume) + float(c1.volume) + float(c2.volume)
 
 

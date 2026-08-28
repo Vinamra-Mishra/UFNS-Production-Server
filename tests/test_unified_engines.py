@@ -40,6 +40,7 @@ class TestLayeringAndImportHygiene:
     """Verify that services/ contains zero imports from apps.api."""
 
     def test_services_has_no_reverse_imports_from_apps(self):
+        """Test that services has no reverse imports from apps behaves as expected."""
         repo_root = Path(__file__).resolve().parents[1]
         service_files = list((repo_root / "services").rglob("*.py"))
         offenders = []
@@ -60,6 +61,7 @@ class TestUnifiedNowcastEngine:
     """Test the unified nowcast multi-horizon pipeline."""
 
     def test_unified_nowcast_generation(self):
+        """Test that unified nowcast generation behaves as expected."""
         config = NowcastConfig(
             method="NOWCAST-UNIFIED-V1",
             lead_times_minutes=(0, 15, 30, 45, 60, 90, 120),
@@ -87,6 +89,7 @@ class TestUnifiedNowcastEngine:
             assert "UNIFIED_MULTI_HORIZON" in rec.quality_flags
 
     def test_nowcast_service_registry(self):
+        """Test that nowcast service registry behaves as expected."""
         orig_id = get_active_provider_id()
         try:
             set_active_provider_id("synthetic-v1")
@@ -105,6 +108,7 @@ class TestDynamicStormGenerators:
     """Test Chicago and Custom hyetograph generators."""
 
     def test_chicago_storm_generation(self):
+        """Test that chicago storm generation behaves as expected."""
         prof = generate_chicago_storm(total_depth_mm=75.0, duration_minutes=180, interval_minutes=15)
         assert prof.total_depth_mm == 75.0
         assert prof.duration_minutes == 180
@@ -113,6 +117,7 @@ class TestDynamicStormGenerators:
         assert prof.fingerprint != ""
 
     def test_custom_hyetograph_generation(self):
+        """Test that custom hyetograph generation behaves as expected."""
         series = [10.0, 25.0, 60.0, 80.0, 45.0, 20.0, 5.0, 0.0]
         prof = generate_custom_hyetograph(series, interval_minutes=15, display_name="2005 Mumbai Historical Cloudburst")
         assert prof.duration_minutes == 120
@@ -125,6 +130,7 @@ class TestCustomScenarioSimulation:
     """Test simulating on-demand custom storms with coupled physical engine."""
 
     def test_run_custom_scenario(self):
+        """Test that run custom scenario behaves as expected."""
         prof = generate_custom_hyetograph([20.0, 40.0], interval_minutes=15, display_name="Quick Test Storm")
         res = run_custom_scenario(
             rainfall_profile=prof,

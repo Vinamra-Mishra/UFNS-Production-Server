@@ -139,6 +139,7 @@ def depth_mm(duration_h: float, return_period_yr: float) -> float:
         raise ValueError("return period < 2 years is outside the source's annual-maxima range")
 
     def _node_depth(d: float) -> float:
+        """Execute  Node Depth operation and return result."""
         k = PUBLISHED_DURATIONS_H.index(d)
         i = PUBLISHED_INTENSITY_2YR[k] * (return_period_yr / 2.0) ** _alpha(d)
         return i * d

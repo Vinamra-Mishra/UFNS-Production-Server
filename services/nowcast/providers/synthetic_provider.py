@@ -54,6 +54,7 @@ class SyntheticRainfallProvider(RainfallProvider):
         spatial_reference: str = "EPSG:32645",
         spatial_resolution_m: float = 30.0,
     ) -> None:
+        """Execute   Init   operation and return result."""
         if temporal_resolution_minutes <= 0:
             raise ValueError("temporal_resolution_minutes must be > 0")
         self._provider_id = provider_id
@@ -68,14 +69,17 @@ class SyntheticRainfallProvider(RainfallProvider):
 
     @property
     def provider_id(self) -> str:
+        """Execute Provider Id operation and return result."""
         return self._provider_id
 
     @property
     def source_type(self) -> SourceType:
+        """Execute Source Type operation and return result."""
         return SourceType.SYNTHETIC
 
     @property
     def source_name(self) -> str:
+        """Execute Source Name operation and return result."""
         return (
             f"UFNS Synthetic Rainfall Generator "
             f"({self._base_rate_mmh} mm/h, {self._pattern})"
@@ -83,10 +87,12 @@ class SyntheticRainfallProvider(RainfallProvider):
 
     @property
     def spatial_reference(self) -> str:
+        """Execute Spatial Reference operation and return result."""
         return self._spatial_reference
 
     @property
     def spatial_resolution_m(self) -> float:
+        """Execute Spatial Resolution M operation and return result."""
         return self._spatial_resolution_m
 
     def _generate_observation(self, obs_time: datetime) -> RainfallObservation:
@@ -143,6 +149,7 @@ class SyntheticRainfallProvider(RainfallProvider):
         return self._generate_observation(observation_time)
 
     def health(self) -> ProviderHealth:
+        """Execute Health operation and return result."""
         return ProviderHealth(
             provider_id=self._provider_id,
             status=ProviderStatus.HEALTHY,
@@ -160,6 +167,7 @@ class SyntheticRainfallProvider(RainfallProvider):
         )
 
     def metadata(self) -> dict[str, Any]:
+        """Execute Metadata operation and return result."""
         return {
             "provider_id": self._provider_id,
             "source_type": self.source_type.value,

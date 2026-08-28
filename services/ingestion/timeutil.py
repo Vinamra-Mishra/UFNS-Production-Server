@@ -14,6 +14,7 @@ LOCAL_TZ = ZoneInfo("Asia/Kolkata")
 
 
 def ensure_utc(dt: datetime) -> datetime:
+    """Execute Ensure Utc operation and return result."""
     if dt.tzinfo is None:
         raise ValueError("naive datetime not allowed; provide timezone-aware UTC")
     return dt.astimezone(timezone.utc)
@@ -25,6 +26,7 @@ def iso_utc(dt: datetime) -> str:
 
 
 def parse_utc(s: str) -> datetime:
+    """Execute Parse Utc operation and return result."""
     dt = datetime.fromisoformat(s.replace("Z", "+00:00"))
     return ensure_utc(dt)
 

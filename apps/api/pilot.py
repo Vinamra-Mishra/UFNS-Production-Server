@@ -30,6 +30,7 @@ class PilotStoreError(Exception):
 
 @lru_cache(maxsize=1)
 def _load() -> dict[str, Any]:
+    """Execute  Load operation and return result."""
     if not INSPECTION_JSON.exists():
         raise PilotStoreError(
             "M11 real-pilot inspection artifact missing: run "
@@ -46,6 +47,7 @@ def _load() -> dict[str, Any]:
 
 
 def inspection_available() -> bool:
+    """Execute Inspection Available operation and return result."""
     return INSPECTION_JSON.exists()
 
 
@@ -78,6 +80,7 @@ def pilot_overview() -> dict[str, Any]:
 
 
 def pilot_dem() -> dict[str, Any]:
+    """Execute Pilot Dem operation and return result."""
     data = _load()
     return {
         "dem_provenance": data.get("dem_provenance"),
@@ -88,6 +91,7 @@ def pilot_dem() -> dict[str, Any]:
 
 
 def pilot_drainage() -> dict[str, Any]:
+    """Execute Pilot Drainage operation and return result."""
     data = _load()
     cov = data.get("drainage_coverage", {})
     return {
@@ -107,6 +111,7 @@ def pilot_drainage() -> dict[str, Any]:
 
 
 def pilot_hydraulic_readiness() -> dict[str, Any]:
+    """Execute Pilot Hydraulic Readiness operation and return result."""
     data = _load()
     return {
         "hydraulic_readiness": _slim_contract(data.get("hydraulic_readiness")),
@@ -116,6 +121,7 @@ def pilot_hydraulic_readiness() -> dict[str, Any]:
 
 
 def _slim_contract(contract: Any) -> dict[str, Any]:
+    """Execute  Slim Contract operation and return result."""
     if not isinstance(contract, dict):
         return {}
     return {

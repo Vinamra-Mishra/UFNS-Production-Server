@@ -39,6 +39,7 @@ from services.ingestion.real_data import AcquisitionAttempt, AcquisitionOutcome
 
 
 def _reconstruct(rec: dict) -> AcquisitionAttempt:
+    """Execute  Reconstruct operation and return result."""
     rec = dict(rec)
     rec["outcome"] = AcquisitionOutcome(rec["outcome"])
     rec["attempted_at"] = datetime.fromisoformat(rec["attempted_at"])
@@ -89,6 +90,7 @@ CONSEQUENCE_VALIDATION_PENDING = (
 
 
 def supplied_attempts() -> list[AcquisitionAttempt]:
+    """Execute Supplied Attempts operation and return result."""
     return [
         verify_local_artifact(
             source_name="WB AMRUT Stormwater drains (india-geodata release water/urban-water; human-supplied)",
@@ -115,6 +117,7 @@ def supplied_attempts() -> list[AcquisitionAttempt]:
 
 
 def main() -> int:
+    """Execute Main operation and return result."""
     prior: list[dict] = []
     if EVIDENCE.exists():
         doc = json.loads(EVIDENCE.read_text())

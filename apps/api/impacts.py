@@ -84,6 +84,7 @@ def grid_metadata() -> dict[str, Any]:
 # ---------------------------------------------------------------------------
 
 def road_network() -> dict[str, Any]:
+    """Execute Road Network operation and return result."""
     active = getattr(city_api, "ACTIVE_CITY", "DEMO")
     if active != "DEMO":
         city_key = city_api.CITY_METADATA.get(active, {}).get("city_id", "mumbai")
@@ -133,6 +134,7 @@ def road_network() -> dict[str, Any]:
 
 
 def policy() -> dict[str, Any]:
+    """Execute Policy operation and return result."""
     return POLICY.to_dict()
 
 
@@ -142,6 +144,7 @@ def policy() -> dict[str, Any]:
 
 @lru_cache(maxsize=4)
 def _load_city_dem_and_mask(city_key: str) -> tuple[np.ndarray, np.ndarray, dict[str, Any]]:
+    """Execute  Load City Dem And Mask operation and return result."""
     import rasterio
     dem_path = PROCESSED_DIR / city_key / "dem_normalized.tif"
     mask_path = PROCESSED_DIR / city_key / "land_sea_mask.npy"
@@ -164,6 +167,7 @@ def _load_city_dem_and_mask(city_key: str) -> tuple[np.ndarray, np.ndarray, dict
 
 
 def clear_caches():
+    """Execute Clear Caches operation and return result."""
     _load_city_dem_and_mask.cache_clear()
     _depth_grid_cached.cache_clear()
     _impact_index_cached.cache_clear()
@@ -214,12 +218,14 @@ def _depth_grid_cached(sid: str, lead: int, city_key: str) -> np.ndarray:
 
 
 def depth_grid(sid: str, lead: int) -> np.ndarray:
+    """Execute Depth Grid operation and return result."""
     active = getattr(city_api, "ACTIVE_CITY", "DEMO")
     city_key = city_api.CITY_METADATA.get(active, {}).get("city_id", "mumbai") if active != "DEMO" else "DEMO"
     return _depth_grid_cached(sid, lead, city_key)
 
 
 def _valid_times(sid: str) -> dict[int, str]:
+    """Execute  Valid Times operation and return result."""
     result = store.scenario_result(sid)
     out: dict[int, str] = {}
     for snap in result.get("snapshot_inventory", []):
@@ -276,16 +282,19 @@ def _impact_index_cached(sid: str, city_key: str) -> dict[int, dict[str, Any]]:
 
 
 def impact_index(sid: str) -> dict[int, dict[str, Any]]:
+    """Execute Impact Index operation and return result."""
     active = getattr(city_api, "ACTIVE_CITY", "DEMO")
     city_key = city_api.CITY_METADATA.get(active, {}).get("city_id", "mumbai") if active != "DEMO" else "DEMO"
     return _impact_index_cached(sid, city_key)
 
 
 def impacts_at(sid: str, lead: int) -> dict[str, Any]:
+    """Execute Impacts At operation and return result."""
     return impact_index(sid).get(lead, {})
 
 
 def road_metrics(sid: str, lead: int) -> dict[str, Any]:
+    """Execute Road Metrics operation and return result."""
     active = getattr(city_api, "ACTIVE_CITY", "DEMO")
     if active != "DEMO":
         idx = impact_index(sid)
@@ -307,6 +316,7 @@ def road_metrics(sid: str, lead: int) -> dict[str, Any]:
 
 
 def road_impact_timeline(sid: str, road_id: str) -> dict[str, Any]:
+    """Execute Road Impact Timeline operation and return result."""
     active = getattr(city_api, "ACTIVE_CITY", "DEMO")
     if active != "DEMO":
         idx = impact_index(sid)
@@ -340,10 +350,12 @@ def road_impact_timeline(sid: str, road_id: str) -> dict[str, Any]:
         if road_id in impact_index(sid)[lead]
     ]
     def _cls_val(p):
+        """Execute  Cls Val operation and return result."""
         c = getattr(p, "classification", None) or (p.get("classification") if isinstance(p, dict) else None)
         return getattr(c, "value", str(c))
 
     def _pass_val(p):
+        """Execute  Pass Val operation and return result."""
         return getattr(p, "is_passable", None) if hasattr(p, "is_passable") else (p.get("is_passable", True) if isinstance(p, dict) else True)
 
     first_impacted = next((getattr(p, "lead_minutes", None) if not isinstance(p, dict) else p.get("lead_minutes") for p in pts if _cls_val(p) not in ("DRY", "RoadImpactClassification.DRY")), None)
@@ -552,6 +564,7 @@ def realtime_frame(lead: int) -> dict[str, Any]:
 
 
 def rainfall_summary(sid: str, lead: int) -> dict[str, Any]:
+    """Execute Rainfall Summary operation and return result."""
     sc = M5_SCENARIOS[sid]
     prof = sc.rainfall_profile
     interval_min = prof.temporal_resolution_minutes
@@ -636,6 +649,7 @@ def horizon_payload(sid: str, max_lead: int = 180, step: int = 5) -> dict[str, A
 
 
 def rainfall_grid(sid: str, lead: int) -> dict[str, Any]:
+    """Execute Rainfall Grid operation and return result."""
     active = getattr(city_api, "ACTIVE_CITY", "DEMO")
     city_key = city_api.CITY_METADATA.get(active, {}).get("city_id", "mumbai") if active != "DEMO" else "DEMO"
     return _rainfall_grid_cached(sid, lead, city_key)
@@ -709,6 +723,7 @@ def compute_route_request(
             
             # Fast spatial grid search for nearest node
             def find_nearest_node(pt: tuple[float, float]) -> str:
+                """Execute Find Nearest Node operation and return result."""
                 px, py = pt[0], pt[1]
                 cgx, cgy = int(px // 500), int(py // 500)
                 best_node, best_dist = None, 1e12
@@ -775,6 +790,7 @@ def compute_route_request(
             impacts_dict = impacts_at(sid, lead)
             
             def solve_dijkstra(flood_aware: bool):
+                """Execute Solve Dijkstra operation and return result."""
                 dist = {orig_node: 0.0}
                 prev = {}
                 heap = [(0.0, orig_node)]

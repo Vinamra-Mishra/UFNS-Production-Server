@@ -49,6 +49,7 @@ class ArtifactStoreError(Exception):
 
 @lru_cache(maxsize=4)
 def _load_json(path: Path) -> dict[str, Any]:
+    """Execute  Load Json operation and return result."""
     if not path.exists():
         raise ArtifactStoreError(f"precomputed artifact missing: {path}")
     try:
@@ -188,10 +189,15 @@ def load_city_dem_and_mask(city_key: str) -> tuple[np.ndarray, np.ndarray, dict[
     return dem, mask, grid_meta
 
 
-@lru_cache(maxsize=1024)
 def get_depth_grid(sid: str, lead: int, city_key: str | None = None) -> np.ndarray:
     """Coupled mass-conservation depth grid (m) for one scenario snapshot."""
     active = (city_key or get_active_city()).upper()
+    return _get_depth_grid_cached(sid, lead, active)
+
+
+@lru_cache(maxsize=1024)
+def _get_depth_grid_cached(sid: str, lead: int, active: str) -> np.ndarray:
+    """Cached computation of depth grid keyed by city and lead time."""
     if active != "DEMO":
         dem, mask, _ = load_city_dem_and_mask(CITY_METADATA.get(active, {}).get("city_id", "mumbai"))
 

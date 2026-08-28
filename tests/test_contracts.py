@@ -20,6 +20,7 @@ ISSUE = datetime(2026, 8, 21, 0, 0, tzinfo=timezone.utc)
 
 
 def _grid() -> GridSpec:
+    """Execute  Grid operation and return result."""
     a = grid_affine()
     return GridSpec(
         grid_id="test_grid",
@@ -35,6 +36,7 @@ def _grid() -> GridSpec:
 
 
 def _lineage() -> DataLineage:
+    """Execute  Lineage operation and return result."""
     return DataLineage(
         dataset_id="t",
         version="v1",
@@ -46,6 +48,7 @@ def _lineage() -> DataLineage:
 
 
 def test_scenario_definition_valid_and_fingerprint_stable():
+    """Test that scenario definition valid and fingerprint stable behaves as expected."""
     s = build_demo_scenarios(_grid(), "dem.tif", "net.inp", ISSUE, _lineage())[0]
     assert s.scenario_id == "normal"
     f1 = s.fingerprint()
@@ -55,6 +58,7 @@ def test_scenario_definition_valid_and_fingerprint_stable():
 
 
 def test_scenario_fingerprint_changes_with_rainfall():
+    """Test that scenario fingerprint changes with rainfall behaves as expected."""
     g = _grid()
     s1 = build_demo_scenarios(g, "dem.tif", "net.inp", ISSUE, _lineage())[0]
     s2 = s1.model_copy(deep=True)
@@ -63,6 +67,7 @@ def test_scenario_fingerprint_changes_with_rainfall():
 
 
 def test_rainfall_grid_interval_validation():
+    """Test that rainfall grid interval validation behaves as expected."""
     g = _grid()
     base = dict(
         rainfall_id="r1",
@@ -82,6 +87,7 @@ def test_rainfall_grid_interval_validation():
 
 
 def test_blockage_configuration_bounds():
+    """Test that blockage configuration bounds behaves as expected."""
     with pytest.raises(ValueError):
         BlockageConfiguration(fraction=1.5)
     with pytest.raises(ValueError):
@@ -89,11 +95,13 @@ def test_blockage_configuration_bounds():
 
 
 def test_surface_parameters_positive():
+    """Test that surface parameters positive behaves as expected."""
     with pytest.raises(ValueError):
         SurfaceParameters(manning_n=0.0, horton_f0_m_s=1e-6, horton_fmin_m_s=1e-6, horton_k_s1=1e-4)
 
 
 def test_naive_timestamp_rejected_in_lineage():
+    """Test that naive timestamp rejected in lineage behaves as expected."""
     with pytest.raises(ValueError):
         DataLineage(
             dataset_id="t", version="v1", source_name="t",
@@ -103,6 +111,7 @@ def test_naive_timestamp_rejected_in_lineage():
 
 
 def test_demo_scenarios_match_approved_ids():
+    """Test that demo scenarios match approved ids behaves as expected."""
     scenarios = build_demo_scenarios(_grid(), "dem.tif", "net.inp", ISSUE, _lineage())
     assert [s.scenario_id for s in scenarios] == ["normal", "heavy", "extreme", "extreme_blockage"]
     b = scenarios[-1].drainage_configuration.blockage

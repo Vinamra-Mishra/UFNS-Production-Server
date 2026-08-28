@@ -77,6 +77,7 @@ class SpatialBounds:
     north: float
 
     def to_dict(self) -> dict[str, float]:
+        """Execute To Dict operation and return result."""
         return {
             "west": self.west,
             "south": self.south,
@@ -109,6 +110,7 @@ class SourceProvenance:
     known_limitations: tuple[str, ...] = ()
 
     def to_dict(self) -> dict[str, Any]:
+        """Execute To Dict operation and return result."""
         return {
             "source_name": self.source_name,
             "dataset_name": self.dataset_name,
@@ -201,6 +203,7 @@ class DatasetAuditResult:
     audit_timestamp: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
 
     def __post_init__(self) -> None:
+        """Execute   Post Init   operation and return result."""
         # Independent read-only view: later mutation of the caller's mapping
         # must not reach this record.
         if self.spatial_coverage is not None:
@@ -211,6 +214,7 @@ class DatasetAuditResult:
             )
 
     def to_dict(self) -> dict[str, Any]:
+        """Execute To Dict operation and return result."""
         return {
             "source": self.source.to_dict(),
             "file_identity": self.file_identity,
@@ -339,6 +343,7 @@ class AcquisitionAttempt:
     artifact_sha256: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
+        """Execute To Dict operation and return result."""
         return {
             "source_name": self.source_name,
             "url": self.url,

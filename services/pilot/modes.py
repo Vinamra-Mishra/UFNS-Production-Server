@@ -88,6 +88,7 @@ class PilotCapabilityState:
     reason: str
 
     def to_dict(self) -> dict[str, object]:
+        """Execute To Dict operation and return result."""
         return {
             "real_terrain_available": self.real_terrain_available,
             "real_geometry_available": self.real_geometry_available,

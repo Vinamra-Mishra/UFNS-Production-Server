@@ -87,6 +87,7 @@ class PassabilityPolicy:
     fingerprint: str
 
     def __init__(self, policy_id: str, status: str, version: int, thresholds: dict[str, float], impacted_depth_threshold_m: float, speed_factors: dict[str, float], baseline_speed_kmh: dict[str, float], disclaimer: str):
+        """Execute   Init   operation and return result."""
         object.__setattr__(self, "policy_id", policy_id)
         object.__setattr__(self, "status", status)
         object.__setattr__(self, "version", version)
@@ -119,6 +120,7 @@ class PassabilityPolicy:
         object.__setattr__(self, "fingerprint", fp)
 
     def to_dict(self) -> dict[str, Any]:
+        """Execute To Dict operation and return result."""
         return {
             "policy_id": self.policy_id,
             "status": self.status,

@@ -11,6 +11,7 @@ from typing import Any
 
 @dataclass(frozen=True)
 class VehicleProfile:
+    """Vehicleprofile schema and data model representation."""
     profile_id: str
     name: str
     icon: str

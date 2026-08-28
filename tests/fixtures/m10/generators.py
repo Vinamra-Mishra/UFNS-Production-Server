@@ -153,10 +153,12 @@ def write_nan_dem_fixture(path: Path) -> Path:
 
 
 def _drain_rows(variant: str) -> tuple[list[tuple], list[str]]:
+    """Execute  Drain Rows operation and return result."""
     from shapely import wkb
     from shapely.geometry import LineString, Point
 
     def line(x0: float, y0: float, x1: float, y1: float) -> bytes:
+        """Execute Line operation and return result."""
         return wkb.dumps(LineString([(x0, y0), (x1, y1)]))
 
     # Geometry lives inside the pilot lon/lat window (real-pilot: 88.6–88.85°E,
@@ -279,12 +281,14 @@ def write_plain_parquet_fixture(path: Path) -> Path:
 
 
 def write_not_a_parquet(path: Path) -> Path:
+    """Execute Write Not A Parquet operation and return result."""
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_bytes(b"this is not a parquet file")
     return path
 
 
 def write_not_a_geotiff(path: Path) -> Path:
+    """Execute Write Not A Geotiff operation and return result."""
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_bytes(b"this is not a geotiff")
     return path

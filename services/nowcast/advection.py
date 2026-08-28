@@ -210,10 +210,12 @@ class AdvectionNowcastEngine:
     """0–3 Hour Optical Flow & Semi-Lagrangian Advection Nowcast Engine."""
 
     def __init__(self, config: AdvectionConfig | None = None) -> None:
+        """Execute   Init   operation and return result."""
         self._config = config or AdvectionConfig()
 
     @property
     def config(self) -> AdvectionConfig:
+        """Execute Config operation and return result."""
         return self._config
 
     def generate(

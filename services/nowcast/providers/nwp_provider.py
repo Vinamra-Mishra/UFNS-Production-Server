@@ -37,6 +37,7 @@ class RealNWPRainfallProvider(RainfallProvider):
         source_type: SourceType = SourceType.REAL,
         ingestion_engine: RealNWPIngestionEngine | None = None,
     ) -> None:
+        """Execute   Init   operation and return result."""
         self._provider_id = provider_id
         self._source_name = source_name
         self._source_type = source_type
@@ -54,18 +55,22 @@ class RealNWPRainfallProvider(RainfallProvider):
 
     @property
     def provider_id(self) -> str:
+        """Execute Provider Id operation and return result."""
         return self._provider_id
 
     @property
     def source_name(self) -> str:
+        """Execute Source Name operation and return result."""
         return self._source_name
 
     @property
     def source_type(self) -> SourceType:
+        """Execute Source Type operation and return result."""
         return self._source_type
 
     @property
     def dataset(self) -> RealNWPDataset | None:
+        """Execute Dataset operation and return result."""
         return self._dataset
 
     def fetch_latest(self) -> Optional[RainfallObservation]:

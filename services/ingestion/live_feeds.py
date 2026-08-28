@@ -26,8 +26,6 @@ from services.ingestion.radar import ZR_CONVECTIVE, ZR_MARSHALL_PALMER, ZRRelati
 
 USER_AGENT = "UFNS-SIH26085/1.0 (Urban Flood Nowcasting System; research contact: sih2026@example.com)"
 SSL_CTX = ssl.create_default_context()
-SSL_CTX.check_hostname = False
-SSL_CTX.verify_mode = ssl.CERT_NONE
 
 
 def _http_get_json(url: str, timeout: float = 20.0) -> Any:

@@ -39,6 +39,7 @@ class StoreError(Exception):
 
 @lru_cache(maxsize=1)
 def _load_json(path: Path) -> dict[str, Any]:
+    """Execute  Load Json operation and return result."""
     if not path.exists():
         raise StoreError(f"precomputed artifact missing: {path}")
     try:

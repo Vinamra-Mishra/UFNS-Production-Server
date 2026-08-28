@@ -32,10 +32,12 @@ N = 134
 
 
 def _grid(value: float) -> np.ndarray:
+    """Execute  Grid operation and return result."""
     return np.full((N, N), value, dtype=np.float64)
 
 
 def _read_s4_depth(lead: int) -> np.ndarray:
+    """Execute  Read S4 Depth operation and return result."""
     import rasterio
 
     with rasterio.open(f"data/demo/m5/s4/depth_t{lead:03d}.tif") as src:
@@ -47,6 +49,7 @@ def _read_s4_depth(lead: int) -> np.ndarray:
 # ---------------------------------------------------------------------------
 
 def test_m7_01_road_fixture_deterministic():
+    """Test that m7 01 road fixture deterministic behaves as expected."""
     a = build_synthetic_network()
     b = build_synthetic_network()
     assert a.fingerprint == b.fingerprint
@@ -61,6 +64,7 @@ def test_m7_01_road_fixture_deterministic():
 # ---------------------------------------------------------------------------
 
 def test_m7_02_road_geometry_valid():
+    """Test that m7 02 road geometry valid behaves as expected."""
     net = NETWORK
     assert net.crs == "EPSG:32645"
     assert net.cell_size_m == 30.0
@@ -90,6 +94,7 @@ def test_m7_02_road_geometry_valid():
 # ---------------------------------------------------------------------------
 
 def test_m7_03_dry_road_classification():
+    """Test that m7 03 dry road classification behaves as expected."""
     grid = _grid(0.0)
     for seg in NETWORK.segments:
         imp = compute_road_impact(seg, grid, "S_TEST", 0, "t0")
@@ -104,6 +109,7 @@ def test_m7_03_dry_road_classification():
 # ---------------------------------------------------------------------------
 
 def test_m7_04_flooded_road_classification():
+    """Test that m7 04 flooded road classification behaves as expected."""
     grid = _grid(0.7)
     for seg in NETWORK.segments:
         imp = compute_road_impact(seg, grid, "S_TEST", 0, "t0")
@@ -118,6 +124,7 @@ def test_m7_04_flooded_road_classification():
 # ---------------------------------------------------------------------------
 
 def test_m7_05_partial_road_flooding():
+    """Test that m7 05 partial road flooding behaves as expected."""
     seg = NETWORK.by_id()["R-001"]
     cells = rasterize_line(*seg.start_cell, *seg.end_cell)
     grid = _grid(0.0)
@@ -136,6 +143,7 @@ def test_m7_05_partial_road_flooding():
 # ---------------------------------------------------------------------------
 
 def test_m7_06_threshold_boundary():
+    """Test that m7 06 threshold boundary behaves as expected."""
     # Exact boundaries are deterministic and documented in policy.py.
     assert classify(0.05) == "DRY"
     assert classify(0.050001) == "LOW_IMPACT"
@@ -160,6 +168,7 @@ def test_m7_06_threshold_boundary():
 # ---------------------------------------------------------------------------
 
 def test_m7_07_road_impact_reproducible():
+    """Test that m7 07 road impact reproducible behaves as expected."""
     grid = _read_s4_depth(110)
     seg = NETWORK.by_id()["R-011"]
     a = compute_road_impact(seg, grid, "S4", 110, "2026-08-21T01:50:00+00:00")
@@ -172,6 +181,7 @@ def test_m7_07_road_impact_reproducible():
 # ---------------------------------------------------------------------------
 
 def test_m7_08_time_dependent_impact():
+    """Test that m7 08 time dependent impact behaves as expected."""
     leads = list(range(0, 181, 5))
     grids = {l: _read_s4_depth(l) for l in leads}
     valid = {l: f"2026-08-21T00:{l:02d}:00+00:00" for l in leads}

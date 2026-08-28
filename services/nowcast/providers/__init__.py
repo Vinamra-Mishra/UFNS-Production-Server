@@ -75,6 +75,7 @@ class RainfallObservation:
     metadata: dict[str, Any] | None = None
 
     def __post_init__(self) -> None:
+        """Execute   Post Init   operation and return result."""
         if self.rate_mmh.ndim != 2:
             raise ValueError("rate_mmh must be 2-D")
         if self.rate_mmh.shape != (self.height, self.width):
@@ -172,6 +173,7 @@ class ProviderHealth:
     metadata: dict[str, Any] | None = None
 
     def to_dict(self) -> dict[str, Any]:
+        """Execute To Dict operation and return result."""
         return {
             "provider_id": self.provider_id,
             "status": self.status.value,

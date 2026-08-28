@@ -1,3 +1,4 @@
+EXPECTED_DRAIN_FEATURES = 90395
 """M11 — Real-pilot integration validation runner (Section 16 experiments).
 
 Runs the deterministic M11 experiments M11-01 .. M11-12 against the real
@@ -54,16 +55,19 @@ OUT_DIR = REPO_ROOT / "data" / "demo" / "m11"
 
 
 def _ts() -> str:
+    """Execute  Ts operation and return result."""
     return datetime.now(timezone.utc).isoformat()
 
 
 def _require_artifacts() -> None:
+    """Execute  Require Artifacts operation and return result."""
     missing = [p for p in (RAW_DEM, RAW_DRAINS, RAW_VENTS) if not p.exists()]
     if missing:
         sys.exit(f"REQUIRED real artifacts missing: {missing}")
 
 
 def run_experiments() -> dict[str, Any]:
+    """Execute Run Experiments operation and return result."""
     _require_artifacts()
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     gates: dict[str, dict[str, Any]] = {}
@@ -134,7 +138,7 @@ def run_experiments() -> dict[str, Any]:
     total = stats["total_source_features"]
     accounted = stats["mapped"] + stats["unresolved_type"] + stats["rejected"]
     prov_ok = (
-        total == 90395
+        total == EXPECTED_DRAIN_FEATURES
         and accounted == total  # every feature accounted for
         and all("source_id" in e for e in drain.entities_reprojected[:10])
         and all("mapping_status" in e for e in drain.entities_reprojected[:10])
@@ -411,6 +415,7 @@ def _first_coord_x(wkt: str) -> float:
 def _build_inspection(
     terrain, drain, contract, mode_b, gate_matrix
 ) -> dict[str, Any]:
+    """Execute  Build Inspection operation and return result."""
     pilot = authoritative_pilot_grid()
     return {
         "generated_at": _ts(),
@@ -469,6 +474,7 @@ def _build_inspection(
 
 
 def main() -> int:
+    """Execute Main operation and return result."""
     print("=" * 70)
     print("UFNS M11 — Real-pilot integration validation")
     print("=" * 70)

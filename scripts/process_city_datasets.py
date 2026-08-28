@@ -73,6 +73,7 @@ CITY_SPECS = {
 
 
 def compute_sha256(path: Path) -> str:
+    """Compute and evaluate sha256."""
     h = hashlib.sha256()
     with open(path, "rb") as f:
         for chunk in iter(lambda: f.read(65536), b""):
@@ -85,6 +86,7 @@ def compute_sha256(path: Path) -> str:
 # ---------------------------------------------------------------------------
 
 def process_dem(city: str, spec: dict) -> tuple[np.ndarray, GridSpec, rasterio.Affine]:
+    """Process and transform dem."""
     print(f"  [1/4] Processing DEM for {spec['name']} ...")
     raw_dem_path = spec["raw_dir"] / spec["dem_raw"]
     if not raw_dem_path.exists():
@@ -162,6 +164,7 @@ def process_dem(city: str, spec: dict) -> tuple[np.ndarray, GridSpec, rasterio.A
 def process_drainage(
     city: str, spec: dict, dem: np.ndarray, transform: rasterio.Affine, grid: GridSpec
 ) -> dict:
+    """Process and transform drainage."""
     print(f"  [2/4] Processing 1D Drainage Hydraulics & SWMM model ...")
     drains_path = spec["raw_dir"] / spec["drains_raw"]
     if not drains_path.exists():
@@ -173,6 +176,7 @@ def process_drainage(
     transformer = pyproj.Transformer.from_crs("EPSG:4326", spec["utm_crs"], always_xy=True)
 
     def get_elev_at(x_utm: float, y_utm: float) -> float:
+        """Retrieve and return elev at."""
         col = int((x_utm - transform.c) / transform.a)
         row = int((y_utm - transform.f) / transform.e)
         if 0 <= row < dem.shape[0] and 0 <= col < dem.shape[1]:
@@ -359,8 +363,14 @@ def process_drainage(
 # 3. Road Graph Processing & Passability Indexing
 # ---------------------------------------------------------------------------
 
-def process_roads(city: str, spec: dict, dem: np.ndarray, transform: rasterio.Affine) -> dict:
+def process_roads(city: str, spec: dict, dem: np.ndarray, transform: rasterio.Affine, grid: GridSpec) -> dict:
+    """Process raw road GeoJSON into a structured routing and passability graph.
+    
+    Transforms road geometry into target UTM coordinates, clips to grid bounds,
+    and assigns baseline speed and elevation metrics.
+    """
     print(f"  [3/4] Processing Road Graph & B13 Passability Network ...")
+    bounds = grid.bounds
     roads_path = spec["raw_dir"] / spec["roads_raw"]
     if not roads_path.exists():
         raise FileNotFoundError(f"Missing raw roads: {roads_path}")
@@ -371,6 +381,7 @@ def process_roads(city: str, spec: dict, dem: np.ndarray, transform: rasterio.Af
     transformer = pyproj.Transformer.from_crs("EPSG:4326", spec["utm_crs"], always_xy=True)
 
     def get_elev_at(x_utm: float, y_utm: float) -> float:
+        """Retrieve and return elev at."""
         col = int((x_utm - transform.c) / transform.a)
         row = int((y_utm - transform.f) / transform.e)
         if 0 <= row < dem.shape[0] and 0 <= col < dem.shape[1]:
@@ -455,6 +466,7 @@ def process_roads(city: str, spec: dict, dem: np.ndarray, transform: rasterio.Af
 # ---------------------------------------------------------------------------
 
 def process_scenarios(city: str, spec: dict) -> dict:
+    """Process and transform scenarios."""
     print(f"  [4/4] Generating Kothyari-Garde & Sherman Scenarios ...")
     idf_path = spec["raw_dir"] / spec["idf_raw"]
     with open(idf_path, "r", encoding="utf-8") as f:
@@ -495,6 +507,7 @@ def process_scenarios(city: str, spec: dict) -> dict:
 # ---------------------------------------------------------------------------
 
 def write_processed_manifest(city: str, spec: dict) -> None:
+    """Execute Write Processed Manifest operation and return result."""
     out_dir = spec["out_dir"]
     files = {}
     for p in out_dir.iterdir():
@@ -521,6 +534,7 @@ def write_processed_manifest(city: str, spec: dict) -> None:
 # ---------------------------------------------------------------------------
 
 def main() -> None:
+    """Execute Main operation and return result."""
     parser = argparse.ArgumentParser(description="Transform city datasets for UFNS")
     parser.add_argument("--city", choices=list(CITY_SPECS) + ["all"], default="all")
     args = parser.parse_args()
@@ -536,7 +550,7 @@ def main() -> None:
         print(f"\n>>> TRANSFORMING CITY: {spec['name'].upper()}")
         dem, grid, transform = process_dem(city, spec)
         process_drainage(city, spec, dem, transform, grid)
-        process_roads(city, spec, dem, transform)
+        process_roads(city, spec, dem, transform, grid)
         process_scenarios(city, spec)
         write_processed_manifest(city, spec)
 

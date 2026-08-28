@@ -35,9 +35,8 @@ SEARCH_URL = f"{MOSDAC_BASE_URL}/apios/datasets.json"
 DOWNLOAD_URL = f"{MOSDAC_BASE_URL}/download_api/download"
 LOGOUT_URL = f"{MOSDAC_BASE_URL}/download_api/logout"
 
+# Default TLS context verifies certificate chain and hostname
 SSL_CTX = ssl.create_default_context()
-SSL_CTX.check_hostname = False
-SSL_CTX.verify_mode = ssl.CERT_NONE
 
 MOSDAC_CATALOG = {
     "3SIMG_L2B_HEM": {
@@ -132,8 +131,19 @@ class MOSDACClient:
         password: Optional[str] = None,
         timeout_sec: float = 12.0,
     ) -> None:
-        self.username = username or os.getenv("MOSDAC_USERNAME", "acelabs")
-        self.password = password or os.getenv("MOSDAC_PASSWORD", "Utkarsh@2005")
+        """Execute   Init   operation and return result."""
+        cfg_user, cfg_pass = "", ""
+        cfg_file = Path(__file__).resolve().parents[2] / "data" / "mosdac" / "config.json"
+        if cfg_file.exists():
+            try:
+                cfg_data = json.loads(cfg_file.read_text(encoding="utf-8"))
+                cfg_user = cfg_data.get("user_credentials", {}).get("username/email", "")
+                cfg_pass = cfg_data.get("user_credentials", {}).get("password", "")
+            except Exception:
+                pass
+
+        self.username = username or os.getenv("MOSDAC_USERNAME") or cfg_user or ""
+        self.password = password or os.getenv("MOSDAC_PASSWORD") or cfg_pass or "" 
         self.timeout_sec = timeout_sec
         self.access_token: Optional[str] = None
         self.refresh_token: Optional[str] = None

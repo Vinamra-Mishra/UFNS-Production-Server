@@ -200,6 +200,7 @@ class CompositeGoodnessOfFit:
     composite_loss: float
 
     def to_dict(self) -> dict[str, float | None]:
+        """Execute To Dict operation and return result."""
         return {
             "nse": round(self.nse, 6),
             "kge": round(self.kge, 6),

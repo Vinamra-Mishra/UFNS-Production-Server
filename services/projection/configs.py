@@ -49,6 +49,7 @@ class ProjectionConfigRecord:
     fingerprint: str = ""
 
     def __post_init__(self) -> None:
+        """Execute   Post Init   operation and return result."""
         payload = {
             "config_id": self.config_id,
             "base_scenarios": list(self.base_scenarios),
@@ -75,6 +76,7 @@ class ProjectionConfigRecord:
         object.__setattr__(self, "fingerprint", fp)
 
     def to_dict(self) -> dict[str, Any]:
+        """Execute To Dict operation and return result."""
         return {
             "config_id": self.config_id,
             "display_name": self.display_name,
@@ -234,6 +236,7 @@ PROJECTION_CONFIGS: dict[str, ProjectionConfigRecord] = {
 
 
 def get_projection_config(config_id: str) -> ProjectionConfigRecord:
+    """Retrieve and return projection config."""
     if config_id not in PROJECTION_CONFIGS:
         raise KeyError(config_id)
     return PROJECTION_CONFIGS[config_id]

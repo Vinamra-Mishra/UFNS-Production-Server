@@ -14,27 +14,32 @@ from services.ingestion.timeutil import (
 
 
 def test_naive_datetime_rejected():
+    """Test that naive datetime rejected behaves as expected."""
     with pytest.raises(ValueError):
         ensure_utc(datetime(2026, 8, 21, 0, 0))
 
 
 def test_utc_normalization():
+    """Test that utc normalization behaves as expected."""
     dt = datetime(2026, 8, 21, 5, 30, tzinfo=timezone(timedelta(hours=5, minutes=30)))
     assert ensure_utc(dt) == datetime(2026, 8, 21, 0, 0, tzinfo=timezone.utc)
 
 
 def test_rfc3339_roundtrip():
+    """Test that rfc3339 roundtrip behaves as expected."""
     s = iso_utc(datetime(2026, 8, 21, 0, 0, tzinfo=timezone.utc))
     assert s == "2026-08-21T00:00:00Z"
     assert parse_utc(s) == datetime(2026, 8, 21, 0, 0, tzinfo=timezone.utc)
 
 
 def test_local_display_is_ist():
+    """Test that local display is ist behaves as expected."""
     out = local_display(datetime(2026, 8, 21, 0, 0, tzinfo=timezone.utc))
     assert out == "2026-08-21 05:30 IST"
 
 
 def test_forecast_intervals_half_open_chain():
+    """Test that forecast intervals half open chain behaves as expected."""
     issue = datetime(2026, 8, 21, 0, 0, tzinfo=timezone.utc)
     ivs = forecast_intervals(issue, horizon_minutes=180, step_minutes=15)
     assert len(ivs) == 12
@@ -44,6 +49,7 @@ def test_forecast_intervals_half_open_chain():
 
 
 def test_bad_interval_config():
+    """Test that bad interval config behaves as expected."""
     issue = datetime(2026, 8, 21, 0, 0, tzinfo=timezone.utc)
     with pytest.raises(ValueError):
         forecast_intervals(issue, 180, 7)  # 7 does not divide 180

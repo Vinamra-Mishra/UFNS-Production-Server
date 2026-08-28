@@ -73,6 +73,7 @@ C1_BLOCKED_CAPACITY = full_bore_capacity(C1_DIAMETER / 2, C1_SLOPE, C1_MANNING)
 FIXTURE_SPAN_HOURS = 6.0  # (SYNTHETIC: duration of the fixed SWMM simulation clock)
 
 def _options() -> str:
+    """Execute  Options operation and return result."""
     # 06:00:00 matches FIXTURE_SPAN_HOURS
     return """[OPTIONS]
 FLOW_UNITS           CMS
@@ -90,6 +91,7 @@ ALLOW_PONDING        NO
 
 
 def _storage_st1() -> str:
+    """Execute  Storage St1 operation and return result."""
     return f"""[STORAGE]
 ;;Name  Elev       MaxDepth  InitDepth  Shape    Curve
 ST1     {ST1_INVERT}    5.0       0.0       TABULAR  area_st1
@@ -173,6 +175,7 @@ LINKS ALL
 
 
 def write_fixtures(data_dir: Path) -> dict[str, Path]:
+    """Execute Write Fixtures operation and return result."""
     data_dir.mkdir(parents=True, exist_ok=True)
     out = {
         "clean": data_dir / "drainage_synthetic.inp",

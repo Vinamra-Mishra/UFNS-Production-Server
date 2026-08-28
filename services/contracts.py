@@ -39,6 +39,7 @@ class ProvenanceClass(str, Enum):
 
 
 class QualityFlag(str, Enum):
+    """Qualityflag schema and data model representation."""
     VALIDATED = "VALIDATED"
     ASSUMED_PARAMETER = "ASSUMED_PARAMETER"
     RESAMPLED = "RESAMPLED"
@@ -71,6 +72,7 @@ class DataLineage(BaseModel):
     @field_validator("acquired_at")
     @classmethod
     def _aware_utc(cls, v: datetime) -> datetime:
+        """Execute  Aware Utc operation and return result."""
         if v.tzinfo is None:
             raise ValueError("acquired_at must be timezone-aware")
         return v.astimezone(timezone.utc)
@@ -93,6 +95,7 @@ class GridSpec(BaseModel):
 
     @property
     def n_cells(self) -> int:
+        """Execute N Cells operation and return result."""
         return self.width * self.height
 
 
@@ -117,6 +120,7 @@ class RainfallGrid(BaseModel):
 
     @model_validator(mode="after")
     def _check_interval(self) -> "RainfallGrid":
+        """Execute  Check Interval operation and return result."""
         if self.valid_to <= self.valid_from:
             raise ValueError("valid_to must be strictly after valid_from")
         if self.valid_from.tzinfo is None or self.valid_to.tzinfo is None or self.issue_time.tzinfo is None:
@@ -149,6 +153,7 @@ class RainfallProfile(BaseModel):
     @field_validator("intensities_mmh")
     @classmethod
     def _nonnegative(cls, v: list[float]) -> list[float]:
+        """Execute  Nonnegative operation and return result."""
         import math
         if not all(isinstance(x, (int, float)) for x in v):
             raise ValueError("intensities must be numeric")
@@ -172,6 +177,7 @@ class BlockageConfiguration(BaseModel):
 
 
 class DrainageConfiguration(BaseModel):
+    """Drainageconfiguration schema and data model representation."""
     model_config = ConfigDict(extra="forbid")
 
     network_asset_uri: str
@@ -216,12 +222,14 @@ class ScenarioDefinition(BaseModel):
     @field_validator("issue_time")
     @classmethod
     def _aware_utc(cls, v: datetime) -> datetime:
+        """Execute  Aware Utc operation and return result."""
         if v.tzinfo is None:
             raise ValueError("issue_time must be timezone-aware")
         return v.astimezone(timezone.utc)
 
     @model_validator(mode="after")
     def _check_duration(self) -> "ScenarioDefinition":
+        """Execute  Check Duration operation and return result."""
         n_intervals = self.duration_minutes // self.rainfall_profile.interval_minutes
         if n_intervals < 1:
             raise ValueError("scenario duration must cover at least one rainfall interval")
@@ -281,6 +289,7 @@ class MassBalance(BaseModel):
 
     @model_validator(mode="after")
     def _finite(cls_self) -> "MassBalance":
+        """Execute  Finite operation and return result."""
         import math
 
         for name in type(cls_self).model_fields:
@@ -370,6 +379,7 @@ class FloodSnapshot(BaseModel):
     @field_validator("valid_time")
     @classmethod
     def _aware_utc(cls, v: datetime) -> datetime:
+        """Execute  Aware Utc operation and return result."""
         if v.tzinfo is None:
             raise ValueError("valid_time must be timezone-aware")
         return v.astimezone(timezone.utc)

@@ -27,6 +27,7 @@ class TestVehicleProfiles:
     """Test vehicle profile specifications and speed degradation physics."""
 
     def test_profiles_catalog_completeness(self):
+        """Test that profiles catalog completeness behaves as expected."""
         assert "AMBULANCE" in VEHICLE_PROFILES
         assert "HEAVY_RESCUE" in VEHICLE_PROFILES
         assert "LIGHT_VEHICLE" in VEHICLE_PROFILES
@@ -47,6 +48,7 @@ class TestVehicleProfiles:
         assert ped.max_depth_m == 0.05
 
     def test_speed_degradation_behavior(self):
+        """Test that speed degradation behavior behaves as expected."""
         amb = VEHICLE_PROFILES["AMBULANCE"]
 
         # Dry road
@@ -63,6 +65,7 @@ class TestMultiModalRouting:
     """Test vehicle-specific dynamic shortest path solver."""
 
     def test_dry_condition_routing_all_profiles(self):
+        """Test that dry condition routing all profiles behaves as expected."""
         engine = EvacuationEngine()
         origin = (ORIGIN_X + 20 * CELL_SIZE_M, ORIGIN_Y + 20 * CELL_SIZE_M)
         destination = (ORIGIN_X + 87 * CELL_SIZE_M, ORIGIN_Y + 87 * CELL_SIZE_M)
@@ -76,6 +79,7 @@ class TestMultiModalRouting:
             assert len(res.polyline_utm) >= 2
 
     def test_heavy_rescue_can_traverse_deeper_water_than_light_vehicle(self):
+        """Test that heavy rescue can traverse deeper water than light vehicle behaves as expected."""
         engine = EvacuationEngine()
         # Route crossing the center street corridor (where depth reaches ~0.35m at lead 110 on S4)
         origin = (ORIGIN_X + 67 * CELL_SIZE_M, ORIGIN_Y + 20 * CELL_SIZE_M)
@@ -100,6 +104,7 @@ class TestEvacuationCutoffTimeline:
     """Test dynamic calculation of evacuation cutoff windows."""
 
     def test_evacuation_cutoff_calculation(self):
+        """Test that evacuation cutoff calculation behaves as expected."""
         engine = EvacuationEngine()
         origin = (ORIGIN_X + 67 * CELL_SIZE_M, ORIGIN_Y + 20 * CELL_SIZE_M)
         destination = (ORIGIN_X + 67 * CELL_SIZE_M, ORIGIN_Y + 113 * CELL_SIZE_M)
@@ -117,6 +122,7 @@ class TestNearestShelterDiscovery:
     """Test nearest safe civic shelter solver."""
 
     def test_find_nearest_shelter_dry_and_flooded(self):
+        """Test that find nearest shelter dry and flooded behaves as expected."""
         engine = EvacuationEngine()
         origin = (ORIGIN_X + 30 * CELL_SIZE_M, ORIGIN_Y + 30 * CELL_SIZE_M)
         amb = get_profile("AMBULANCE")
@@ -132,6 +138,7 @@ class TestEvacuationAPIEndpoints:
     """Test FastAPI /api/v1/evacuation endpoints."""
 
     def test_profiles_endpoint(self):
+        """Test that profiles endpoint behaves as expected."""
         client = TestClient(app)
         res = client.get("/api/v1/evacuation/profiles")
         assert res.status_code == 200
@@ -142,6 +149,7 @@ class TestEvacuationAPIEndpoints:
         assert "HEAVY_RESCUE" in ids
 
     def test_shelters_endpoint(self):
+        """Test that shelters endpoint behaves as expected."""
         client = TestClient(app)
         res = client.get("/api/v1/evacuation/shelters")
         assert res.status_code == 200
@@ -149,6 +157,7 @@ class TestEvacuationAPIEndpoints:
         assert data["count"] >= 4
 
     def test_route_endpoint(self):
+        """Test that route endpoint behaves as expected."""
         client = TestClient(app)
         payload = {
             "origin": [ORIGIN_X + 20 * CELL_SIZE_M, ORIGIN_Y + 20 * CELL_SIZE_M],
@@ -164,6 +173,7 @@ class TestEvacuationAPIEndpoints:
         assert data["travel_time_minutes"] > 0.0
 
     def test_cutoff_endpoint(self):
+        """Test that cutoff endpoint behaves as expected."""
         client = TestClient(app)
         payload = {
             "origin": [ORIGIN_X + 67 * CELL_SIZE_M, ORIGIN_Y + 20 * CELL_SIZE_M],
@@ -177,6 +187,7 @@ class TestEvacuationAPIEndpoints:
         assert "timeline" in data
 
     def test_nearest_shelter_endpoint(self):
+        """Test that nearest shelter endpoint behaves as expected."""
         client = TestClient(app)
         payload = {
             "origin": [ORIGIN_X + 47 * CELL_SIZE_M, ORIGIN_Y + 47 * CELL_SIZE_M],

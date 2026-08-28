@@ -28,6 +28,7 @@ router = APIRouter(prefix="/api/v1/evacuation", tags=["Evacuation & Safe Routing
 # ---------------------------------------------------------------------------
 
 class EvacuationRouteRequest(BaseModel):
+    """Evacuationrouterequest schema and data model representation."""
     origin: tuple[float, float] = Field(..., description="Origin coordinates (x, y) in EPSG:32645 UTM")
     destination: tuple[float, float] = Field(..., description="Destination coordinates (x, y) in EPSG:32645 UTM")
     vehicle_profile: str = Field(default="LIGHT_VEHICLE", description="AMBULANCE, HEAVY_RESCUE, LIGHT_VEHICLE, or PEDESTRIAN")
@@ -36,6 +37,7 @@ class EvacuationRouteRequest(BaseModel):
 
 
 class EvacuationCutoffRequest(BaseModel):
+    """Evacuationcutoffrequest schema and data model representation."""
     origin: tuple[float, float] = Field(..., description="Origin coordinates (x, y) in EPSG:32645 UTM")
     destination: tuple[float, float] = Field(..., description="Destination coordinates (x, y) in EPSG:32645 UTM")
     vehicle_profile: str = Field(default="LIGHT_VEHICLE", description="AMBULANCE, HEAVY_RESCUE, LIGHT_VEHICLE, or PEDESTRIAN")
@@ -43,6 +45,7 @@ class EvacuationCutoffRequest(BaseModel):
 
 
 class NearestShelterRequest(BaseModel):
+    """Nearestshelterrequest schema and data model representation."""
     origin: tuple[float, float] = Field(..., description="Origin coordinates (x, y) in EPSG:32645 UTM")
     vehicle_profile: str = Field(default="LIGHT_VEHICLE", description="AMBULANCE, HEAVY_RESCUE, LIGHT_VEHICLE, or PEDESTRIAN")
     scenario_id: str = Field(default="S4", description="Scenario identifier (S1..S4)")

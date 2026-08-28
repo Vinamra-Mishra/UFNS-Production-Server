@@ -173,9 +173,9 @@ def generate_diagnostics(
 
         # Peak depth: find lead with max depth
         peak_lead = max(r.m4_result.depth_arrays.keys(),
-                        key=lambda l: float(r.m4_result.depth_arrays[l].max()))
+                        key=lambda lead: float(r.m4_result.depth_arrays[lead].max()))
         peak_arr = r.m4_result.depth_arrays[peak_lead]
-        vmax_depth = max((float(r.m4_result.depth_arrays[l].max()) for l in r.m4_result.depth_arrays))
+        vmax_depth = max((float(r.m4_result.depth_arrays[lead].max()) for lead in r.m4_result.depth_arrays))
         vmax_depth = max(vmax_depth, 0.05)
 
         depth_png = sdir / f"{sid}_peak_depth_t{peak_lead:03d}.png"
@@ -195,9 +195,9 @@ def generate_diagnostics(
 
         # Depth timeline (peak depth + flooded area)
         leads = sorted(r.m4_result.depth_arrays.keys())
-        peak_series = [float(r.m4_result.depth_arrays[l].max()) for l in leads]
-        area_series = [float((r.m4_result.depth_arrays[l] > sc.extent_threshold_m).sum())
-                       * 900.0 / 1e6 for l in leads]
+        peak_series = [float(r.m4_result.depth_arrays[lead].max()) for lead in leads]
+        area_series = [float((r.m4_result.depth_arrays[lead] > sc.extent_threshold_m).sum())
+                       * 900.0 / 1e6 for lead in leads]
         timeline_png = sdir / f"{sid}_depth_timeline.png"
         _line_chart(timeline_png,
                     {"peak_depth": peak_series, "flooded_area": area_series},
@@ -224,9 +224,9 @@ def generate_diagnostics(
     s3 = results["S3"]
     s4 = results["S4"]
     peak_lead_s3 = max(s3.m4_result.depth_arrays.keys(),
-                       key=lambda l: float(s3.m4_result.depth_arrays[l].max()))
+                       key=lambda lead: float(s3.m4_result.depth_arrays[lead].max()))
     peak_lead_s4 = max(s4.m4_result.depth_arrays.keys(),
-                       key=lambda l: float(s4.m4_result.depth_arrays[l].max()))
+                       key=lambda lead: float(s4.m4_result.depth_arrays[lead].max()))
     peak_lead = max(peak_lead_s3, peak_lead_s4)
     arr3 = s3.m4_result.depth_arrays.get(peak_lead, s3.m4_result.depth_arrays[max(s3.m4_result.depth_arrays)])
     arr4 = s4.m4_result.depth_arrays.get(peak_lead, s4.m4_result.depth_arrays[max(s4.m4_result.depth_arrays)])
@@ -256,8 +256,8 @@ def generate_diagnostics(
     # Flooded area difference timeline
     leads = sorted(s3.m4_result.depth_arrays.keys())
     thresh = M5_SCENARIOS["S3"].extent_threshold_m
-    area_s3 = [float((s3.m4_result.depth_arrays[l] > thresh).sum()) * 900.0 / 1e6 for l in leads]
-    area_s4 = [float((s4.m4_result.depth_arrays[l] > thresh).sum()) * 900.0 / 1e6 for l in leads]
+    area_s3 = [float((s3.m4_result.depth_arrays[lead] > thresh).sum()) * 900.0 / 1e6 for lead in leads]
+    area_s4 = [float((s4.m4_result.depth_arrays[lead] > thresh).sum()) * 900.0 / 1e6 for lead in leads]
     area_diff_png = cdir / "flooded_area_difference.png"
     _line_chart(area_diff_png,
                 {"S3 flooded area": area_s3, "S4 flooded area": area_s4},

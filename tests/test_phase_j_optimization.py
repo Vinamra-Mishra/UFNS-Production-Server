@@ -27,11 +27,13 @@ class TestCostModelsAndLossValuation:
     """Test civil engineering cost models and avoided loss valuation formulas."""
 
     def test_calculate_intervention_cost_zero(self):
+        """Test that calculate intervention cost zero behaves as expected."""
         res = calculate_intervention_cost(0.0, 0.0, 0.0, False)
         assert res["total_capex_inr"] == 0.0
         assert res["total_capex_crores"] == 0.0
 
     def test_calculate_intervention_cost_with_assets(self):
+        """Test that calculate intervention cost with assets behaves as expected."""
         res = calculate_intervention_cost(
             lid_permeable_fraction=0.10,
             detention_basin_m3=50000.0,
@@ -48,6 +50,7 @@ class TestCostModelsAndLossValuation:
         assert res["total_capex_crores"] > 0
 
     def test_calculate_damage_valuation(self):
+        """Test that calculate damage valuation behaves as expected."""
         res = calculate_damage_valuation(
             area_reduction_m2=100000.0,
             volume_reduction_m3=50000.0,
@@ -64,6 +67,7 @@ class TestParetoOptimizer:
     """Test multi-objective Pareto solver across budget limits."""
 
     def test_solve_low_budget_selects_tactical(self):
+        """Test that solve low budget selects tactical behaves as expected."""
         optimizer = InterventionOptimizer()
         res = optimizer.solve(scenario_id="S4", lead_minutes=110, budget_crores=2.0)
 
@@ -78,6 +82,7 @@ class TestParetoOptimizer:
         assert tactical["economic_benefit"]["total_avoided_losses_inr"] > 0.0
 
     def test_solve_high_budget_selects_higher_tier(self):
+        """Test that solve high budget selects higher tier behaves as expected."""
         optimizer = InterventionOptimizer()
         res = optimizer.solve(scenario_id="S4", lead_minutes=110, budget_crores=20.0)
 
@@ -93,6 +98,7 @@ class TestOptimizationAPIEndpoints:
     """Test FastAPI /api/v1/optimization endpoints."""
 
     def test_rates_endpoint(self):
+        """Test that rates endpoint behaves as expected."""
         client = TestClient(app)
         res = client.get("/api/v1/optimization/rates")
         assert res.status_code == 200
@@ -101,6 +107,7 @@ class TestOptimizationAPIEndpoints:
         assert "damage_valuation_rates_inr" in data
 
     def test_solve_endpoint(self):
+        """Test that solve endpoint behaves as expected."""
         client = TestClient(app)
         payload = {
             "scenario_id": "S4",

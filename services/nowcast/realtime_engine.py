@@ -23,6 +23,7 @@ from services.ingestion.live_feeds import (
 
 @dataclass
 class RealtimeEnvironmentalState:
+    """Realtimeenvironmentalstate schema and data model representation."""
     active_city: str
     timestamp: str
     weather: dict[str, Any]
@@ -40,7 +41,9 @@ class RealtimeEnvironmentalState:
     provenance_labels: list[str] = field(default_factory=list)
 
 class RealtimeFusionEngine:
+    """Realtimefusionengine schema and data model representation."""
     def __init__(self) -> None:
+        """Execute   Init   operation and return result."""
         self.owm_client = OpenWeatherMapClient()
         self.nasa_client = NASAClient()
         self.imd_client = GLOBAL_IMD_CLIENT
@@ -53,6 +56,7 @@ class RealtimeFusionEngine:
         self.iot_client = OpenSenseMapClient()
 
     def get_realtime_state(self, city_id: str = 'MUMBAI', lat: float = 19.0760, lon: float = 72.8777) -> RealtimeEnvironmentalState:
+        """Retrieve and return realtime state."""
         now = datetime.now(timezone.utc).isoformat()
         weather = self.owm_client.get_weather(lat, lon)
         nasa_sat = self.nasa_client.get_satellite_telemetry(lat, lon)

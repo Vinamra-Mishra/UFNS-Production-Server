@@ -70,6 +70,7 @@ class CouplingError(RuntimeError):
 
 @dataclass
 class ExchangeStep:
+    """Exchangestep schema and data model representation."""
     t_s: float
     S2D_vol: float      # m3, positive = surface -> drainage
     D2S_vol: float      # m3, positive = drainage -> surface
@@ -81,6 +82,7 @@ class ExchangeStep:
 
 @dataclass
 class CoupledLedger:
+    """Coupledledger schema and data model representation."""
     rain_m3: float = 0.0
     ext_in_m3: float = 0.0
     losses_m3: float = 0.0
@@ -107,12 +109,14 @@ class CoupledLedger:
 
     @property
     def residual_surface(self) -> float:
+        """Execute Residual Surface operation and return result."""
         # rain - losses - surf_out - S2D + (D2S + flood_export) - dS_s
         return (self.rain_m3 - self.losses_m3 - self.surf_out_m3 - self.S2D_m3
                 + self.D2S_m3 + self.flood_export_m3 - (self.S_s1 - self.S_s0))
 
     @property
     def residual_drainage(self) -> float:
+        """Execute Residual Drainage operation and return result."""
         # By construction ~0: dS_d is computed from SWMM's own per-stride
         # conservation identity (engine-exact; verified via flow_routing_error
         # and the fill-drain probe). The readback cross-check is reported
@@ -122,16 +126,19 @@ class CoupledLedger:
 
     @property
     def residual_total(self) -> float:
+        """Execute Residual Total operation and return result."""
         # rain + ext_in - losses - surf_out - outfall - dS_s - dS_d
         # (flooding export and exchange are internal transfers and cancel)
         return (self.rain_m3 + self.ext_in_m3 - self.losses_m3 - self.surf_out_m3
                 - self.outfall_m3 - (self.S_s1 - self.S_s0) - (self.S_d1 - self.S_d0))
 
     def relative_total(self) -> Optional[float]:
+        """Execute Relative Total operation and return result."""
         scale = max(abs(self.rain_m3) + abs(self.ext_in_m3), 1e-6)
         return abs(self.residual_total) / scale
 
     def status(self) -> str:
+        """Execute Status operation and return result."""
         rel = self.relative_total()
         if rel is None or not math.isfinite(rel):
             return "fail"
@@ -163,6 +170,7 @@ class CoupledSpike:
         cd: float = CD_ORIFICE,
         ao: float = AO_ORIFICE,
     ) -> None:
+        """Execute   Init   operation and return result."""
         if dt_c < 1 or not isinstance(dt_c, int):
             raise CouplingError(f"coupling timestep must be a positive integer number of seconds, got {dt_c}")
         self.surface = surface
@@ -184,15 +192,18 @@ class CoupledSpike:
 
     # ------------------------------------------------------------------
     def _head_at(self, cell: tuple[int, int]) -> float:
+        """Execute  Head At operation and return result."""
         return float(self.surface.dem[cell] + self.surface.depth[cell])
 
     def _add_depth(self, cell: tuple[int, int], depth_m: float) -> None:
+        """Execute  Add Depth operation and return result."""
         h = self.surface.depth
         h[cell] += depth_m
         if h[cell] < -1e-12:
             raise CouplingError(f"negative depth {h[cell]:.3e} m at cell {cell} after exchange")
 
     def _remove_depth(self, cell: tuple[int, int], depth_m: float) -> None:
+        """Execute  Remove Depth operation and return result."""
         h = self.surface.depth
         if h[cell] < depth_m - 1e-12:
             raise CouplingError(f"removing {depth_m:.3e} m from cell {cell} with only {h[cell]:.3e} m available")
@@ -200,6 +211,7 @@ class CoupledSpike:
 
     # ------------------------------------------------------------------
     def run(self, minutes: float, rain_mmh: float = 0.0, external_inflow_m3s: float = 0.0, ext_node: str = "ST1") -> None:
+        """Execute Run operation and return result."""
         from pyswmm import Links, Nodes, Simulation
 
         n_steps = int(round(minutes * 60 / self.dt_c))

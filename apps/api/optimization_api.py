@@ -19,6 +19,7 @@ router = APIRouter(prefix="/api/v1/optimization", tags=["Intervention Optimizati
 
 
 class SolveOptimizationRequest(BaseModel):
+    """Solveoptimizationrequest schema and data model representation."""
     scenario_id: str = Field(default="S4", description="Scenario identifier (S1..S4)")
     lead_minutes: int = Field(default=110, ge=0, le=180, description="Lead time in minutes")
     budget_crores: float = Field(default=10.0, ge=0.9, le=100.0, description="Municipal budget limit in Crores INR (min 0.9 Cr)")

@@ -12,6 +12,7 @@ from services.contracts import DataLineage, ProvenanceClass, QualityFlag
 
 
 def sha256_file(path: Path, chunk: int = 1 << 20) -> str:
+    """Execute Sha256 File operation and return result."""
     h = hashlib.sha256()
     with open(path, "rb") as f:
         while True:
@@ -23,6 +24,7 @@ def sha256_file(path: Path, chunk: int = 1 << 20) -> str:
 
 
 def sha256_bytes(data: bytes) -> str:
+    """Execute Sha256 Bytes operation and return result."""
     return hashlib.sha256(data).hexdigest()
 
 
@@ -40,6 +42,7 @@ def make_lineage(
     processing_steps: Optional[list[str]] = None,
     acquired_at: Optional[datetime] = None,
 ) -> DataLineage:
+    """Execute Make Lineage operation and return result."""
     digest = sha256_file(content) if isinstance(content, Path) else sha256_bytes(content)
     return DataLineage(
         dataset_id=dataset_id,
@@ -61,6 +64,7 @@ class Manifest:
     """Versioned pilot/demo bundle manifest (DATA_SOURCES §10)."""
 
     def __init__(self, pilot_id: str, base_dir: Optional[Path] = None) -> None:
+        """Execute   Init   operation and return result."""
         self.pilot_id = pilot_id
         self.base_dir = base_dir
         self.assets: list[dict[str, Any]] = []
@@ -72,10 +76,13 @@ class Manifest:
         lineage: DataLineage,
         extra: Optional[dict[str, Any]] = None,
     ) -> None:
-        if self.base_dir is not None and self.base_dir in path.parents:
-            uri = str(path.relative_to(self.base_dir))
-        else:
-            uri = str(path)
+        """Execute Add Asset operation and return result."""
+        uri = str(path)
+        if self.base_dir is not None:
+            try:
+                uri = str(Path(path).resolve().relative_to(Path(self.base_dir).resolve()))
+            except ValueError:
+                uri = str(path)
         base = {
             "role": role,
             "asset_uri": uri,
@@ -93,6 +100,7 @@ class Manifest:
         self.assets.append(base)
 
     def write(self, out_path: Path, extra: Optional[dict[str, Any]] = None, created_at: Optional[datetime] = None) -> Path:
+        """Execute Write operation and return result."""
         from services.ingestion.timeutil import iso_utc
 
         doc = {

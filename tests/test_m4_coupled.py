@@ -37,16 +37,19 @@ VENT_GROUND = None  # resolved from the DEM at fixture time
 
 @pytest.fixture(scope="module")
 def dem() -> np.ndarray:
+    """Execute Dem operation and return result."""
     return synthetic_dem()
 
 
 @pytest.fixture(scope="module")
 def cfgs(dem):
+    """Execute Cfgs operation and return result."""
     return m4_scenario_configs(dem, ISSUE)
 
 
 @pytest.fixture(scope="module")
 def m4_results(dem, cfgs) -> dict[str, "M4RunResult"]:
+    """Execute M4 Results operation and return result."""
     out = {}
     for key in ("zero", "uniform", "spatial", "heavy", "heavy_blocked"):
         out[key] = CoupledFloodModel(cfgs[key]).run()
@@ -55,6 +58,7 @@ def m4_results(dem, cfgs) -> dict[str, "M4RunResult"]:
 
 @pytest.fixture(scope="module")
 def vent_ground(dem) -> float:
+    """Execute Vent Ground operation and return result."""
     return float(dem[FIXTURE_VENT_CELL])
 
 
@@ -63,6 +67,7 @@ def vent_ground(dem) -> float:
 # ---------------------------------------------------------------------------
 
 def test_m4_01_zero_rainfall(m4_results):
+    """Test that m4 01 zero rainfall behaves as expected."""
     res = m4_results["zero"]
     led = res.ledger
     final = res.depth_arrays[180]
@@ -80,6 +85,7 @@ def test_m4_01_zero_rainfall(m4_results):
 # ---------------------------------------------------------------------------
 
 def test_m4_02_uniform_rainfall(m4_results):
+    """Test that m4 02 uniform rainfall behaves as expected."""
     res = m4_results["uniform"]
     led = res.ledger
     assert res.peak_depth_m > 0.01
@@ -96,6 +102,7 @@ def test_m4_02_uniform_rainfall(m4_results):
 # ---------------------------------------------------------------------------
 
 def test_m4_03_spatial_rainfall(m4_results):
+    """Test that m4 03 spatial rainfall behaves as expected."""
     res = m4_results["spatial"]
     d15 = res.depth_arrays[15]
     # the convective cell starts in the west and advects east: at lead 15 the
@@ -113,6 +120,7 @@ def test_m4_03_spatial_rainfall(m4_results):
 # ---------------------------------------------------------------------------
 
 def test_m4_04_heavy_rainfall(m4_results):
+    """Test that m4 04 heavy rainfall behaves as expected."""
     heavy = m4_results["heavy"]
     uniform = m4_results["uniform"]
     # increased rainfall => increased runoff/flood potential (measured, not predicted)
@@ -127,6 +135,7 @@ def test_m4_04_heavy_rainfall(m4_results):
 # ---------------------------------------------------------------------------
 
 def test_m4_05_blockage(m4_results, vent_ground):
+    """Test that m4 05 blockage behaves as expected."""
     clean = m4_results["heavy"]
     blocked = m4_results["heavy_blocked"]
     lc, lb = clean.ledger, blocked.ledger
@@ -154,6 +163,7 @@ def test_m4_05_blockage(m4_results, vent_ground):
 # ---------------------------------------------------------------------------
 
 def test_m4_06_mass_conservation(m4_results):
+    """Test that m4 06 mass conservation behaves as expected."""
     res = m4_results["heavy"]
     led = res.ledger
     mb = res.mass_balance
@@ -179,6 +189,7 @@ def test_m4_06_mass_conservation(m4_results):
 # ---------------------------------------------------------------------------
 
 def test_m4_07_non_negative_depth(m4_results):
+    """Test that m4 07 non negative depth behaves as expected."""
     for res in m4_results.values():
         for lead, arr in res.depth_arrays.items():
             assert np.all(np.isfinite(arr)), f"{res.config.scenario_id} lead {lead}: non-finite"
@@ -190,6 +201,7 @@ def test_m4_07_non_negative_depth(m4_results):
 # ---------------------------------------------------------------------------
 
 def test_m4_08_snapshots(m4_results, cfgs):
+    """Test that m4 08 snapshots behaves as expected."""
     res = m4_results["heavy"]
     leads = [s.lead_minutes for s in res.snapshots]
     assert leads == list(range(0, 181, 5))
@@ -210,6 +222,7 @@ def test_m4_08_snapshots(m4_results, cfgs):
 # ---------------------------------------------------------------------------
 
 def test_m4_09_scenario_isolation(m4_results, cfgs):
+    """Test that m4 09 scenario isolation behaves as expected."""
     zero1 = m4_results["zero"]
     _ = CoupledFloodModel(cfgs["heavy"]).run()   # interleave another scenario
     zero2 = CoupledFloodModel(cfgs["zero"]).run()
@@ -224,6 +237,7 @@ def test_m4_09_scenario_isolation(m4_results, cfgs):
 # ---------------------------------------------------------------------------
 
 def test_m4_10_timestep_halving(dem, cfgs):
+    """Test that m4 10 timestep halving behaves as expected."""
     base = cfgs["heavy"]
     coarse_cfg = RunConfig(
         run_id="m4_halving_10", scenario_id="heavy", issue_time=ISSUE, dem=dem,
@@ -248,6 +262,7 @@ def test_m4_10_timestep_halving(dem, cfgs):
 # ---------------------------------------------------------------------------
 
 def test_m4_11_drainage_sensitivity(dem, cfgs):
+    """Test that m4 11 drainage sensitivity behaves as expected."""
     base = cfgs["heavy"]
     stronger = RunConfig(
         run_id="m4_sens_ao", scenario_id="heavy", issue_time=ISSUE, dem=dem,
@@ -268,6 +283,7 @@ def test_m4_11_drainage_sensitivity(dem, cfgs):
 # ---------------------------------------------------------------------------
 
 def test_m4_12_output_provenance(dem, tmp_path):
+    """Test that m4 12 output provenance behaves as expected."""
     import rasterio
 
     from services.contracts import SimulationRun
@@ -296,8 +312,8 @@ def test_m4_12_output_provenance(dem, tmp_path):
     # fingerprints: stable and sensitive
     f1 = res.simulation_run.configuration_fingerprint
     assert f1 == cfg.fingerprint()
-    cfg2 = cfg
-    cfg2.ao_per_inlet = 0.009
+    from dataclasses import replace
+    cfg2 = replace(cfg, ao_per_inlet=0.009)
     assert cfg2.fingerprint() != f1
     assert "dem_sha256" in res.simulation_run.input_manifest
     assert res.simulation_run.model_versions["engine"].startswith("m4")
@@ -308,6 +324,7 @@ def test_m4_12_output_provenance(dem, tmp_path):
 # ---------------------------------------------------------------------------
 
 def test_m4_13_runtime(m4_results):
+    """Test that m4 13 runtime behaves as expected."""
     res = m4_results["heavy"]
     simulated_hours = 3.0
     assert res.wall_seconds > 0 and res.wall_seconds < 600, "coupled run must finish well under the gate"
@@ -323,6 +340,7 @@ def test_m4_13_runtime(m4_results):
 # ---------------------------------------------------------------------------
 
 def test_m4_14_invalid_configuration(dem, cfgs, tmp_path):
+    """Test that m4 14 invalid configuration behaves as expected."""
     good = cfgs["heavy"]
     good_inp = tmp_path / "good.inp"
     good_inp.write_text(exact_fixture_inp(False, datum_offset_m=10.0))
@@ -372,6 +390,7 @@ def test_m4_14_invalid_configuration(dem, cfgs, tmp_path):
 # ---------------------------------------------------------------------------
 
 def test_m4_15_reproducibility(cfgs):
+    """Test that m4 15 reproducibility behaves as expected."""
     a = CoupledFloodModel(cfgs["heavy"]).run()
     b = CoupledFloodModel(cfgs["heavy"]).run()
     assert np.array_equal(a.depth_arrays[180], b.depth_arrays[180])
@@ -389,6 +408,7 @@ def test_m4_15_reproducibility(cfgs):
 # ---------------------------------------------------------------------------
 
 def test_engine_matches_m3_spike_semantics(tmp_path):
+    """Test that engine matches m3 spike semantics behaves as expected."""
     fx = write_fixtures(tmp_path)
     spike_surface = build_spike_surface()
     dem = spike_surface.dem

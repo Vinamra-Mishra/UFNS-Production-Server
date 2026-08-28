@@ -62,6 +62,7 @@ from services.simulation.engine import (
 )
 from services.simulation.engine import (
     CoupledFloodModel,
+    LossSpec,
     M4RunResult,
     RainfallSpec,
     RunConfig,
@@ -104,6 +105,7 @@ class PilotROI:
         return (ox, oy)
 
     def to_dict(self) -> dict[str, Any]:
+        """Execute To Dict operation and return result."""
         return {
             "grid": self.grid.model_dump(mode="json"),
             "pilot_grid_id": self.pilot_grid.grid_id,
@@ -147,6 +149,7 @@ def select_real_pilot_roi(
 
 
 def _build_roi(terrain: RealTerrain, row0: int, col0: int, window: int) -> PilotROI:
+    """Execute  Build Roi operation and return result."""
     elev = terrain.elevation[row0:row0 + window, col0:col0 + window].copy()
     pilot = terrain.grid
     ox, oy = (
@@ -190,6 +193,7 @@ class RealCellMapping:
     basis: str
 
     def to_dict(self) -> dict[str, Any]:
+        """Execute To Dict operation and return result."""
         return {
             "basin_cell": list(self.basin_cell),
             "basin_elevation_m": round(self.basin_elevation_m, 4),
@@ -333,6 +337,7 @@ class RealPilotSimulationResult:
 
     @property
     def capability_state(self) -> PilotCapabilityState:
+        """Execute Capability State operation and return result."""
         return PilotCapabilityState(
             real_terrain_available=True,
             real_geometry_available=True,
@@ -346,6 +351,7 @@ class RealPilotSimulationResult:
 
     @property
     def mass_ledger(self) -> dict[str, Any]:
+        """Execute Mass Ledger operation and return result."""
         led = self.m4_result.ledger
         return {
             "rainfall_input_m3": led.rain_m3,
@@ -364,6 +370,7 @@ class RealPilotSimulationResult:
         }
 
     def to_dict(self) -> dict[str, Any]:
+        """Execute To Dict operation and return result."""
         mb = self.mass_balance
         led = self.m4_result.ledger
         return {
@@ -378,21 +385,7 @@ class RealPilotSimulationResult:
             "engine_version": self.m4_result.simulation_run.model_versions.get("engine", ""),
             "adapter_version": M11_VERSION,
             "mass_balance": mb.model_dump(mode="json"),
-            "mass_ledger": {
-                "rainfall_input_m3": led.rain_m3,
-                "external_inflow_m3": led.ext_in_m3,
-                "infiltration_loss_m3": led.losses_m3,
-                "microstore_final_m3": led.microstore_final_m3,
-                "surface_boundary_outflow_m3": led.surf_out_m3,
-                "drainage_outfall_m3": led.outfall_m3,
-                "S2D_m3": led.S2D_m3,
-                "D2S_m3": led.D2S_m3,
-                "swmm_flood_export_m3": led.flood_export_m3,
-                "combined_residual_m3": led.residual_total,
-                "relative_residual": led.relative_total(),
-                "swmm_flow_routing_error_pct": led.flow_routing_error_pct,
-                "status": led.status(),
-            },
+            "mass_ledger": self.mass_ledger,
             "hydraulic_contract": self.hydraulic_contract.to_dict(),
             "provenance": self.provenance.to_dict(),
             "rainfall_status": self.rainfall_status,
@@ -417,6 +410,7 @@ class M11SimulationAdapter:
     """Compose real terrain + (synthetic hydraulics for MODE B) → engine."""
 
     def __init__(self, terrain: RealTerrain) -> None:
+        """Execute   Init   operation and return result."""
         self.terrain = terrain
 
     # -- MODE A: real terrain + real drainage geometry (NO simulation) -------
@@ -494,9 +488,7 @@ class M11SimulationAdapter:
                 pattern="uniform",
                 seed=20260823,
             ),
-            losses=__import__(
-                "services.simulation.engine", fromlist=["LossSpec"]
-            ).LossSpec(),
+            losses=LossSpec(),
             mannings_n=0.03,
             alpha=0.5,
             theta=0.8,
@@ -583,6 +575,7 @@ class M11SimulationAdapter:
 # ---------------------------------------------------------------------------#
 
 def _default_mode_a_contract() -> HydraulicReadinessContract:
+    """Execute  Default Mode A Contract operation and return result."""
     from services.pilot.contract import build_real_drainage_contract
 
     return build_real_drainage_contract("WB_AMRUT_Stormwater_drains")
@@ -602,12 +595,14 @@ def _pick_snapshot_interval(duration_minutes: int) -> int:
 
 
 def _default_mode_b_contract() -> HydraulicReadinessContract:
+    """Execute  Default Mode B Contract operation and return result."""
     from services.pilot.contract import build_synthetic_fixture_contract
 
     return build_synthetic_fixture_contract("M4_synthetic_exact_exchange_fixture")
 
 
 def _rainfall_fingerprint(rainfall_mmh: float, duration_minutes: int) -> str:
+    """Execute  Rainfall Fingerprint operation and return result."""
     payload = json.dumps(
         {
             "profile": "uniform_synthetic_provisional",
@@ -629,6 +624,7 @@ def _build_provenance(
     gridspec: GridSpec,
     rainfall_fingerprint: str,
 ) -> RealPilotProvenance:
+    """Execute  Build Provenance operation and return result."""
     grid_fp = gridspec_fingerprint(gridspec.model_dump(mode="json"))
     pilot_fp = gridspec_fingerprint(pilot_grid_spec().model_dump(mode="json"))
     return RealPilotProvenance(
@@ -659,4 +655,5 @@ def dem_array_fingerprint(dem: np.ndarray) -> str:
 
 
 def inp_fingerprint(path: Path) -> str:
+    """Execute Inp Fingerprint operation and return result."""
     return sha256_file(path)

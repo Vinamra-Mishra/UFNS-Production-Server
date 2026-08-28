@@ -27,7 +27,9 @@ ABS_SCALE_M3 = 1e-6  # absolute-volume check for near-dry runs
 
 
 class MassLedger:
+    """Massledger schema and data model representation."""
     def __init__(self) -> None:
+        """Execute   Init   operation and return result."""
         self.rainfall_input_m3 = 0.0
         self.external_inflow_m3 = 0.0
         self.infiltration_loss_m3 = 0.0
@@ -44,18 +46,23 @@ class MassLedger:
 
     # -- accumulation -------------------------------------------------------
     def add_rainfall(self, volume_m3: float) -> None:
+        """Execute Add Rainfall operation and return result."""
         self.rainfall_input_m3 += volume_m3
 
     def add_external_inflow(self, volume_m3: float) -> None:
+        """Execute Add External Inflow operation and return result."""
         self.external_inflow_m3 += volume_m3
 
     def add_infiltration(self, volume_m3: float) -> None:
+        """Execute Add Infiltration operation and return result."""
         self.infiltration_loss_m3 += volume_m3
 
     def add_surface_boundary_outflow(self, volume_m3: float) -> None:
+        """Execute Add Surface Boundary Outflow operation and return result."""
         self.surface_boundary_outflow_m3 += volume_m3
 
     def add_drainage_outfall(self, volume_m3: float) -> None:
+        """Execute Add Drainage Outfall operation and return result."""
         self.drainage_outfall_m3 += volume_m3
 
     def record_exchange(self, surface_to_drain_m3: float, drain_to_surface_m3: float) -> None:
@@ -65,6 +72,7 @@ class MassLedger:
 
     # -- closing ------------------------------------------------------------
     def _residual(self) -> float:
+        """Execute  Residual operation and return result."""
         inputs = (
             self.rainfall_input_m3
             + self.external_inflow_m3
@@ -82,6 +90,7 @@ class MassLedger:
         return inputs - outputs
 
     def close(self, interval_start: datetime, interval_end: datetime) -> MassBalance:
+        """Execute Close operation and return result."""
         residual = self._residual()
         if any(not math.isfinite(x) for x in [residual]):
             status = "fail"

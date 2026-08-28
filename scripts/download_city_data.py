@@ -71,6 +71,7 @@ CITIES: dict[str, dict] = {
 
 
 def _sha256(path: Path) -> str:
+    """Execute  Sha256 operation and return result."""
     h = hashlib.sha256()
     with open(path, "rb") as f:
         for chunk in iter(lambda: f.read(65536), b""):
@@ -79,6 +80,7 @@ def _sha256(path: Path) -> str:
 
 
 def _save(data: bytes, path: Path) -> None:
+    """Execute  Save operation and return result."""
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_bytes(data)
     size_kb = len(data) / 1024
@@ -87,6 +89,7 @@ def _save(data: bytes, path: Path) -> None:
 
 
 def download_dem(city: str, cfg: dict) -> bool:
+    """Execute Download Dem operation and return result."""
     bbox = cfg["bbox"]
     out_path = cfg["out_dir"] / cfg["dem_file"]
     if out_path.exists():
@@ -119,6 +122,7 @@ def download_dem(city: str, cfg: dict) -> bool:
 
 
 def _overpass_drain_query(bbox: dict) -> str:
+    """Execute  Overpass Drain Query operation and return result."""
     s, w, n, e = bbox["south"], bbox["west"], bbox["north"], bbox["east"]
     tags = ["drain","ditch","canal","stream","river","culvert"]
     lines = "\n".join(f'  way["waterway"="{t}"]({s},{w},{n},{e});' for t in tags)
@@ -126,6 +130,7 @@ def _overpass_drain_query(bbox: dict) -> str:
 
 
 def _overpass_road_query(bbox: dict) -> str:
+    """Execute  Overpass Road Query operation and return result."""
     s, w, n, e = bbox["south"], bbox["west"], bbox["north"], bbox["east"]
     rtypes = ["motorway","trunk","primary","secondary","tertiary","residential",
               "service","unclassified","living_street","motorway_link","trunk_link",
@@ -135,6 +140,7 @@ def _overpass_road_query(bbox: dict) -> str:
 
 
 def _osm_to_geojson(osm_json: dict) -> dict:
+    """Execute  Osm To Geojson operation and return result."""
     nodes: dict[int, tuple] = {
         e["id"]: (e["lon"], e["lat"])
         for e in osm_json.get("elements", []) if e["type"] == "node"
@@ -196,6 +202,7 @@ def _run_overpass(query: str, label: str, retries: int = 3) -> dict | None:
 
 
 def download_drains(city: str, cfg: dict) -> bool:
+    """Execute Download Drains operation and return result."""
     out_path = cfg["out_dir"] / cfg["drains_file"]
     if out_path.exists():
         print(f"  [DRN] {city}: already exists -> {out_path.relative_to(REPO_ROOT)}")
@@ -211,6 +218,7 @@ def download_drains(city: str, cfg: dict) -> bool:
 
 
 def download_roads(city: str, cfg: dict) -> bool:
+    """Execute Download Roads operation and return result."""
     out_path = cfg["out_dir"] / cfg["roads_file"]
     if out_path.exists():
         print(f"  [RDS] {city}: already exists -> {out_path.relative_to(REPO_ROOT)}")
@@ -226,6 +234,7 @@ def download_roads(city: str, cfg: dict) -> bool:
 
 
 def write_manifest(city: str, cfg: dict) -> None:
+    """Execute Write Manifest operation and return result."""
     manifest = {"city": city, "bbox": cfg["bbox"], "epsg": cfg["epsg"], "files": {}}
     for key in ("dem_file", "drains_file", "roads_file"):
         p = cfg["out_dir"] / cfg[key]
@@ -237,6 +246,7 @@ def write_manifest(city: str, cfg: dict) -> None:
 
 
 def main() -> None:
+    """Execute Main operation and return result."""
     parser = argparse.ArgumentParser()
     parser.add_argument("--city", choices=list(CITIES) + ["all"], default="all")
     parser.add_argument("--only", choices=["dem", "drains", "roads", "all"], default="all")

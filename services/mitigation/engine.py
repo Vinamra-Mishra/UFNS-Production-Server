@@ -25,6 +25,7 @@ from services.scenarios.artifacts import VALID_SCENARIO_IDS, get_depth_grid
 # ---------------------------------------------------------------------------
 
 class InterventionConfig(BaseModel):
+    """Interventionconfig schema and data model representation."""
     scenario_id: str = Field(default="S4", description="Base scenario identifier (S1..S4)")
     lead_minutes: int = Field(default=110, ge=0, le=180, description="Lead time snapshot to mitigate")
     lid_permeable_fraction: float = Field(default=0.0, ge=0.0, le=0.50, description="Permeable pavement / green roof LID coverage (0.0 to 0.50)")
@@ -39,6 +40,7 @@ class InterventionConfig(BaseModel):
 
 @dataclass
 class MitigationResult:
+    """Mitigationresult schema and data model representation."""
     scenario_id: str
     lead_minutes: int
     config: dict[str, Any]
@@ -52,6 +54,7 @@ class MitigationResult:
     mitigated_depth_grid: list[float] = field(default_factory=list)
 
     def to_dict(self, include_raster: bool = False) -> dict[str, Any]:
+        """Execute To Dict operation and return result."""
         out = {
             "scenario_id": self.scenario_id,
             "lead_minutes": self.lead_minutes,
@@ -77,6 +80,7 @@ class InterventionScenarioEngine:
     """Executes dynamic counterfactual flood mitigation modeling without altering baseline data."""
 
     def __init__(self) -> None:
+        """Execute   Init   operation and return result."""
         self.cell_area_m2 = float(CELL_SIZE_M * CELL_SIZE_M)  # 30m x 30m = 900 m²
 
     def simulate(self, config: InterventionConfig, return_raster: bool = False) -> MitigationResult:

@@ -78,6 +78,7 @@ class CalibrationResult:
     created_at_epoch: float = field(default_factory=time.time)
 
     def to_dict(self) -> dict[str, Any]:
+        """Execute To Dict operation and return result."""
         return {
             "calibration_id": self.calibration_id,
             "scenario_id": self.scenario_id,
@@ -123,6 +124,7 @@ class CalibrationResult:
         )
 
     def fingerprint(self) -> str:
+        """Execute Fingerprint operation and return result."""
         serialized = json.dumps(self.to_dict(), sort_keys=True)
         return hashlib.sha256(serialized.encode("utf-8")).hexdigest()[:16]
 
@@ -187,6 +189,7 @@ class DrainageCalibrationEngine:
         tolerance: float = 1e-4,
         definitions: Optional[dict[str, ParameterDefinition]] = None,
     ) -> None:
+        """Execute   Init   operation and return result."""
         self.strategy = strategy
         self.target_param_names = list(target_param_names or ["pipe_manning_n", "blockage_ratio"])
         self.optimizer = ParameterOptimizer(
@@ -220,6 +223,7 @@ class DrainageCalibrationEngine:
         dt_min = float(target_times[1] - target_times[0]) if len(target_times) > 1 else 1.0
 
         def objective_function(candidate: CalibrationParameterSet) -> float:
+            """Execute Objective Function operation and return result."""
             try:
                 t_sim, q_sim = run_forward_calibration_simulation(
                     params=candidate,

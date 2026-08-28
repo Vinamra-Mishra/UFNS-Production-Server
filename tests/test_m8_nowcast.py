@@ -44,6 +44,7 @@ class TestProviderContract:
     """M8-01: Every provider implements the RainfallProvider interface."""
 
     def test_synthetic_provider_has_required_methods(self):
+        """Test that synthetic provider has required methods behaves as expected."""
         from services.nowcast.providers import RainfallProvider
         from services.nowcast.providers.synthetic_provider import (
             SyntheticRainfallProvider,
@@ -59,6 +60,7 @@ class TestProviderContract:
         assert hasattr(p, "source_name")
 
     def test_fixture_provider_has_required_methods(self):
+        """Test that fixture provider has required methods behaves as expected."""
         from services.nowcast.providers import RainfallProvider
         from services.nowcast.providers.fixture_provider import FixtureRainfallProvider
         p = FixtureRainfallProvider(profile_intensities_mmh=[10.0, 20.0, 30.0])
@@ -69,6 +71,7 @@ class TestProviderContract:
         assert hasattr(p, "metadata")
 
     def test_provider_fetch_returns_observation(self):
+        """Test that provider fetch returns observation behaves as expected."""
         from services.nowcast.providers import RainfallObservation
         from services.nowcast.providers.synthetic_provider import (
             SyntheticRainfallProvider,
@@ -82,6 +85,7 @@ class TestProviderContract:
         assert obs.height == 134
 
     def test_provider_fetch_at_time(self):
+        """Test that provider fetch at time behaves as expected."""
         from services.nowcast.providers.synthetic_provider import (
             SyntheticRainfallProvider,
         )
@@ -100,6 +104,7 @@ class TestSourceIdentification:
     """M8-02: Every observation/response carries explicit source_type."""
 
     def test_synthetic_source_type(self):
+        """Test that synthetic source type behaves as expected."""
         from services.nowcast.providers import SourceType
         from services.nowcast.providers.synthetic_provider import (
             SyntheticRainfallProvider,
@@ -110,6 +115,7 @@ class TestSourceIdentification:
         assert obs.source_type == SourceType.SYNTHETIC
 
     def test_fixture_source_type(self):
+        """Test that fixture source type behaves as expected."""
         from services.nowcast.providers import SourceType
         from services.nowcast.providers.fixture_provider import FixtureRainfallProvider
         p = FixtureRainfallProvider(profile_intensities_mmh=[10.0, 20.0])
@@ -118,6 +124,7 @@ class TestSourceIdentification:
         assert obs.source_type == SourceType.FIXTURE
 
     def test_source_type_in_observation_dict(self):
+        """Test that source type in observation dict behaves as expected."""
         from services.nowcast.providers.synthetic_provider import (
             SyntheticRainfallProvider,
         )
@@ -128,6 +135,7 @@ class TestSourceIdentification:
         assert d["source_type"] in ("REAL", "SYNTHETIC", "FIXTURE")
 
     def test_source_type_in_nowcast_record(self):
+        """Test that source type in nowcast record behaves as expected."""
         from services.nowcast.engine import PersistenceNowcast
         from services.nowcast.providers.synthetic_provider import (
             SyntheticRainfallProvider,
@@ -148,6 +156,7 @@ class TestTimestampValidation:
     """M8-03: All timestamps are timezone-aware UTC."""
 
     def test_observation_time_is_aware(self):
+        """Test that observation time is aware behaves as expected."""
         from services.nowcast.providers.synthetic_provider import (
             SyntheticRainfallProvider,
         )
@@ -158,6 +167,7 @@ class TestTimestampValidation:
         assert obs.valid_to.tzinfo is not None
 
     def test_naive_observation_time_rejected(self):
+        """Test that naive observation time rejected behaves as expected."""
         from services.nowcast.providers import RainfallObservation, SourceType
         with pytest.raises(ValueError, match="timezone-aware"):
             RainfallObservation(
@@ -175,6 +185,7 @@ class TestTimestampValidation:
             )
 
     def test_nowcast_record_times_are_aware(self):
+        """Test that nowcast record times are aware behaves as expected."""
         from services.nowcast.engine import PersistenceNowcast
         from services.nowcast.providers.synthetic_provider import (
             SyntheticRainfallProvider,
@@ -196,6 +207,7 @@ class TestUnits:
     """M8-04: All rates are in mm/h."""
 
     def test_observation_units_mmh(self):
+        """Test that observation units mmh behaves as expected."""
         from services.nowcast.providers.synthetic_provider import (
             SyntheticRainfallProvider,
         )
@@ -204,6 +216,7 @@ class TestUnits:
         assert obs.units == "mm/h"
 
     def test_non_mmh_units_rejected(self):
+        """Test that non mmh units rejected behaves as expected."""
         from services.nowcast.providers import RainfallObservation, SourceType
         with pytest.raises(ValueError, match="mm/h"):
             RainfallObservation(
@@ -222,6 +235,7 @@ class TestUnits:
             )
 
     def test_nowcast_record_units_mmh(self):
+        """Test that nowcast record units mmh behaves as expected."""
         from services.nowcast.engine import PersistenceNowcast
         from services.nowcast.providers.synthetic_provider import (
             SyntheticRainfallProvider,
@@ -242,6 +256,7 @@ class TestStaleDataDetection:
     """M8-05: Observations older than the freshness threshold are flagged STALE."""
 
     def test_fresh_observation(self):
+        """Test that fresh observation behaves as expected."""
         from services.nowcast.providers.synthetic_provider import (
             SyntheticRainfallProvider,
         )
@@ -257,6 +272,7 @@ class TestStaleDataDetection:
         assert result.freshness == DataFreshness.FRESH
 
     def test_stale_observation(self):
+        """Test that stale observation behaves as expected."""
         from services.nowcast.providers.synthetic_provider import (
             SyntheticRainfallProvider,
         )
@@ -272,6 +288,7 @@ class TestStaleDataDetection:
         assert result.freshness == DataFreshness.STALE
 
     def test_very_old_observation_is_missing(self):
+        """Test that very old observation is missing behaves as expected."""
         from services.nowcast.providers.synthetic_provider import (
             SyntheticRainfallProvider,
         )
@@ -295,6 +312,7 @@ class TestMissingDataHandling:
     """M8-06: Missing observations are reported, never silently replaced."""
 
     def test_none_observation_is_missing(self):
+        """Test that none observation is missing behaves as expected."""
         from services.nowcast.quality import DataFreshness, validate_observation
         result = validate_observation(None)
         assert result.freshness == DataFreshness.MISSING
@@ -333,6 +351,7 @@ class TestPersistenceDeterminism:
     """M8-07: Persistence baseline is deterministic (same input → same output)."""
 
     def test_persistence_produces_identical_fields(self):
+        """Test that persistence produces identical fields behaves as expected."""
         from services.nowcast.engine import PersistenceNowcast
         from services.nowcast.providers.synthetic_provider import (
             SyntheticRainfallProvider,
@@ -345,10 +364,11 @@ class TestPersistenceDeterminism:
         recs1 = engine.generate(obs1)
         recs2 = engine.generate(obs2)
         assert len(recs1) == len(recs2)
-        for r1, r2 in zip(recs1, recs2):
+        for r1, r2 in zip(recs1, recs2, strict=True):
             np.testing.assert_array_equal(r1.rate_mmh, r2.rate_mmh)
 
     def test_persistence_forecast_equals_observation(self):
+        """Test that persistence forecast equals observation behaves as expected."""
         from services.nowcast.engine import PersistenceNowcast
         from services.nowcast.providers.synthetic_provider import (
             SyntheticRainfallProvider,
@@ -369,6 +389,7 @@ class TestNowcastContract:
     """M8-08: NowcastRecord has the required typed fields."""
 
     def test_nowcast_record_has_required_fields(self):
+        """Test that nowcast record has required fields behaves as expected."""
         from services.nowcast.nowcast_record import NowcastRecord
         rec = NowcastRecord(
             initialization_time=datetime(2026, 8, 22, 12, 0, tzinfo=timezone.utc),
@@ -385,6 +406,7 @@ class TestNowcastContract:
         assert rec.uncertainty == "NOT PROVIDED"
 
     def test_nowcast_record_to_dict(self):
+        """Test that nowcast record to dict behaves as expected."""
         from services.nowcast.nowcast_record import NowcastRecord
         rec = NowcastRecord(
             initialization_time=datetime(2026, 8, 22, 12, 0, tzinfo=timezone.utc),
@@ -405,6 +427,7 @@ class TestNowcastContract:
         assert d["uncertainty"] == "NOT PROVIDED"
 
     def test_nowcast_record_negative_rate_rejected(self):
+        """Test that nowcast record negative rate rejected behaves as expected."""
         from services.nowcast.nowcast_record import NowcastRecord
         with pytest.raises(ValueError, match="negative"):
             NowcastRecord(
@@ -415,6 +438,7 @@ class TestNowcastContract:
             )
 
     def test_nowcast_record_negative_lead_rejected(self):
+        """Test that nowcast record negative lead rejected behaves as expected."""
         from services.nowcast.nowcast_record import NowcastRecord
         with pytest.raises(ValueError, match="non-negative"):
             NowcastRecord(
@@ -433,6 +457,7 @@ class TestFingerprintDeterminism:
     """M8-09: Fingerprints are deterministic and change with inputs."""
 
     def test_observation_fingerprint_deterministic(self):
+        """Test that observation fingerprint deterministic behaves as expected."""
         from services.nowcast.providers.synthetic_provider import (
             SyntheticRainfallProvider,
         )
@@ -443,6 +468,7 @@ class TestFingerprintDeterminism:
         assert obs1.fingerprint() == obs2.fingerprint()
 
     def test_observation_fingerprint_changes_with_time(self):
+        """Test that observation fingerprint changes with time behaves as expected."""
         from services.nowcast.providers.synthetic_provider import (
             SyntheticRainfallProvider,
         )
@@ -454,6 +480,7 @@ class TestFingerprintDeterminism:
         assert obs1.observation_time != obs2.observation_time
 
     def test_nowcast_fingerprint_deterministic(self):
+        """Test that nowcast fingerprint deterministic behaves as expected."""
         from services.nowcast.engine import PersistenceNowcast
         from services.nowcast.providers.synthetic_provider import (
             SyntheticRainfallProvider,
@@ -464,7 +491,7 @@ class TestFingerprintDeterminism:
         engine = PersistenceNowcast()
         recs1 = engine.generate(obs)
         recs2 = engine.generate(obs)
-        for r1, r2 in zip(recs1, recs2):
+        for r1, r2 in zip(recs1, recs2, strict=True):
             assert r1.fingerprint == r2.fingerprint
 
 
@@ -476,12 +503,14 @@ class TestAPIRainfallLatest:
     """M8-10: The /api/v1/rainfall/latest endpoint works correctly."""
 
     def test_rainfall_latest_returns_200(self):
+        """Test that rainfall latest returns 200 behaves as expected."""
         from apps.api.app import app
         client = TestClient(app)
         r = client.get("/api/v1/rainfall/latest")
         assert r.status_code == 200
 
     def test_rainfall_latest_has_source_type(self):
+        """Test that rainfall latest has source type behaves as expected."""
         from apps.api.app import app
         client = TestClient(app)
         r = client.get("/api/v1/rainfall/latest")
@@ -490,6 +519,7 @@ class TestAPIRainfallLatest:
         assert data["source_type"] in ("REAL", "SYNTHETIC", "FIXTURE")
 
     def test_rainfall_latest_has_quality(self):
+        """Test that rainfall latest has quality behaves as expected."""
         from apps.api.app import app
         client = TestClient(app)
         r = client.get("/api/v1/rainfall/latest")
@@ -498,6 +528,7 @@ class TestAPIRainfallLatest:
         assert "freshness" in data["quality"]
 
     def test_rainfall_latest_has_observation(self):
+        """Test that rainfall latest has observation behaves as expected."""
         from apps.api.app import app
         client = TestClient(app)
         r = client.get("/api/v1/rainfall/latest")
@@ -515,12 +546,14 @@ class TestAPINowcastLatest:
     """M8-11: The /api/v1/nowcast/latest endpoint works correctly."""
 
     def test_nowcast_latest_returns_200(self):
+        """Test that nowcast latest returns 200 behaves as expected."""
         from apps.api.app import app
         client = TestClient(app)
         r = client.get("/api/v1/nowcast/latest")
         assert r.status_code == 200
 
     def test_nowcast_latest_has_method(self):
+        """Test that nowcast latest has method behaves as expected."""
         from apps.api.app import app
         client = TestClient(app)
         r = client.get("/api/v1/nowcast/latest")
@@ -529,6 +562,7 @@ class TestAPINowcastLatest:
         assert data["method"] == "NOWCAST-PERSISTENCE-V1"
 
     def test_nowcast_latest_has_lead_times(self):
+        """Test that nowcast latest has lead times behaves as expected."""
         from apps.api.app import app
         client = TestClient(app)
         r = client.get("/api/v1/nowcast/latest")
@@ -540,6 +574,7 @@ class TestAPINowcastLatest:
         assert 60 in leads
 
     def test_nowcast_each_record_has_source(self):
+        """Test that nowcast each record has source behaves as expected."""
         from apps.api.app import app
         client = TestClient(app)
         r = client.get("/api/v1/nowcast/latest")
@@ -558,18 +593,21 @@ class TestInvalidRequests:
     """M8-12: Invalid requests are rejected with structured errors."""
 
     def test_invalid_lead_returns_400(self):
+        """Test that invalid lead returns 400 behaves as expected."""
         from apps.api.app import app
         client = TestClient(app)
         r = client.get("/api/v1/nowcast/9999")
         assert r.status_code == 400
 
     def test_invalid_provider_returns_404(self):
+        """Test that invalid provider returns 404 behaves as expected."""
         from apps.api.app import app
         client = TestClient(app)
         r = client.get("/api/v1/nowcast/providers/nonexistent")
         assert r.status_code == 404
 
     def test_invalid_timestamp_returns_400(self):
+        """Test that invalid timestamp returns 400 behaves as expected."""
         from apps.api.app import app
         client = TestClient(app)
         r = client.get("/api/v1/rainfall/observation?time=not-a-date")
@@ -584,6 +622,7 @@ class TestProvenance:
     """M8-13: Every response carries provenance."""
 
     def test_nowcast_status_has_labels(self):
+        """Test that nowcast status has labels behaves as expected."""
         from apps.api.app import app
         client = TestClient(app)
         r = client.get("/api/v1/nowcast/status")
@@ -592,6 +631,7 @@ class TestProvenance:
         assert len(data["labels"]) > 0
 
     def test_providers_have_source_type(self):
+        """Test that providers have source type behaves as expected."""
         from apps.api.app import app
         client = TestClient(app)
         r = client.get("/api/v1/nowcast/providers")
@@ -601,6 +641,7 @@ class TestProvenance:
             assert p["source_type"] in ("REAL", "SYNTHETIC", "FIXTURE")
 
     def test_nowcast_has_verification_status(self):
+        """Test that nowcast has verification status behaves as expected."""
         from apps.api.app import app
         client = TestClient(app)
         r = client.get("/api/v1/nowcast/verification")
@@ -616,6 +657,7 @@ class TestCaching:
     """M8-14: Cache works correctly."""
 
     def test_cache_can_store_and_retrieve(self):
+        """Test that cache can store and retrieve behaves as expected."""
         from services.nowcast.cache import NowcastCache
         from services.nowcast.providers.synthetic_provider import (
             SyntheticRainfallProvider,
@@ -629,6 +671,7 @@ class TestCaching:
         np.testing.assert_array_equal(retrieved.rate_mmh, obs.rate_mmh)
 
     def test_cache_stats(self):
+        """Test that cache stats behaves as expected."""
         from services.nowcast.cache import NowcastCache
         cache = NowcastCache()
         stats = cache.stats()
@@ -656,6 +699,7 @@ class TestForecastObservationSeparation:
         assert "nowcast" in nc
 
     def test_nowcast_records_have_lead_time(self):
+        """Test that nowcast records have lead time behaves as expected."""
         from apps.api.app import app
         client = TestClient(app)
         r = client.get("/api/v1/nowcast/latest")
@@ -674,6 +718,7 @@ class TestDashboardStatus:
     """M8-16: Health endpoint includes M8 status."""
 
     def test_health_includes_nowcast_version(self):
+        """Test that health includes nowcast version behaves as expected."""
         from apps.api.app import app
         client = TestClient(app)
         r = client.get("/health")
@@ -682,6 +727,7 @@ class TestDashboardStatus:
         assert "rainfall_provider_type" in data
 
     def test_health_shows_synthetic(self):
+        """Test that health shows synthetic behaves as expected."""
         from apps.api.app import app
         client = TestClient(app)
         r = client.get("/health")
@@ -689,6 +735,7 @@ class TestDashboardStatus:
         assert data["rainfall_provider_type"] == "SYNTHETIC"
 
     def test_version_includes_maturity(self):
+        """Test that version includes maturity behaves as expected."""
         from apps.api.app import app
         client = TestClient(app)
         r = client.get("/api/v1/version")
@@ -704,6 +751,7 @@ class TestSyntheticProviderLabelling:
     """M8-17: Synthetic data is NEVER presented as real."""
 
     def test_synthetic_api_never_says_real(self):
+        """Test that synthetic api never says real behaves as expected."""
         from apps.api.app import app
         client = TestClient(app)
         r = client.get("/api/v1/rainfall/latest")
@@ -712,6 +760,7 @@ class TestSyntheticProviderLabelling:
         assert data["source_type"] == "SYNTHETIC"
 
     def test_nowcast_api_never_says_real(self):
+        """Test that nowcast api never says real behaves as expected."""
         from apps.api.app import app
         client = TestClient(app)
         r = client.get("/api/v1/nowcast/latest")
@@ -721,6 +770,7 @@ class TestSyntheticProviderLabelling:
             assert nc["source_type"] in ("SYNTHETIC", "FIXTURE")
 
     def test_labels_include_synthetic(self):
+        """Test that labels include synthetic behaves as expected."""
         from apps.api.app import app
         client = TestClient(app)
         for endpoint in ["/api/v1/rainfall/status", "/api/v1/nowcast/latest",
@@ -741,6 +791,7 @@ class TestProviderFailure:
     """M8-18: Provider failures are handled gracefully."""
 
     def test_missing_provider_returns_404(self):
+        """Test that missing provider returns 404 behaves as expected."""
         from apps.api.app import app
         client = TestClient(app)
         r = client.get("/api/v1/nowcast/providers/does-not-exist")
@@ -749,6 +800,7 @@ class TestProviderFailure:
         assert "error" in data
 
     def test_provider_health_always_available(self):
+        """Test that provider health always available behaves as expected."""
         from apps.api.app import app
         client = TestClient(app)
         r = client.get("/api/v1/nowcast/providers")
@@ -765,6 +817,7 @@ class TestRegressionM1M7:
     """M8-19: M8 does not break M1-M7 functionality."""
 
     def test_scenarios_still_work(self):
+        """Test that scenarios still work behaves as expected."""
         from apps.api.app import app
         client = TestClient(app)
         r = client.get("/api/v1/scenarios")
@@ -773,18 +826,21 @@ class TestRegressionM1M7:
         assert data["count"] == 4
 
     def test_frame_still_works(self):
+        """Test that frame still works behaves as expected."""
         from apps.api.app import app
         client = TestClient(app)
         r = client.get("/api/v1/scenarios/S4/frame?lead=110")
         assert r.status_code == 200
 
     def test_roads_still_work(self):
+        """Test that roads still work behaves as expected."""
         from apps.api.app import app
         client = TestClient(app)
         r = client.get("/api/v1/roads")
         assert r.status_code == 200
 
     def test_policies_still_work(self):
+        """Test that policies still work behaves as expected."""
         from apps.api.app import app
         client = TestClient(app)
         r = client.get("/api/v1/policies")
@@ -793,6 +849,7 @@ class TestRegressionM1M7:
         assert data["policies"][0]["policy_id"] == "B13-DEMO-V1"
 
     def test_comparison_still_works(self):
+        """Test that comparison still works behaves as expected."""
         from apps.api.app import app
         client = TestClient(app)
         r = client.get("/api/v1/comparison/s3s4")
@@ -807,6 +864,7 @@ class TestVerificationBehaviour:
     """M8-20: Verification is NOT_EVALUATED until real data exists."""
 
     def test_verification_endpoint_not_evaluated(self):
+        """Test that verification endpoint not evaluated behaves as expected."""
         from apps.api.app import app
         client = TestClient(app)
         r = client.get("/api/v1/nowcast/verification")
@@ -814,6 +872,7 @@ class TestVerificationBehaviour:
         assert data["verification"]["status"] == "NOT_EVALUATED"
 
     def test_no_fake_skill_scores(self):
+        """Test that no fake skill scores behaves as expected."""
         from apps.api.app import app
         client = TestClient(app)
         r = client.get("/api/v1/nowcast/verification")
@@ -823,6 +882,7 @@ class TestVerificationBehaviour:
         assert data["verification"]["n_samples"] == 0
 
     def test_nowcast_status_includes_verification(self):
+        """Test that nowcast status includes verification behaves as expected."""
         from apps.api.app import app
         client = TestClient(app)
         r = client.get("/api/v1/nowcast/status")
@@ -839,17 +899,20 @@ class TestNowcastConfig:
     """Additional configuration tests."""
 
     def test_default_config_lead_times(self):
+        """Test that default config lead times behaves as expected."""
         from services.nowcast.engine import NowcastConfig
         config = NowcastConfig()
         assert config.lead_times_minutes == (0, 15, 30, 45, 60)
         assert config.max_lead_minutes == 60
 
     def test_config_rejects_invalid_lead(self):
+        """Test that config rejects invalid lead behaves as expected."""
         from services.nowcast.engine import NowcastConfig
         with pytest.raises(ValueError, match="outside"):
             NowcastConfig(lead_times_minutes=(0, 120), max_lead_minutes=60)
 
     def test_generate_for_specific_lead(self):
+        """Test that generate for specific lead behaves as expected."""
         from services.nowcast.engine import PersistenceNowcast
         from services.nowcast.providers.synthetic_provider import (
             SyntheticRainfallProvider,
@@ -862,6 +925,7 @@ class TestNowcastConfig:
         assert rec.lead_minutes == 30
 
     def test_generate_for_invalid_lead_returns_none(self):
+        """Test that generate for invalid lead returns none behaves as expected."""
         from services.nowcast.engine import PersistenceNowcast
         from services.nowcast.providers.synthetic_provider import (
             SyntheticRainfallProvider,
@@ -877,6 +941,7 @@ class TestVerificationMetrics:
     """Additional verification metric tests."""
 
     def test_mae_computation(self):
+        """Test that mae computation behaves as expected."""
         from services.nowcast.verification import compute_mae
         f = np.array([10.0, 20.0, 30.0])
         o = np.array([12.0, 18.0, 32.0])
@@ -884,6 +949,7 @@ class TestVerificationMetrics:
         assert abs(mae - 2.0) < 1e-10
 
     def test_rmse_computation(self):
+        """Test that rmse computation behaves as expected."""
         from services.nowcast.verification import compute_rmse
         f = np.array([10.0, 20.0, 30.0])
         o = np.array([10.0, 20.0, 30.0])
@@ -891,6 +957,7 @@ class TestVerificationMetrics:
         assert abs(rmse) < 1e-10
 
     def test_bias_computation(self):
+        """Test that bias computation behaves as expected."""
         from services.nowcast.verification import compute_bias
         f = np.array([10.0, 20.0])
         o = np.array([8.0, 18.0])
@@ -898,6 +965,7 @@ class TestVerificationMetrics:
         assert abs(bias - 2.0) < 1e-10
 
     def test_csi_perfect_forecast(self):
+        """Test that csi perfect forecast behaves as expected."""
         from services.nowcast.verification import compute_csi
         f = np.array([0.0, 5.0, 10.0, 0.0])
         o = np.array([0.0, 5.0, 10.0, 0.0])
@@ -905,6 +973,7 @@ class TestVerificationMetrics:
         assert abs(csi - 1.0) < 1e-10
 
     def test_verification_pair(self):
+        """Test that verification pair behaves as expected."""
         from services.nowcast.verification import VerificationStatus, verify_pair
         f = np.full((10, 10), 15.0)
         o = np.full((10, 10), 15.0)
@@ -913,6 +982,7 @@ class TestVerificationMetrics:
         assert result.metrics["mae_mmh"] < 1e-10
 
     def test_shape_mismatch_returns_insufficient(self):
+        """Test that shape mismatch returns insufficient behaves as expected."""
         from services.nowcast.verification import VerificationStatus, verify_pair
         f = np.full((10, 10), 15.0)
         o = np.full((20, 20), 15.0)
@@ -924,6 +994,7 @@ class TestFixtureProviderSequence:
     """Fixture provider sequence generation."""
 
     def test_fetch_sequence(self):
+        """Test that fetch sequence behaves as expected."""
         from services.nowcast.providers.fixture_provider import FixtureRainfallProvider
         p = FixtureRainfallProvider(profile_intensities_mmh=[10.0, 20.0, 30.0, 40.0])
         seq = p.fetch_sequence(0, 4)
@@ -932,6 +1003,7 @@ class TestFixtureProviderSequence:
             assert obs.source_type.value == "FIXTURE"
 
     def test_fixture_deterministic(self):
+        """Test that fixture deterministic behaves as expected."""
         from services.nowcast.providers.fixture_provider import FixtureRainfallProvider
         p1 = FixtureRainfallProvider(profile_intensities_mmh=[10.0, 20.0], seed=42)
         p2 = FixtureRainfallProvider(profile_intensities_mmh=[10.0, 20.0], seed=42)
@@ -944,6 +1016,7 @@ class TestAPINowcastAtLead:
     """API nowcast at specific lead time."""
 
     def test_nowcast_lead_0(self):
+        """Test that nowcast lead 0 behaves as expected."""
         from apps.api.app import app
         client = TestClient(app)
         r = client.get("/api/v1/nowcast/0")
@@ -953,6 +1026,7 @@ class TestAPINowcastAtLead:
         assert data["nowcast"]["lead_minutes"] == 0
 
     def test_nowcast_lead_60(self):
+        """Test that nowcast lead 60 behaves as expected."""
         from apps.api.app import app
         client = TestClient(app)
         r = client.get("/api/v1/nowcast/60")
@@ -961,6 +1035,7 @@ class TestAPINowcastAtLead:
         assert data["lead_minutes"] == 60
 
     def test_nowcast_lead_has_values(self):
+        """Test that nowcast lead has values behaves as expected."""
         from apps.api.app import app
         client = TestClient(app)
         r = client.get("/api/v1/nowcast/0")
@@ -969,6 +1044,7 @@ class TestAPINowcastAtLead:
         assert len(data["nowcast"]["values"]) == 134 * 134
 
     def test_nowcast_cache_stats(self):
+        """Test that nowcast cache stats behaves as expected."""
         from apps.api.app import app
         client = TestClient(app)
         r = client.get("/api/v1/nowcast/cache")
@@ -985,6 +1061,7 @@ class TestRainfallObservationValidation:
     """Direct validation tests for RainfallObservation.__post_init__."""
 
     def _valid_kwargs(self, **overrides):
+        """Execute  Valid Kwargs operation and return result."""
         from services.nowcast.providers import SourceType
         kwargs = {
             "observation_time": datetime(2026, 8, 22, 12, 0, tzinfo=timezone.utc),
@@ -1003,16 +1080,19 @@ class TestRainfallObservationValidation:
         return kwargs
 
     def test_ndim_mismatch_rejected(self):
+        """Test that ndim mismatch rejected behaves as expected."""
         from services.nowcast.providers import RainfallObservation
         with pytest.raises(ValueError, match="2-D"):
             RainfallObservation(**self._valid_kwargs(rate_mmh=np.zeros(134, dtype=np.float32)))
 
     def test_shape_mismatch_rejected(self):
+        """Test that shape mismatch rejected behaves as expected."""
         from services.nowcast.providers import RainfallObservation
         with pytest.raises(ValueError, match="shape"):
             RainfallObservation(**self._valid_kwargs(rate_mmh=np.zeros((10, 10), dtype=np.float32)))
 
     def test_nan_rejected(self):
+        """Test that nan rejected behaves as expected."""
         from services.nowcast.providers import RainfallObservation
         rate = np.zeros((134, 134), dtype=np.float32)
         rate[0, 0] = np.nan
@@ -1020,6 +1100,7 @@ class TestRainfallObservationValidation:
             RainfallObservation(**self._valid_kwargs(rate_mmh=rate))
 
     def test_inf_rejected(self):
+        """Test that inf rejected behaves as expected."""
         from services.nowcast.providers import RainfallObservation
         rate = np.zeros((134, 134), dtype=np.float32)
         rate[0, 0] = np.inf
@@ -1027,6 +1108,7 @@ class TestRainfallObservationValidation:
             RainfallObservation(**self._valid_kwargs(rate_mmh=rate))
 
     def test_negative_rate_rejected(self):
+        """Test that negative rate rejected behaves as expected."""
         from services.nowcast.providers import RainfallObservation
         rate = np.zeros((134, 134), dtype=np.float32)
         rate[0, 0] = -1.0
@@ -1034,6 +1116,7 @@ class TestRainfallObservationValidation:
             RainfallObservation(**self._valid_kwargs(rate_mmh=rate))
 
     def test_valid_to_before_valid_from_rejected(self):
+        """Test that valid to before valid from rejected behaves as expected."""
         from services.nowcast.providers import RainfallObservation
         with pytest.raises(ValueError, match="valid_to"):
             RainfallObservation(**self._valid_kwargs(
@@ -1042,22 +1125,26 @@ class TestRainfallObservationValidation:
             ))
 
     def test_valid_to_equal_valid_from_rejected(self):
+        """Test that valid to equal valid from rejected behaves as expected."""
         from services.nowcast.providers import RainfallObservation
         same = datetime(2026, 8, 22, 12, 0, tzinfo=timezone.utc)
         with pytest.raises(ValueError, match="valid_to"):
             RainfallObservation(**self._valid_kwargs(valid_from=same, valid_to=same))
 
     def test_naive_valid_from_rejected(self):
+        """Test that naive valid from rejected behaves as expected."""
         from services.nowcast.providers import RainfallObservation
         with pytest.raises(ValueError, match="valid_from"):
             RainfallObservation(**self._valid_kwargs(valid_from=datetime(2026, 8, 22, 12, 0)))  # noqa: DTZ001
 
     def test_naive_valid_to_rejected(self):
+        """Test that naive valid to rejected behaves as expected."""
         from services.nowcast.providers import RainfallObservation
         with pytest.raises(ValueError, match="valid_to"):
             RainfallObservation(**self._valid_kwargs(valid_to=datetime(2026, 8, 22, 12, 15)))  # noqa: DTZ001
 
     def test_to_dict_schema(self):
+        """Test that to dict schema behaves as expected."""
         from services.nowcast.providers import RainfallObservation
         obs = RainfallObservation(**self._valid_kwargs())
         d = obs.to_dict()
@@ -1072,6 +1159,7 @@ class TestRainfallObservationValidation:
         assert "values" not in d
 
     def test_fingerprint_changes_with_rate(self):
+        """Test that fingerprint changes with rate behaves as expected."""
         from services.nowcast.providers import RainfallObservation
         obs1 = RainfallObservation(**self._valid_kwargs())
         rate2 = np.full((134, 134), 5.0, dtype=np.float32)
@@ -1079,6 +1167,7 @@ class TestRainfallObservationValidation:
         assert obs1.fingerprint() != obs2.fingerprint()
 
     def test_fingerprint_stable_for_identical_inputs(self):
+        """Test that fingerprint stable for identical inputs behaves as expected."""
         from services.nowcast.providers import RainfallObservation
         obs1 = RainfallObservation(**self._valid_kwargs())
         obs2 = RainfallObservation(**self._valid_kwargs())
@@ -1093,6 +1182,7 @@ class TestProviderHealthDict:
     """ProviderHealth.to_dict() must expose full provenance."""
 
     def test_provider_health_to_dict_after_fetch(self):
+        """Test that provider health to dict after fetch behaves as expected."""
         from services.nowcast.providers.synthetic_provider import (
             SyntheticRainfallProvider,
         )
@@ -1105,6 +1195,7 @@ class TestProviderHealthDict:
         assert d["last_observation_time"] is not None
 
     def test_provider_health_before_fetch_has_no_last_observation(self):
+        """Test that provider health before fetch has no last observation behaves as expected."""
         from services.nowcast.providers.synthetic_provider import (
             SyntheticRainfallProvider,
         )
@@ -1113,6 +1204,7 @@ class TestProviderHealthDict:
         assert d["last_observation_time"] is None
 
     def test_fixture_provider_health_and_metadata(self):
+        """Test that fixture provider health and metadata behaves as expected."""
         from services.nowcast.providers.fixture_provider import FixtureRainfallProvider
         p = FixtureRainfallProvider(profile_intensities_mmh=[10.0, 20.0])
         meta = p.metadata()
@@ -1131,6 +1223,7 @@ class TestQualityValidationExtended:
     """Additional freshness/warning/boundary behaviour of validate_observation."""
 
     def _obs(self, **overrides):
+        """Execute  Obs operation and return result."""
         from services.nowcast.providers import RainfallObservation, SourceType
         kwargs = {
             "observation_time": datetime(2026, 8, 22, 12, 0, tzinfo=timezone.utc),
@@ -1149,6 +1242,7 @@ class TestQualityValidationExtended:
         return RainfallObservation(**kwargs)
 
     def test_grid_size_mismatch_warns_not_errors(self):
+        """Test that grid size mismatch warns not errors behaves as expected."""
         from services.nowcast.quality import QualityConfig, validate_observation
         obs = self._obs(rate_mmh=np.zeros((10, 10), dtype=np.float32), width=10, height=10)
         config = QualityConfig(expected_width=134, expected_height=134)
@@ -1157,6 +1251,7 @@ class TestQualityValidationExtended:
         assert any("grid size mismatch" in w for w in result.warnings)
 
     def test_resolution_mismatch_warns(self):
+        """Test that resolution mismatch warns behaves as expected."""
         from services.nowcast.quality import QualityConfig, validate_observation
         obs = self._obs(spatial_resolution_m=100.0)
         config = QualityConfig(expected_resolution_m=30.0)
@@ -1164,6 +1259,7 @@ class TestQualityValidationExtended:
         assert any("resolution mismatch" in w for w in result.warnings)
 
     def test_future_observation_is_fresh_with_warning(self):
+        """Test that future observation is fresh with warning behaves as expected."""
         from services.nowcast.quality import DataFreshness, validate_observation
         obs = self._obs()
         now = obs.observation_time - timedelta(minutes=10)
@@ -1172,6 +1268,7 @@ class TestQualityValidationExtended:
         assert any("future" in w for w in result.warnings)
 
     def test_freshness_exact_boundary_is_fresh(self):
+        """Test that freshness exact boundary is fresh behaves as expected."""
         from services.nowcast.quality import (
             DataFreshness,
             QualityConfig,
@@ -1184,17 +1281,20 @@ class TestQualityValidationExtended:
         assert result.freshness == DataFreshness.FRESH
 
     def test_is_observable_true_for_fresh_valid(self):
+        """Test that is observable true for fresh valid behaves as expected."""
         from services.nowcast.quality import is_observable, validate_observation
         obs = self._obs()
         result = validate_observation(obs, now=obs.observation_time)
         assert is_observable(result) is True
 
     def test_is_observable_false_for_missing(self):
+        """Test that is observable false for missing behaves as expected."""
         from services.nowcast.quality import is_observable, validate_observation
         result = validate_observation(None)
         assert is_observable(result) is False
 
     def test_is_observable_false_for_invalid(self):
+        """Test that is observable false for invalid behaves as expected."""
         from services.nowcast.quality import DataFreshness, QualityResult, is_observable
         result = QualityResult(
             observation=None, freshness=DataFreshness.INVALID, valid=False,
@@ -1211,6 +1311,7 @@ class TestNowcastCacheExtended:
     """Round-trip, expiry, and clearing behaviour of NowcastCache."""
 
     def test_nowcast_round_trip(self):
+        """Test that nowcast round trip behaves as expected."""
         from services.nowcast.cache import NowcastCache
         from services.nowcast.engine import PersistenceNowcast
         from services.nowcast.providers.synthetic_provider import (
@@ -1228,6 +1329,7 @@ class TestNowcastCacheExtended:
         assert len(cached) == len(records)
 
     def test_get_nowcast_miss_returns_none(self):
+        """Test that get nowcast miss returns none behaves as expected."""
         from services.nowcast.cache import NowcastCache
         from services.nowcast.providers.synthetic_provider import (
             SyntheticRainfallProvider,
@@ -1238,6 +1340,7 @@ class TestNowcastCacheExtended:
         assert cache.get_nowcast(obs, "NOWCAST-PERSISTENCE-V1", (0, 15, 30)) is None
 
     def test_expired_observation_returns_none(self):
+        """Test that expired observation returns none behaves as expected."""
         from services.nowcast.cache import NowcastCache
         from services.nowcast.providers.synthetic_provider import (
             SyntheticRainfallProvider,
@@ -1249,6 +1352,7 @@ class TestNowcastCacheExtended:
         assert cache.get_observation(key) is None
 
     def test_clear_empties_cache(self):
+        """Test that clear empties cache behaves as expected."""
         from services.nowcast.cache import NowcastCache
         from services.nowcast.providers.synthetic_provider import (
             SyntheticRainfallProvider,
@@ -1262,11 +1366,13 @@ class TestNowcastCacheExtended:
         assert cache.size == 0
 
     def test_get_unknown_key_returns_none(self):
+        """Test that get unknown key returns none behaves as expected."""
         from services.nowcast.cache import NowcastCache
         cache = NowcastCache()
         assert cache.get_observation("nonexistent-key") is None
 
     def test_stats_counts_active_entries(self):
+        """Test that stats counts active entries behaves as expected."""
         from services.nowcast.cache import NowcastCache
         from services.nowcast.providers.synthetic_provider import (
             SyntheticRainfallProvider,
@@ -1288,6 +1394,7 @@ class TestNowcastRecordValidationExtended:
     """Additional validation/serialisation tests for NowcastRecord."""
 
     def _valid_kwargs(self, **overrides):
+        """Execute  Valid Kwargs operation and return result."""
         defaults = {
             "initialization_time": datetime(2026, 8, 22, 12, 0, tzinfo=timezone.utc),
             "lead_minutes": 15,
@@ -1303,21 +1410,25 @@ class TestNowcastRecordValidationExtended:
         return defaults
 
     def test_ndim_mismatch_rejected(self):
+        """Test that ndim mismatch rejected behaves as expected."""
         from services.nowcast.nowcast_record import NowcastRecord
         with pytest.raises(ValueError, match="2-D"):
             NowcastRecord(**self._valid_kwargs(rate_mmh=np.zeros(134, dtype=np.float32)))
 
     def test_shape_mismatch_rejected(self):
+        """Test that shape mismatch rejected behaves as expected."""
         from services.nowcast.nowcast_record import NowcastRecord
         with pytest.raises(ValueError, match="shape"):
             NowcastRecord(**self._valid_kwargs(rate_mmh=np.zeros((10, 10), dtype=np.float32)))
 
     def test_wrong_units_rejected(self):
+        """Test that wrong units rejected behaves as expected."""
         from services.nowcast.nowcast_record import NowcastRecord
         with pytest.raises(ValueError, match="mm/h"):
             NowcastRecord(**self._valid_kwargs(units="in/h"))
 
     def test_nan_rejected(self):
+        """Test that nan rejected behaves as expected."""
         from services.nowcast.nowcast_record import NowcastRecord
         rate = np.zeros((134, 134), dtype=np.float32)
         rate[0, 0] = np.nan
@@ -1325,16 +1436,19 @@ class TestNowcastRecordValidationExtended:
             NowcastRecord(**self._valid_kwargs(rate_mmh=rate))
 
     def test_naive_initialization_time_rejected(self):
+        """Test that naive initialization time rejected behaves as expected."""
         from services.nowcast.nowcast_record import NowcastRecord
         with pytest.raises(ValueError, match="initialization_time"):
             NowcastRecord(**self._valid_kwargs(initialization_time=datetime(2026, 8, 22, 12, 0)))  # noqa: DTZ001
 
     def test_naive_valid_time_rejected(self):
+        """Test that naive valid time rejected behaves as expected."""
         from services.nowcast.nowcast_record import NowcastRecord
         with pytest.raises(ValueError, match="valid_time"):
             NowcastRecord(**self._valid_kwargs(valid_time=datetime(2026, 8, 22, 12, 15)))  # noqa: DTZ001
 
     def test_to_dict_include_rates(self):
+        """Test that to dict include rates behaves as expected."""
         from services.nowcast.nowcast_record import NowcastRecord
         rate = np.full((134, 134), 5.0, dtype=np.float32)
         rec = NowcastRecord(**self._valid_kwargs(rate_mmh=rate))
@@ -1344,24 +1458,28 @@ class TestNowcastRecordValidationExtended:
         assert d["values"][0] == 5.0
 
     def test_to_dict_excludes_rates_by_default(self):
+        """Test that to dict excludes rates by default behaves as expected."""
         from services.nowcast.nowcast_record import NowcastRecord
         rec = NowcastRecord(**self._valid_kwargs())
         d = rec.to_dict()
         assert "values" not in d
 
     def test_to_dict_includes_metadata_when_present(self):
+        """Test that to dict includes metadata when present behaves as expected."""
         from services.nowcast.nowcast_record import NowcastRecord
         rec = NowcastRecord(**self._valid_kwargs(metadata={"note": "test"}))
         d = rec.to_dict()
         assert d["metadata"] == {"note": "test"}
 
     def test_fingerprint_changes_with_lead_minutes(self):
+        """Test that fingerprint changes with lead minutes behaves as expected."""
         from services.nowcast.nowcast_record import NowcastRecord
         rec1 = NowcastRecord(**self._valid_kwargs(lead_minutes=0))
         rec2 = NowcastRecord(**self._valid_kwargs(lead_minutes=15))
         assert rec1.compute_fingerprint() != rec2.compute_fingerprint()
 
     def test_fingerprint_stable_for_identical_inputs(self):
+        """Test that fingerprint stable for identical inputs behaves as expected."""
         from services.nowcast.nowcast_record import NowcastRecord
         rec1 = NowcastRecord(**self._valid_kwargs())
         rec2 = NowcastRecord(**self._valid_kwargs())
@@ -1376,6 +1494,7 @@ class TestPersistenceNowcastExtended:
     """Invalid-quality gating and configuration boundary behaviour."""
 
     def test_generate_with_invalid_quality_returns_empty(self):
+        """Test that generate with invalid quality returns empty behaves as expected."""
         from services.nowcast.engine import PersistenceNowcast
         from services.nowcast.providers.synthetic_provider import (
             SyntheticRainfallProvider,
@@ -1392,6 +1511,7 @@ class TestPersistenceNowcastExtended:
         assert records == []
 
     def test_generate_for_lead_with_invalid_quality_returns_none(self):
+        """Test that generate for lead with invalid quality returns none behaves as expected."""
         from services.nowcast.engine import PersistenceNowcast
         from services.nowcast.providers.synthetic_provider import (
             SyntheticRainfallProvider,
@@ -1408,16 +1528,19 @@ class TestPersistenceNowcastExtended:
         assert rec is None
 
     def test_config_boundary_lead_equals_max(self):
+        """Test that config boundary lead equals max behaves as expected."""
         from services.nowcast.engine import NowcastConfig
         config = NowcastConfig(lead_times_minutes=(0, 60), max_lead_minutes=60)
         assert 60 in config.lead_times_minutes
 
     def test_config_negative_lead_rejected(self):
+        """Test that config negative lead rejected behaves as expected."""
         from services.nowcast.engine import NowcastConfig
         with pytest.raises(ValueError, match="outside"):
             NowcastConfig(lead_times_minutes=(-5, 0), max_lead_minutes=60)
 
     def test_generate_valid_times_increase_with_lead(self):
+        """Test that generate valid times increase with lead behaves as expected."""
         from services.nowcast.engine import PersistenceNowcast
         from services.nowcast.providers.synthetic_provider import (
             SyntheticRainfallProvider,
@@ -1431,6 +1554,7 @@ class TestPersistenceNowcastExtended:
             assert rec.valid_time == expected_valid
 
     def test_generate_quality_flags_include_persistence(self):
+        """Test that generate quality flags include persistence behaves as expected."""
         from services.nowcast.engine import PersistenceNowcast
         from services.nowcast.providers.synthetic_provider import (
             SyntheticRainfallProvider,
@@ -1451,6 +1575,7 @@ class TestVerificationMetricsExtended:
     """POD/FAR computation and zero-denominator edge cases."""
 
     def test_pod_computation(self):
+        """Test that pod computation behaves as expected."""
         from services.nowcast.verification import compute_pod
         f = np.array([0.0, 5.0, 10.0, 0.0])
         o = np.array([0.0, 5.0, 10.0, 5.0])
@@ -1458,6 +1583,7 @@ class TestVerificationMetricsExtended:
         assert abs(pod - (2.0 / 3.0)) < 1e-10
 
     def test_far_computation(self):
+        """Test that far computation behaves as expected."""
         from services.nowcast.verification import compute_far
         f = np.array([5.0, 5.0, 0.0])
         o = np.array([0.0, 5.0, 0.0])
@@ -1465,30 +1591,35 @@ class TestVerificationMetricsExtended:
         assert abs(far - 0.5) < 1e-10
 
     def test_csi_zero_denominator_returns_zero(self):
+        """Test that csi zero denominator returns zero behaves as expected."""
         from services.nowcast.verification import compute_csi
         f = np.zeros(4)
         o = np.zeros(4)
         assert compute_csi(f, o) == 0.0
 
     def test_pod_zero_denominator_returns_zero(self):
+        """Test that pod zero denominator returns zero behaves as expected."""
         from services.nowcast.verification import compute_pod
         f = np.zeros(4)
         o = np.zeros(4)
         assert compute_pod(f, o) == 0.0
 
     def test_far_zero_denominator_returns_zero(self):
+        """Test that far zero denominator returns zero behaves as expected."""
         from services.nowcast.verification import compute_far
         f = np.zeros(4)
         o = np.zeros(4)
         assert compute_far(f, o) == 0.0
 
     def test_correlation_constant_field_returns_zero(self):
+        """Test that correlation constant field returns zero behaves as expected."""
         from services.nowcast.verification import compute_correlation
         f = np.full(10, 5.0)
         o = np.full(10, 5.0)
         assert compute_correlation(f, o) == 0.0
 
     def test_no_evaluation_available_custom_reason(self):
+        """Test that no evaluation available custom reason behaves as expected."""
         from services.nowcast.verification import (
             VerificationStatus,
             no_evaluation_available,
@@ -1498,11 +1629,13 @@ class TestVerificationMetricsExtended:
         assert result.notes == "custom reason"
 
     def test_no_evaluation_available_default_reason_nonempty(self):
+        """Test that no evaluation available default reason nonempty behaves as expected."""
         from services.nowcast.verification import no_evaluation_available
         result = no_evaluation_available()
         assert len(result.notes) > 0
 
     def test_verification_result_to_dict(self):
+        """Test that verification result to dict behaves as expected."""
         from services.nowcast.verification import VerificationResult, VerificationStatus
         r = VerificationResult(status=VerificationStatus.EVALUATED, metrics={"mae_mmh": 1.0}, n_samples=5)
         d = r.to_dict()
@@ -1519,6 +1652,7 @@ class TestFixtureProviderEdgeCases:
     """Interval selection and clamping behaviour of FixtureRainfallProvider."""
 
     def test_fetch_observation_before_start_returns_first_interval(self):
+        """Test that fetch observation before start returns first interval behaves as expected."""
         from services.nowcast.providers.fixture_provider import FixtureRainfallProvider
         p = FixtureRainfallProvider(
             profile_intensities_mmh=[10.0, 20.0, 30.0],
@@ -1528,12 +1662,14 @@ class TestFixtureProviderEdgeCases:
         assert obs.metadata["interval_index"] == 0
 
     def test_fetch_latest_returns_last_interval(self):
+        """Test that fetch latest returns last interval behaves as expected."""
         from services.nowcast.providers.fixture_provider import FixtureRainfallProvider
         p = FixtureRainfallProvider(profile_intensities_mmh=[10.0, 20.0, 30.0])
         obs = p.fetch_latest()
         assert obs.metadata["interval_index"] == 2
 
     def test_interval_index_clamped_beyond_range(self):
+        """Test that interval index clamped beyond range behaves as expected."""
         from services.nowcast.providers.fixture_provider import FixtureRainfallProvider
         p = FixtureRainfallProvider(
             profile_intensities_mmh=[10.0, 20.0],
@@ -1552,23 +1688,27 @@ class TestRainfallAPIModule:
     """Direct unit tests for the rainfall_api module (bypassing the HTTP layer)."""
 
     def test_get_active_provider_default_is_synthetic(self):
+        """Test that get active provider default is synthetic behaves as expected."""
         from apps.api import rainfall_api
         provider = rainfall_api.get_active_provider()
         assert provider.provider_id == "synthetic-v1"
 
     def test_get_provider_known_and_unknown(self):
+        """Test that get provider known and unknown behaves as expected."""
         from apps.api import rainfall_api
         assert rainfall_api.get_provider("synthetic-v1") is not None
         assert rainfall_api.get_provider("fixture-extreme-v1") is not None
         assert rainfall_api.get_provider("does-not-exist") is None
 
     def test_list_providers_marks_exactly_one_active(self):
+        """Test that list providers marks exactly one active behaves as expected."""
         from apps.api import rainfall_api
         providers = rainfall_api.list_providers()
         active_flags = [p["active"] for p in providers]
         assert active_flags.count(True) == 1
 
     def test_set_active_provider_switches_and_restores(self):
+        """Test that set active provider switches and restores behaves as expected."""
         from apps.api import rainfall_api
         original = rainfall_api._active_provider_id
         try:
@@ -1580,6 +1720,7 @@ class TestRainfallAPIModule:
         assert rainfall_api.get_active_provider().provider_id == original
 
     def test_set_active_provider_unknown_returns_false(self):
+        """Test that set active provider unknown returns false behaves as expected."""
         from apps.api import rainfall_api
         original = rainfall_api._active_provider_id
         ok = rainfall_api.set_active_provider("nonexistent-provider")
@@ -1587,6 +1728,7 @@ class TestRainfallAPIModule:
         assert rainfall_api._active_provider_id == original
 
     def test_fetch_observation_at_returns_available(self):
+        """Test that fetch observation at returns available behaves as expected."""
         from apps.api import rainfall_api
         t = datetime.now(timezone.utc).replace(second=0, microsecond=0)
         result = rainfall_api.fetch_observation_at(t)
@@ -1595,6 +1737,7 @@ class TestRainfallAPIModule:
         assert result["source_type"] == "SYNTHETIC"
 
     def test_generate_nowcast_returns_dicts(self):
+        """Test that generate nowcast returns dicts behaves as expected."""
         from apps.api import rainfall_api
         provider = rainfall_api.get_active_provider()
         obs = provider.fetch_latest()
@@ -1604,6 +1747,7 @@ class TestRainfallAPIModule:
         assert all("lead_minutes" in r for r in records)
 
     def test_get_cache_stats_matches_cache_schema(self):
+        """Test that get cache stats matches cache schema behaves as expected."""
         from apps.api import rainfall_api
         stats = rainfall_api.get_cache_stats()
         assert "ttl_seconds" in stats
@@ -1618,6 +1762,7 @@ class TestAppEndpointsExtended:
     """Additional M8 endpoint coverage not exercised above."""
 
     def test_rainfall_observation_valid_time_returns_200(self):
+        """Test that rainfall observation valid time returns 200 behaves as expected."""
         from apps.api.app import app
         client = TestClient(app)
         t = datetime.now(timezone.utc).replace(second=0, microsecond=0).isoformat().replace("+00:00", "Z")
@@ -1627,6 +1772,7 @@ class TestAppEndpointsExtended:
         assert data["status"] == "AVAILABLE"
 
     def test_provider_detail_synthetic(self):
+        """Test that provider detail synthetic behaves as expected."""
         from apps.api.app import app
         client = TestClient(app)
         r = client.get("/api/v1/nowcast/providers/synthetic-v1")
@@ -1637,6 +1783,7 @@ class TestAppEndpointsExtended:
         assert "metadata" in data
 
     def test_provider_detail_fixture(self):
+        """Test that provider detail fixture behaves as expected."""
         from apps.api.app import app
         client = TestClient(app)
         r = client.get("/api/v1/nowcast/providers/fixture-extreme-v1")
@@ -1645,6 +1792,7 @@ class TestAppEndpointsExtended:
         assert data["source_type"] == "FIXTURE"
 
     def test_health_includes_provider_health_and_labels(self):
+        """Test that health includes provider health and labels behaves as expected."""
         from apps.api.app import app
         client = TestClient(app)
         r = client.get("/health")
@@ -1654,6 +1802,7 @@ class TestAppEndpointsExtended:
         assert "SYNTHETIC" in data["labels"]
 
     def test_version_includes_nowcast_version(self):
+        """Test that version includes nowcast version behaves as expected."""
         from apps.api.app import app
         from services.nowcast import NOWCAST_VERSION
         client = TestClient(app)
@@ -1662,6 +1811,7 @@ class TestAppEndpointsExtended:
         assert data["nowcast_version"] == NOWCAST_VERSION
 
     def test_nowcast_providers_active_id_matches_default(self):
+        """Test that nowcast providers active id matches default behaves as expected."""
         from apps.api.app import app
         client = TestClient(app)
         r = client.get("/api/v1/nowcast/providers")
@@ -1669,6 +1819,7 @@ class TestAppEndpointsExtended:
         assert data["active_provider_id"] == "synthetic-v1"
 
     def test_rainfall_status_full_fields(self):
+        """Test that rainfall status full fields behaves as expected."""
         from apps.api.app import app
         client = TestClient(app)
         r = client.get("/api/v1/rainfall/status")
@@ -1679,6 +1830,7 @@ class TestAppEndpointsExtended:
             assert key in data, f"missing {key}"
 
     def test_negative_lead_returns_400(self):
+        """Test that negative lead returns 400 behaves as expected."""
         # Starlette's default `int` path converter regex ([0-9]+) does not
         # match a leading minus sign, so a negative lead never reaches the
         # route handler via HTTP (it 404s at the routing layer instead).
@@ -1688,6 +1840,7 @@ class TestAppEndpointsExtended:
         assert result["status"] == "INVALID_LEAD"
 
     def test_nowcast_unavailable_returns_503(self):
+        """Test that nowcast unavailable returns 503 behaves as expected."""
         from unittest import mock
 
         from apps.api import rainfall_api
@@ -1718,6 +1871,7 @@ class TestAppEndpointsExtended:
         assert code != "PROJECTION_UNAVAILABLE"
 
     def test_nowcast_verification_explanation_present(self):
+        """Test that nowcast verification explanation present behaves as expected."""
         from apps.api.app import app
         client = TestClient(app)
         r = client.get("/api/v1/nowcast/verification")
@@ -1734,6 +1888,7 @@ class TestHealthDegradation:
     """Top-level /health must degrade when the rainfall dependency is unavailable."""
 
     def test_health_ok_when_artifacts_and_rainfall_healthy(self):
+        """Test that health ok when artifacts and rainfall healthy behaves as expected."""
         from unittest import mock
 
         from apps.api.app import app, rainfall_api, store
@@ -1752,6 +1907,7 @@ class TestHealthDegradation:
         assert data["status"] == "ok"
 
     def test_health_degraded_when_rainfall_unavailable(self):
+        """Test that health degraded when rainfall unavailable behaves as expected."""
         from unittest import mock
 
         from apps.api.app import app, rainfall_api, store
@@ -1769,6 +1925,7 @@ class TestHealthDegradation:
         assert data["status"] == "degraded"
 
     def test_health_degraded_when_artifacts_unhealthy(self):
+        """Test that health degraded when artifacts unhealthy behaves as expected."""
         from unittest import mock
 
         from apps.api.app import app, rainfall_api, store
@@ -1813,6 +1970,7 @@ class TestInvalidObservationNotAvailable:
 
     @staticmethod
     def _stale_observation() -> RainfallObservation:
+        """Execute  Stale Observation operation and return result."""
         from services.nowcast.providers import RainfallObservation, SourceType
         stale_time = datetime.now(timezone.utc) - timedelta(hours=10)
         return RainfallObservation(
@@ -1830,6 +1988,7 @@ class TestInvalidObservationNotAvailable:
         )
 
     def test_latest_observation_invalid_not_available(self):
+        """Test that latest observation invalid not available behaves as expected."""
         from unittest import mock
 
         from apps.api import rainfall_api
@@ -1842,6 +2001,7 @@ class TestInvalidObservationNotAvailable:
         assert result["quality"]["valid"] is False
 
     def test_observation_at_invalid_not_available(self):
+        """Test that observation at invalid not available behaves as expected."""
         from unittest import mock
 
         from apps.api import rainfall_api
@@ -1853,6 +2013,7 @@ class TestInvalidObservationNotAvailable:
         assert result["quality"]["valid"] is False
 
     def test_nowcast_latest_invalid_not_available(self):
+        """Test that nowcast latest invalid not available behaves as expected."""
         from unittest import mock
 
         from apps.api import rainfall_api
@@ -1869,6 +2030,7 @@ class TestInvalidObservationNotAvailable:
         assert "NOT_REAL_TIME" not in result["labels"]
 
     def test_nowcast_at_lead_invalid_not_available(self):
+        """Test that nowcast at lead invalid not available behaves as expected."""
         from unittest import mock
 
         from apps.api import rainfall_api
@@ -1890,6 +2052,7 @@ class TestCacheIntegration:
     """A normal rainfall/nowcast API request creates cache entries."""
 
     def test_rainfall_and_nowcast_request_create_cache_entries(self):
+        """Test that rainfall and nowcast request create cache entries behaves as expected."""
         from apps.api import rainfall_api
         from apps.api.app import app
         rainfall_api._cache.clear()
@@ -1905,6 +2068,7 @@ class TestCacheIntegration:
         assert stats["nowcast_entries"] > 0, "nowcast cache not populated"
 
     def test_repeated_observation_at_same_time_hits_cache(self):
+        """Test that repeated observation at same time hits cache behaves as expected."""
         from services.nowcast.cache import NowcastCache
         cache = NowcastCache(ttl_seconds=60)
         from services.nowcast.providers.synthetic_provider import (
@@ -1928,6 +2092,7 @@ class TestCacheImmutability:
     """The cache must never expose caller-owned mutable state."""
 
     def test_observation_immutable_after_put_and_get(self):
+        """Test that observation immutable after put and get behaves as expected."""
         from services.nowcast.cache import NowcastCache
         from services.nowcast.providers.synthetic_provider import (
             SyntheticRainfallProvider,
@@ -1951,6 +2116,7 @@ class TestCacheImmutability:
         assert "hacked2" not in (cached2.metadata or {})
 
     def test_nowcast_immutable_after_put_and_get(self):
+        """Test that nowcast immutable after put and get behaves as expected."""
         from services.nowcast.cache import NowcastCache
         from services.nowcast.engine import PersistenceNowcast
         from services.nowcast.providers.synthetic_provider import (
@@ -1987,6 +2153,7 @@ class TestCacheThreadSafety:
     """Concurrent cache operations must not raise or corrupt state."""
 
     def test_concurrent_access_does_not_corrupt(self):
+        """Test that concurrent access does not corrupt behaves as expected."""
         import threading
 
         from services.nowcast.cache import NowcastCache
@@ -2000,6 +2167,7 @@ class TestCacheThreadSafety:
         errors: list[BaseException] = []
 
         def worker() -> None:
+            """Execute Worker operation and return result."""
             try:
                 for _ in range(25):
                     # Concurrent clear() may legitimately remove an entry
@@ -2031,6 +2199,7 @@ class TestNowcastLeadTimeInvariant:
     """valid_time must equal initialization_time + lead_minutes."""
 
     def _record(self, *, init, lead):
+        """Execute  Record operation and return result."""
         from services.nowcast.nowcast_record import NowcastRecord
         return NowcastRecord(
             initialization_time=init,
@@ -2040,16 +2209,19 @@ class TestNowcastLeadTimeInvariant:
         )
 
     def test_valid_record_accepted(self):
+        """Test that valid record accepted behaves as expected."""
         init = datetime(2026, 8, 22, 12, 0, tzinfo=timezone.utc)
         rec = self._record(init=init, lead=15)
         assert rec.valid_time == init + timedelta(minutes=15)
 
     def test_valid_lead_zero_accepted(self):
+        """Test that valid lead zero accepted behaves as expected."""
         init = datetime(2026, 8, 22, 12, 0, tzinfo=timezone.utc)
         rec = self._record(init=init, lead=0)
         assert rec.valid_time == init
 
     def test_invalid_record_rejected(self):
+        """Test that invalid record rejected behaves as expected."""
         from services.nowcast.nowcast_record import NowcastRecord
         init = datetime(2026, 8, 22, 12, 0, tzinfo=timezone.utc)
         with pytest.raises(ValueError, match="lead_minutes"):
@@ -2070,6 +2242,7 @@ class TestFullFieldFingerprint:
 
     @staticmethod
     def _observation(rate):
+        """Execute  Observation operation and return result."""
         from services.nowcast.providers import RainfallObservation, SourceType
         return RainfallObservation(
             observation_time=datetime(2026, 8, 22, 12, 0, tzinfo=timezone.utc),
@@ -2086,12 +2259,14 @@ class TestFullFieldFingerprint:
         )
 
     def test_same_field_same_fingerprint(self):
+        """Test that same field same fingerprint behaves as expected."""
         rate = np.zeros((4, 4), dtype=np.float32)
         rate[0, 0] = 1.0
         assert self._observation(rate.copy()).fingerprint() == \
             self._observation(rate.copy()).fingerprint()
 
     def test_different_field_same_mean_max_different_fingerprint(self):
+        """Test that different field same mean max different fingerprint behaves as expected."""
         # Both fields share the same mean and max but differ in spatial layout.
         a = np.zeros((4, 4), dtype=np.float32)
         a[0, :] = 1.0
@@ -2103,6 +2278,7 @@ class TestFullFieldFingerprint:
         assert self._observation(a).fingerprint() != self._observation(b).fingerprint()
 
     def test_nowcast_same_field_same_fingerprint(self):
+        """Test that nowcast same field same fingerprint behaves as expected."""
         from services.nowcast.nowcast_record import NowcastRecord
         init = datetime(2026, 8, 22, 12, 0, tzinfo=timezone.utc)
         rate = np.zeros((4, 4), dtype=np.float32)
@@ -2126,6 +2302,7 @@ class TestFixtureNoFutureTimestamp:
     """A request beyond the fixture duration must not create a future timestamp."""
 
     def test_beyond_duration_clamped_to_last_interval_start(self):
+        """Test that beyond duration clamped to last interval start behaves as expected."""
         from services.nowcast.providers.fixture_provider import FixtureRainfallProvider
         p = FixtureRainfallProvider(
             profile_intensities_mmh=[10.0, 20.0, 30.0],
@@ -2140,6 +2317,7 @@ class TestFixtureNoFutureTimestamp:
         assert obs.valid_to == datetime(2026, 8, 22, 12, 45, tzinfo=timezone.utc)
 
     def test_fetch_latest_is_last_interval_not_future(self):
+        """Test that fetch latest is last interval not future behaves as expected."""
         from services.nowcast.providers.fixture_provider import FixtureRainfallProvider
         p = FixtureRainfallProvider(
             profile_intensities_mmh=[10.0, 20.0],
@@ -2159,6 +2337,7 @@ class TestFrontendLeadTime:
     """The dashboard must render lead times from ncs (nowcast status), not nc."""
 
     def test_dashboard_uses_ncs_for_lead_times(self):
+        """Test that dashboard uses ncs for lead times behaves as expected."""
         from pathlib import Path
         idx = Path(__file__).resolve().parents[1] / "apps" / "web" / "index.html"
         html = idx.read_text(encoding="utf-8")
@@ -2173,11 +2352,13 @@ class TestFrontendClampLead:
     """clampLead must select the nearest valid projection lead."""
 
     def _get_clamp_function(self):
+        """Execute  Get Clamp Function operation and return result."""
         from pathlib import Path
         idx = Path(__file__).resolve().parents[1] / "apps" / "web" / "index.html"
         return idx.read_text(encoding="utf-8")
 
     def test_clamp_lead_function_exists(self):
+        """Test that clamp lead function exists behaves as expected."""
         html = self._get_clamp_function()
         assert "function clampLead" in html
         # Must not unconditionally fall through to the maximum for intermediate values.
@@ -2188,6 +2369,7 @@ class TestFrontendClampLead:
         assert "bestDist" in clamp_body or "Math.abs" in clamp_body
 
     def test_clamp_lead_uses_nearest_valid(self):
+        """Test that clamp lead uses nearest valid behaves as expected."""
         html = self._get_clamp_function()
         clamp_body = html.split("function clampLead")[1].split("function")[0]
         # Must contain logic to find the nearest valid lead
@@ -2213,6 +2395,7 @@ class TestFrontendProjectionUnavailable:
     """The frontend must handle 503 PROJECTION_UNAVAILABLE, and only that code."""
 
     def test_getjson_captures_status_code(self):
+        """Test that getjson captures status code behaves as expected."""
         from pathlib import Path
         idx = Path(__file__).resolve().parents[1] / "apps" / "web" / "index.html"
         html = idx.read_text(encoding="utf-8")
@@ -2220,6 +2403,7 @@ class TestFrontendProjectionUnavailable:
         assert "err.errorCode" in html
 
     def test_projection_unavailable_render_function_exists(self):
+        """Test that projection unavailable render function exists behaves as expected."""
         from pathlib import Path
         idx = Path(__file__).resolve().parents[1] / "apps" / "web" / "index.html"
         html = idx.read_text(encoding="utf-8")
@@ -2227,6 +2411,7 @@ class TestFrontendProjectionUnavailable:
         assert "Projection unavailable" in html
 
     def test_select_projection_config_handles_503(self):
+        """Test that select projection config handles 503 behaves as expected."""
         from pathlib import Path
         idx = Path(__file__).resolve().parents[1] / "apps" / "web" / "index.html"
         html = idx.read_text(encoding="utf-8")
@@ -2235,6 +2420,7 @@ class TestFrontendProjectionUnavailable:
         assert "statusCode === 503" in select_body
 
     def test_init_handles_projection_unavailable(self):
+        """Test that init handles projection unavailable behaves as expected."""
         from pathlib import Path
         idx = Path(__file__).resolve().parents[1] / "apps" / "web" / "index.html"
         html = idx.read_text(encoding="utf-8")

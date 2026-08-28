@@ -48,11 +48,13 @@ class HortonLoss:
     """
 
     def __init__(self, f0_ms: float, fmin_ms: float, k_s1: float) -> None:
+        """Execute   Init   operation and return result."""
         if not (f0_ms >= fmin_ms >= 0 and k_s1 > 0):
             raise ValueError("Horton parameters invalid (f0 >= fmin >= 0, k > 0)")
         self.f0, self.fmin, self.k = f0_ms, fmin_ms, k_s1
 
     def capacity(self, wetting_time_s: np.ndarray) -> np.ndarray:
+        """Execute Capacity operation and return result."""
         return self.fmin + (self.f0 - self.fmin) * np.exp(-self.k * wetting_time_s)
 
 
@@ -70,6 +72,7 @@ class SurfaceModel:
         closed_boundaries: bool = False,
         max_dt_s: float = 30.0,
     ) -> None:
+        """Execute   Init   operation and return result."""
         from landlab import RasterModelGrid
         from landlab.components.overland_flow import OverlandFlow
 
@@ -111,6 +114,7 @@ class SurfaceModel:
     # -- state ----------------------------------------------------------------
     @property
     def depth(self) -> np.ndarray:
+        """Execute Depth operation and return result."""
         return self.grid.at_node["surface_water__depth"].reshape(self.shape)
 
     def surface_storage_m3(self) -> float:

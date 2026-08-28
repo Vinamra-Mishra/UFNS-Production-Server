@@ -104,6 +104,7 @@ class RoadSegment:
     end_cell: tuple[int, int]
 
     def to_dict(self) -> dict[str, Any]:
+        """Execute To Dict operation and return result."""
         return {
             "road_id": self.road_id,
             "geometry": [[round(x, 3), round(y, 3)] for x, y in self.geometry],
@@ -132,12 +133,15 @@ class RoadNetwork:
 
     @property
     def n_segments(self) -> int:
+        """Execute N Segments operation and return result."""
         return len(self.segments)
 
     def by_id(self) -> dict[str, RoadSegment]:
+        """Execute By Id operation and return result."""
         return {s.road_id: s for s in self.segments}
 
     def to_dict(self) -> dict[str, Any]:
+        """Execute To Dict operation and return result."""
         nodes = {
             nid: {
                 "cell": [r, c],
@@ -162,6 +166,7 @@ class RoadNetwork:
 def _segment_fingerprint(road_id: str, road_class: str, length_m: float,
                          speed: float, start_node: str, end_node: str,
                          start_cell: tuple[int, int], end_cell: tuple[int, int]) -> str:
+    """Execute  Segment Fingerprint operation and return result."""
     payload = {
         "road_id": road_id,
         "road_class": road_class,
@@ -253,6 +258,7 @@ def build_synthetic_network() -> RoadNetwork:
 
 
 def _make_segment(r1: int, c1: int, r2: int, c2: int, road_class: str) -> RoadSegment:
+    """Execute  Make Segment operation and return result."""
     x1, y1 = cell_to_projected(r1, c1)
     x2, y2 = cell_to_projected(r2, c2)
     length_m = ((x2 - x1) ** 2 + (y2 - y1) ** 2) ** 0.5

@@ -29,6 +29,7 @@ EVIDENCE = DATA_RAW / "acquisition_attempts.json"
 
 
 def main() -> int:
+    """Execute Main operation and return result."""
     attempts = [
         attempt_wb_amrut_drains(DATA_RAW),
         attempt_copernicus_dem(DATA_RAW),

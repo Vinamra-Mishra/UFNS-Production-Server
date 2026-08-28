@@ -32,6 +32,7 @@ COPERNICUS_DEM_STAC_URL = (
 
 
 def _failure_mode(exc: Exception) -> str:
+    """Execute  Failure Mode operation and return result."""
     if isinstance(exc, HTTPError):
         return f"HTTP {exc.code} {exc.reason}"
     if isinstance(exc, URLError):
@@ -170,6 +171,7 @@ def attempt_copernicus_dem(data_dir: Path) -> AcquisitionAttempt:
 
 
 def write_attempts_evidence(attempts: list[AcquisitionAttempt], out_path: Path) -> Path:
+    """Execute Write Attempts Evidence operation and return result."""
     doc: dict[str, Any] = {
         "recorded_at": datetime.now(timezone.utc).isoformat(),
         "note": (

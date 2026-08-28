@@ -62,6 +62,7 @@ class AlignedDrainage:
     rejection_breakdown: dict[str, int]
 
     def to_dict(self) -> dict[str, Any]:
+        """Execute To Dict operation and return result."""
         return {
             "grid": self.grid.model_dump(mode="json"),
             "source_crs": self.source_crs,
@@ -89,16 +90,16 @@ class RealDrainageAdapter:
     """
 
     def __init__(self, source_path: Path) -> None:
+        """Execute   Init   operation and return result."""
         self.source_path = Path(source_path)
 
     def map_and_align(self, grid: GridSpec) -> AlignedDrainage:
+        """Execute Map And Align operation and return result."""
         mapping = map_drainage_entities(
             self.source_path,
             external_crs_provenance=WB_AMRUT_EXTERNAL_CRS_PROVENANCE,
         )
-        if mapping.entities and mapping.entities[0].crs != "EPSG:4326" and not self.source_path:
-            # Defensive: mapping carries EPSG:4326 when external provenance used.
-            pass
+
 
         reprojected = _reproject_entities(mapping, target_crs=grid.crs_wkt_or_epsg)
 

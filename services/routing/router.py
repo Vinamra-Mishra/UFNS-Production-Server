@@ -43,6 +43,7 @@ class Route:
     node_path: list[str]
 
     def to_dict(self) -> dict[str, Any]:
+        """Execute To Dict operation and return result."""
         return {
             "distance_m": round(self.distance_m, 3),
             "estimated_time_s": round(self.estimated_time_s, 3),
@@ -70,6 +71,7 @@ class RouteResult:
     policy_fingerprint: str
 
     def to_dict(self) -> dict[str, Any]:
+        """Execute To Dict operation and return result."""
         return {
             "scenario_id": self.scenario_id,
             "lead_minutes": self.lead_minutes,
@@ -89,10 +91,12 @@ class RouteResult:
 
 
 def _route_geometry(graph: RoadGraph, node_path: list[str]) -> list[list[float]]:
+    """Execute  Route Geometry operation and return result."""
     return [[round(x, 3), round(y, 3)] for x, y in (graph.node_xy[n] for n in node_path)]
 
 
 def _route_distance(graph: RoadGraph, road_ids: list[str]) -> float:
+    """Execute  Route Distance operation and return result."""
     return sum(graph.segment(rid).length_m for rid in road_ids)
 
 
@@ -144,6 +148,7 @@ def compute_route(
 
 
 def _make_route(graph: RoadGraph, res: Optional[tuple[float, list[str], list[str]]]) -> Optional[Route]:
+    """Execute  Make Route operation and return result."""
     if res is None:
         return None
     cost, node_path, road_path = res
@@ -162,6 +167,7 @@ def _difference_and_explanation(
     flood_aware: Route,
     impacts: dict[str, Any],
 ) -> tuple[dict[str, Any], dict[str, Any]]:
+    """Execute  Difference And Explanation operation and return result."""
     base_ids = set(baseline.road_ids) if baseline else set()
     faw_ids = set(flood_aware.road_ids)
     avoided = sorted(base_ids - faw_ids)              # roads the flood-aware route avoids
@@ -199,6 +205,7 @@ def _difference_and_explanation(
 
 
 def _no_route_explanation(mode: str, policy: PassabilityPolicy) -> dict[str, Any]:
+    """Execute  No Route Explanation operation and return result."""
     return {
         "summary": (
             f"No route satisfies the selected passability policy "

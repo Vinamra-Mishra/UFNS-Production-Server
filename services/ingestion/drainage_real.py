@@ -124,6 +124,7 @@ class ExternalCRSProvenance:
     notes: str = ""
 
     def to_dict(self) -> dict[str, Any]:
+        """Execute To Dict operation and return result."""
         return {
             "crs": self.crs,
             "authority": self.authority,
@@ -257,9 +258,11 @@ class DrainageEntity:
     capacity_availability: AttributeAvailability = AttributeAvailability.UNKNOWN
 
     def __post_init__(self) -> None:
+        """Execute   Post Init   operation and return result."""
         object.__setattr__(self, "attributes", MappingProxyType(dict(self.attributes)))
 
     def to_dict(self) -> dict[str, Any]:
+        """Execute To Dict operation and return result."""
         return {
             "feature_id": self.feature_id,
             "feature_type": self.feature_type.value,
@@ -300,6 +303,7 @@ class DrainageSchemaAudit:
     hydraulic_findings: tuple[tuple[str, str], ...] = ()
 
     def to_dict(self) -> dict[str, Any]:
+        """Execute To Dict operation and return result."""
         return {
             "source_attributes": list(self.source_attributes),
             "observed_columns": [
@@ -343,9 +347,11 @@ class DrainageIngestionResult:
 
     @property
     def labels(self) -> list[str]:
+        """Execute Labels operation and return result."""
         return result_labels(self.status, self.provenance.classification)
 
     def to_dict(self) -> dict[str, Any]:
+        """Execute To Dict operation and return result."""
         return {
             "status": self.status.value,
             "provenance": self.provenance.to_dict(),
@@ -382,6 +388,7 @@ class MappingRejection:
     source_type: str = ""
 
     def to_dict(self) -> dict[str, Any]:
+        """Execute To Dict operation and return result."""
         return {
             "source_index": self.source_index,
             "source_id": self.source_id,
@@ -423,9 +430,11 @@ class DrainageMappingResult:
 
     @property
     def labels(self) -> list[str]:
+        """Execute Labels operation and return result."""
         return result_labels(self.status, self.provenance.classification)
 
     def to_dict(self) -> dict[str, Any]:
+        """Execute To Dict operation and return result."""
         return {
             "status": self.status.value,
             "provenance": self.provenance.to_dict(),
@@ -481,6 +490,7 @@ def _read_geoparquet_cached(
     source_path_str: str,
     file_version: tuple[int, int],
 ) -> tuple[Any, str | None, str | None, list[str]]:
+    """Execute  Read Geoparquet Cached operation and return result."""
     import pyarrow.parquet as pq
 
     source_path = Path(source_path_str)
@@ -544,11 +554,13 @@ def _parse_geometries(df: Any, geom_col: str | None) -> list[Any]:
 
 
 def _null_rate(series: Any) -> float:
+    """Execute  Null Rate operation and return result."""
     n = len(series)
     return float(series.isna().sum()) / n if n else 0.0
 
 
 def _json_safe(value: Any) -> Any:
+    """Execute  Json Safe operation and return result."""
     import numpy as np
 
     if value is None or isinstance(value, (bool, int, float, str)):
@@ -887,6 +899,7 @@ def audit_wb_amrut_drains(
 
 
 def _stable_entity_id(dataset_name: str, identity: str) -> str:
+    """Execute  Stable Entity Id operation and return result."""
     digest = hashlib.sha256(f"{dataset_name}:{identity}".encode()).hexdigest()
     return f"ufns-{digest[:16]}"
 

@@ -57,6 +57,7 @@ class NowcastConfig:
     uncertainty: str = "NOT PROVIDED"
 
     def __post_init__(self) -> None:
+        """Execute   Post Init   operation and return result."""
         for lt in self.lead_times_minutes:
             if lt < 0 or lt > self.max_lead_minutes:
                 raise ValueError(
@@ -74,10 +75,12 @@ class PersistenceNowcast:
     """
 
     def __init__(self, config: NowcastConfig | None = None) -> None:
+        """Execute   Init   operation and return result."""
         self._config = config or NowcastConfig()
 
     @property
     def config(self) -> NowcastConfig:
+        """Execute Config operation and return result."""
         return self._config
 
     def generate(
@@ -251,10 +254,12 @@ class UnifiedNowcastEngine:
     """
 
     def __init__(self, config: NowcastConfig | None = None) -> None:
+        """Execute   Init   operation and return result."""
         self._config = config or NowcastConfig(method="NOWCAST-UNIFIED-V1")
 
     @property
     def config(self) -> NowcastConfig:
+        """Execute Config operation and return result."""
         return self._config
 
     def generate(
@@ -262,6 +267,7 @@ class UnifiedNowcastEngine:
         observation: RainfallObservation,
         quality: QualityResult | None = None,
     ) -> list[NowcastRecord]:
+        """Execute Generate operation and return result."""
         if quality is not None and not quality.valid:
             return []
 
@@ -352,6 +358,7 @@ class UnifiedNowcastEngine:
         lead_minutes: int,
         quality: QualityResult | None = None,
     ) -> Optional[NowcastRecord]:
+        """Execute Generate For Lead operation and return result."""
         recs = self.generate(observation, quality)
         for r in recs:
             if r.lead_minutes == lead_minutes:

@@ -59,6 +59,7 @@ from services.routing.router import compute_route
 
 
 def _observation_for_rate(rate_mmh: float, when: datetime | None = None) -> RainfallObservation:
+    """Execute  Observation For Rate operation and return result."""
     when = when or datetime(2026, 8, 22, 12, 0, tzinfo=timezone.utc)
     provider = SyntheticRainfallProvider(base_rate_mmh=rate_mmh, seed=123)
     return provider.fetch_observation(when)
@@ -66,6 +67,7 @@ def _observation_for_rate(rate_mmh: float, when: datetime | None = None) -> Rain
 
 @lru_cache(maxsize=16)
 def _bundle(config_id: str, rate_mmh: float) -> object:
+    """Execute  Bundle operation and return result."""
     obs = _observation_for_rate(rate_mmh)
     quality = validate_observation(obs, now=obs.observation_time)
     return PIPELINE.build_from_observation(config_id, obs, quality=quality)
@@ -97,6 +99,7 @@ class TestM9FingerprintBackwardCompatibility:
 
     @staticmethod
     def _legacy_config():
+        """Execute  Legacy Config operation and return result."""
         from services.ingestion.dem import synthetic_dem
         from services.simulation.engine import RainfallSpec, RunConfig
         return RunConfig(
@@ -110,6 +113,7 @@ class TestM9FingerprintBackwardCompatibility:
         )
 
     def test_legacy_fingerprint_matches_pre_m9_oracle(self):
+        """Test that legacy fingerprint matches pre m9 oracle behaves as expected."""
         assert self._legacy_config().fingerprint() == self.KNOWN_PRE_M9_LEGACY_FINGERPRINT
 
     def test_legacy_fingerprint_matches_independent_payload_reconstruction(self):
@@ -254,7 +258,9 @@ class TestM9FingerprintBackwardCompatibility:
 # ---------------------------------------------------------------------------
 
 class TestM9ForecastRainfallFrameContract:
+    """Testm9Forecastrainfallframecontract schema and data model representation."""
     def _record(self, *, lead: int = 15, values: np.ndarray | None = None) -> NowcastRecord:
+        """Execute  Record operation and return result."""
         init = datetime(2026, 8, 22, 12, 0, tzinfo=timezone.utc)
         values = values if values is not None else np.full((134, 134), 10.0, dtype=np.float32)
         rec = NowcastRecord(
@@ -289,6 +295,7 @@ class TestM9ForecastRainfallFrameContract:
         )
 
     def test_valid_forecast_frame(self):
+        """Test that valid forecast frame behaves as expected."""
         rec = self._record()
         frame = ForecastRainfallFrame.from_nowcast_record(
             rec, interval_minutes=15, provenance_status=("PERSISTENCE_PROJECTION",)
@@ -300,6 +307,7 @@ class TestM9ForecastRainfallFrameContract:
         assert frame.fingerprint
 
     def test_invalid_units(self):
+        """Test that invalid units behaves as expected."""
         rec = self._record()
         with pytest.raises(ValueError, match="mm/h"):
             ForecastRainfallFrame(
@@ -325,6 +333,7 @@ class TestM9ForecastRainfallFrameContract:
             )
 
     def test_invalid_dimensions(self):
+        """Test that invalid dimensions behaves as expected."""
         rec = self._record()
         with pytest.raises(ValueError, match="shape"):
             ForecastRainfallFrame(
@@ -350,6 +359,7 @@ class TestM9ForecastRainfallFrameContract:
             )
 
     def test_invalid_timestamps(self):
+        """Test that invalid timestamps behaves as expected."""
         rec = self._record()
         with pytest.raises(ValueError, match="valid_to"):
             ForecastRainfallFrame(
@@ -375,6 +385,7 @@ class TestM9ForecastRainfallFrameContract:
             )
 
     def test_invalid_lead(self):
+        """Test that invalid lead behaves as expected."""
         rec = self._record(lead=15)
         with pytest.raises(ValueError, match="lead_minutes"):
             ForecastRainfallFrame(
@@ -400,6 +411,7 @@ class TestM9ForecastRainfallFrameContract:
             )
 
     def test_invalid_rainfall_values(self):
+        """Test that invalid rainfall values behaves as expected."""
         rec = self._record()
         with pytest.raises(ValueError, match="negative"):
             ForecastRainfallFrame(
@@ -430,13 +442,16 @@ class TestM9ForecastRainfallFrameContract:
 # ---------------------------------------------------------------------------
 
 class TestM9PersistenceSemantics:
+    """Testm9Persistencesemantics schema and data model representation."""
     def test_leads_0_15_30_45_60_present(self):
+        """Test that leads 0 15 30 45 60 present behaves as expected."""
         obs = _observation_for_rate(40.0)
         records = PersistenceNowcast().generate(obs)
         frames = nowcast_records_to_frames(records)
         assert [frame.lead_minutes for frame in frames] == [0, 15, 30, 45, 60]
 
     def test_exact_field_equality_across_leads(self):
+        """Test that exact field equality across leads behaves as expected."""
         obs = _observation_for_rate(40.0)
         records = PersistenceNowcast().generate(obs)
         frames = nowcast_records_to_frames(records)
@@ -444,6 +459,7 @@ class TestM9PersistenceSemantics:
             np.testing.assert_array_equal(frame.rate_mmh, obs.rate_mmh)
 
     def test_forcing_fields_use_interval_start_frames_without_transform(self):
+        """Test that forcing fields use interval start frames without transform behaves as expected."""
         obs = _observation_for_rate(40.0)
         records = PersistenceNowcast().generate(obs)
         frames = nowcast_records_to_frames(records)
@@ -458,7 +474,9 @@ class TestM9PersistenceSemantics:
 # ---------------------------------------------------------------------------
 
 class TestM9Adapter:
+    """Testm9Adapter schema and data model representation."""
     def test_build_runconfig_preserves_grid_and_units(self):
+        """Test that build runconfig preserves grid and units behaves as expected."""
         obs = _observation_for_rate(40.0)
         records = PersistenceNowcast().generate(obs)
         frames = nowcast_records_to_frames(records)
@@ -471,6 +489,7 @@ class TestM9Adapter:
             np.testing.assert_array_equal(field, obs.rate_mmh)
 
     def test_grid_compatibility_rejected(self):
+        """Test that grid compatibility rejected behaves as expected."""
         obs = _observation_for_rate(40.0)
         records = PersistenceNowcast().generate(obs)
         frames = nowcast_records_to_frames(records)
@@ -478,6 +497,7 @@ class TestM9Adapter:
             build_runconfig_from_frames(get_projection_config("P_NORMAL"), frames, np.zeros((10, 10), dtype=np.float32))
 
     def test_provenance_and_fingerprint_preserved(self):
+        """Test that provenance and fingerprint preserved behaves as expected."""
         obs = _observation_for_rate(40.0)
         records = PersistenceNowcast().generate(obs)
         frames = nowcast_records_to_frames(records)
@@ -487,6 +507,7 @@ class TestM9Adapter:
             assert frame.fingerprint
 
     def test_explicit_fields_match_uniform_engine_input(self):
+        """Test that explicit fields match uniform engine input behaves as expected."""
         init = datetime(2026, 8, 22, 12, 0, tzinfo=timezone.utc)
         rate = np.full((134, 134), 10.0, dtype=np.float32)
         rec = NowcastRecord(
@@ -538,7 +559,9 @@ class TestM9Adapter:
 # ---------------------------------------------------------------------------
 
 class TestM9FloodProjection:
+    """Testm9Floodprojection schema and data model representation."""
     def test_nowcast_produces_projection(self):
+        """Test that nowcast produces projection behaves as expected."""
         bundle = _bundle("P_NORMAL", 40.0)
         proj = bundle.flood_projections[60]
         assert proj.status == "AVAILABLE"
@@ -546,6 +569,7 @@ class TestM9FloodProjection:
         assert proj.flooded_area_m2 >= 0
 
     def test_deterministic_result(self):
+        """Test that deterministic result behaves as expected."""
         # The @lru_cache on _bundle() would return the same object for identical
         # arguments, which does NOT prove deterministic independent execution.
         # Construct two genuinely independent pipeline runs with caches cleared
@@ -615,6 +639,7 @@ class TestM9FloodProjection:
                 assert impact_a.impacted_fraction == impact_b.impacted_fraction
 
     def test_peak_depth_extent_and_mass_balance_available(self):
+        """Test that peak depth extent and mass balance available behaves as expected."""
         bundle = _bundle("P_NORMAL", 40.0)
         proj = bundle.flood_projections[60]
         data = proj.to_dict()
@@ -623,6 +648,7 @@ class TestM9FloodProjection:
         assert data["mass_balance"]["gate"] == "PASS"
 
     def test_model_version_preserved(self):
+        """Test that model version preserved behaves as expected."""
         bundle = _bundle("P_NORMAL", 40.0)
         proj = bundle.flood_projections[60]
         assert proj.model_version == M9_MODEL_VERSION
@@ -634,17 +660,21 @@ class TestM9FloodProjection:
 # ---------------------------------------------------------------------------
 
 class TestM9MultiLead:
+    """Testm9Multilead schema and data model representation."""
     def test_all_five_leads_available(self):
+        """Test that all five leads available behaves as expected."""
         bundle = _bundle("P_NORMAL", 40.0)
         assert sorted(bundle.flood_projections) == [0, 15, 30, 45, 60]
 
     def test_valid_time_correct(self):
+        """Test that valid time correct behaves as expected."""
         bundle = _bundle("P_NORMAL", 40.0)
         init = bundle.observation.observation_time
         for lead, proj in bundle.flood_projections.items():
             assert proj.valid_time == init + timedelta(minutes=lead)
 
     def test_each_projection_traceable_to_same_observation(self):
+        """Test that each projection traceable to same observation behaves as expected."""
         bundle = _bundle("P_NORMAL", 40.0)
         obs_fp = bundle.observation.fingerprint()
         assert {proj.observation_fingerprint for proj in bundle.flood_projections.values()} == {obs_fp}
@@ -655,23 +685,29 @@ class TestM9MultiLead:
 # ---------------------------------------------------------------------------
 
 class TestM9RoadImpact:
+    """Testm9Roadimpact schema and data model representation."""
     def test_projected_depth_reaches_existing_road_impact_logic(self):
+        """Test that projected depth reaches existing road impact logic behaves as expected."""
         bundle = _bundle("P_NORMAL", 40.0)
         road = bundle.road_projections[60]
         assert road.road_metrics["total_segments"] == NETWORK.n_segments
         assert road.policy_version == "B13-DEMO-V1"
 
     def test_road_impact_changes_when_projection_input_changes(self):
+        """Test that road impact changes when projection input changes behaves as expected."""
         dry_bundle = _bundle("P_NORMAL", 20.0)
         wet_bundle = _bundle("P_NORMAL", 40.0)
         assert dry_bundle.road_projections[60].road_metrics["impacted_segments"] < wet_bundle.road_projections[60].road_metrics["impacted_segments"]
 
     def test_synthetic_road_labeling_preserved(self):
+        """Test that synthetic road labeling preserved behaves as expected."""
         # Fixed observation: a wall-clock-dependent provider would make the
         # timeline (and this assertion) non-reproducible.
         class TestM9API_RoadHelper:
+            """Testm9Api Roadhelper schema and data model representation."""
             @staticmethod
             def _current_fixed_observation(rate_mmh: float = 40.0) -> RainfallObservation:
+                """Execute  Current Fixed Observation operation and return result."""
                 now = datetime.now(timezone.utc).replace(second=0, microsecond=0)
                 return SyntheticRainfallProvider(base_rate_mmh=rate_mmh, seed=123).fetch_observation(now)
 
@@ -689,7 +725,9 @@ class TestM9RoadImpact:
 # ---------------------------------------------------------------------------
 
 class TestM9Routing:
+    """Testm9Routing schema and data model representation."""
     def test_routing_consumes_projected_impact(self):
+        """Test that routing consumes projected impact behaves as expected."""
         bundle = _bundle("P_NORMAL", 140.0)
         route = PIPELINE.route(bundle, 60, NW, SE, "flood_aware")
         data = route.to_dict()
@@ -697,12 +735,14 @@ class TestM9Routing:
         assert data["routing"]["status"] == "OK"
 
     def test_lead_preserved_on_route(self):
+        """Test that lead preserved on route behaves as expected."""
         bundle = _bundle("P_NORMAL", 140.0)
         route = PIPELINE.route(bundle, 60, NW, SE, "flood_aware")
         assert route.lead_minutes == 60
         assert route.routing.lead_minutes == 60
 
     def test_no_safe_route_preserved(self):
+        """Test that no safe route preserved behaves as expected."""
         depth = np.full((134, 134), 0.7, dtype=np.float64)
         impacts = tuple(
             compute_road_impact(seg, depth, "P_TEST", 60, "2026-08-22T13:00:00+00:00")
@@ -730,6 +770,7 @@ class TestM9Routing:
         assert route.routing.status == "NO_SAFE_ROUTE"
 
     def test_no_silent_fallback(self):
+        """Test that no silent fallback behaves as expected."""
         depth = np.full((134, 134), 0.7, dtype=np.float64)
         impacts = {seg.road_id: compute_road_impact(seg, depth, "P_TEST", 60, "t60") for seg in NETWORK.segments}
         result = compute_route(NETWORK, impacts, NW, SE, "flood_aware", "P_TEST", 60, "t60")
@@ -742,11 +783,14 @@ class TestM9Routing:
 # ---------------------------------------------------------------------------
 
 class TestM9API:
+    """Testm9Api schema and data model representation."""
     def _current_fixed_observation(self, rate_mmh: float = 140.0) -> RainfallObservation:
+        """Execute  Current Fixed Observation operation and return result."""
         now = datetime.now(timezone.utc).replace(second=0, microsecond=0)
         return SyntheticRainfallProvider(base_rate_mmh=rate_mmh, seed=123).fetch_observation(now)
 
     def test_status_lists_valid_leads(self):
+        """Test that status lists valid leads behaves as expected."""
         client = TestClient(app)
         r = client.get("/api/v1/projections/nowcast/status")
         assert r.status_code == 200
@@ -755,6 +799,7 @@ class TestM9API:
         assert data["projection_version"] == M9_MODEL_VERSION
 
     def test_valid_lead_projection_frame(self):
+        """Test that valid lead projection frame behaves as expected."""
         client = TestClient(app)
         obs = self._current_fixed_observation()
         provider = rainfall_api.get_active_provider()
@@ -768,12 +813,14 @@ class TestM9API:
         assert "PERSISTENCE_PROJECTION" in data["labels"]
 
     def test_invalid_lead(self):
+        """Test that invalid lead behaves as expected."""
         client = TestClient(app)
         r = client.get("/api/v1/projections/nowcast/P_NORMAL/frame?lead=7")
         assert r.status_code == 400
         assert r.json()["error"]["code"] == "INVALID_LEAD"
 
     def test_missing_observation(self):
+        """Test that missing observation behaves as expected."""
         client = TestClient(app)
         provider = rainfall_api.get_active_provider()
         with mock.patch.object(provider, "fetch_latest", return_value=None):
@@ -782,6 +829,7 @@ class TestM9API:
         assert r.json()["error"]["code"] == "PROJECTION_UNAVAILABLE"
 
     def test_cached_projection(self):
+        """Test that cached projection behaves as expected."""
         client = TestClient(app)
         obs = self._current_fixed_observation()
         provider = rainfall_api.get_active_provider()
@@ -795,6 +843,7 @@ class TestM9API:
         assert second.json()["cache_hit"] is True
 
     def test_provenance_present(self):
+        """Test that provenance present behaves as expected."""
         client = TestClient(app)
         obs = self._current_fixed_observation()
         provider = rainfall_api.get_active_provider()
@@ -818,7 +867,9 @@ class TestM9API:
 # ---------------------------------------------------------------------------
 
 class TestM9Dashboard:
+    """Testm9Dashboard schema and data model representation."""
     def test_dashboard_contains_projection_controls(self):
+        """Test that dashboard contains projection controls behaves as expected."""
         client = TestClient(app)
         r = client.get("/")
         assert r.status_code == 200
@@ -826,6 +877,7 @@ class TestM9Dashboard:
         assert 'id="view-mode"' in r.text
 
     def test_dashboard_contains_required_projection_labels(self):
+        """Test that dashboard contains required projection labels behaves as expected."""
         client = TestClient(app)
         html = client.get("/").text
         assert "PERSISTENCE PROJECTION" in html
@@ -833,6 +885,7 @@ class TestM9Dashboard:
         assert "NOT_VALIDATED FORECAST" in html
 
     def test_dashboard_preserves_m7_content(self):
+        """Test that dashboard preserves m7 content behaves as expected."""
         client = TestClient(app)
         html = client.get("/").text
         assert "Rainfall + Nowcast" in html

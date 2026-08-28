@@ -47,6 +47,7 @@ class NeuralNowcastEngine:
     """PyTorch Deep Learning Nowcaster with seamless advection fallback."""
 
     def __init__(self, config: NeuralNowcastConfig | None = None) -> None:
+        """Execute   Init   operation and return result."""
         self._config = config or NeuralNowcastConfig()
         self._torch_available = self._check_torch()
         self._model = None
@@ -62,13 +63,16 @@ class NeuralNowcastEngine:
 
     @property
     def config(self) -> NeuralNowcastConfig:
+        """Execute Config operation and return result."""
         return self._config
 
     @property
     def is_torch_active(self) -> bool:
+        """Execute Is Torch Active operation and return result."""
         return self._torch_available and self._model is not None
 
     def _check_torch(self) -> bool:
+        """Execute  Check Torch operation and return result."""
         try:
             import torch
             return True

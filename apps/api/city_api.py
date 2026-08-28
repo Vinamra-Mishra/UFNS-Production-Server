@@ -87,6 +87,7 @@ CITY_METADATA = {
 
 
 class CitySwitchRequest(BaseModel):
+    """Cityswitchrequest schema and data model representation."""
     city: Optional[str] = None
     city_id: Optional[str] = None
 

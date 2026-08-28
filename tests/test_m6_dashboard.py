@@ -25,6 +25,7 @@ client = TestClient(app)
 # ---------------------------------------------------------------------------
 
 def test_m6_health_and_version():
+    """Test that m6 health and version behaves as expected."""
     r = client.get("/health")
     assert r.status_code == 200
     body = r.json()
@@ -43,6 +44,7 @@ def test_m6_health_and_version():
 
 
 def test_m6_dashboard_root_serves_html():
+    """Test that m6 dashboard root serves html behaves as expected."""
     r = client.get("/")
     assert r.status_code == 200
     assert "text/html" in r.headers["content-type"]
@@ -51,6 +53,7 @@ def test_m6_dashboard_root_serves_html():
 
 
 def test_m6_dashboard_includes_m8_rainfall_panel():
+    """Test that m6 dashboard includes m8 rainfall panel behaves as expected."""
     # M8 adds a rainfall/nowcast status panel to the dashboard sidebar.
     r = client.get("/")
     assert r.status_code == 200
@@ -60,6 +63,7 @@ def test_m6_dashboard_includes_m8_rainfall_panel():
 
 
 def test_m6_scenario_list():
+    """Test that m6 scenario list behaves as expected."""
     r = client.get("/api/v1/scenarios")
     assert r.status_code == 200
     body = r.json()
@@ -79,6 +83,7 @@ def test_m6_scenario_list():
 # ---------------------------------------------------------------------------
 
 def test_m6_scenario_metadata_provenance():
+    """Test that m6 scenario metadata provenance behaves as expected."""
     r = client.get("/api/v1/scenarios/S4")
     assert r.status_code == 200
     m = r.json()
@@ -102,6 +107,7 @@ def test_m6_scenario_metadata_provenance():
 # ---------------------------------------------------------------------------
 
 def test_m6_scenario_result_schema():
+    """Test that m6 scenario result schema behaves as expected."""
     r = client.get("/api/v1/scenarios/S2/result")
     assert r.status_code == 200
     d = r.json()
@@ -122,6 +128,7 @@ def test_m6_scenario_result_schema():
 
 
 def test_m6_snapshots_timeline():
+    """Test that m6 snapshots timeline behaves as expected."""
     r = client.get("/api/v1/scenarios/S1/snapshots")
     assert r.status_code == 200
     body = r.json()
@@ -135,6 +142,7 @@ def test_m6_snapshots_timeline():
 # ---------------------------------------------------------------------------
 
 def test_m6_s3s4_comparison():
+    """Test that m6 s3s4 comparison behaves as expected."""
     r = client.get("/api/v1/comparison/s3s4")
     assert r.status_code == 200
     body = r.json()
@@ -159,6 +167,7 @@ def test_m6_s3s4_comparison():
 # ---------------------------------------------------------------------------
 
 def test_m6_mass_balance():
+    """Test that m6 mass balance behaves as expected."""
     r = client.get("/api/v1/scenarios/S3/mass-balance")
     assert r.status_code == 200
     mb = r.json()
@@ -177,6 +186,7 @@ def test_m6_mass_balance():
 # ---------------------------------------------------------------------------
 
 def test_m6_flood_depth_artifact():
+    """Test that m6 flood depth artifact behaves as expected."""
     r = client.get("/api/v1/scenarios/S3/flood-depth?lead=110")
     assert r.status_code == 200
     assert r.headers["content-type"] == "image/png"
@@ -185,6 +195,7 @@ def test_m6_flood_depth_artifact():
 
 
 def test_m6_flood_extent_artifact():
+    """Test that m6 flood extent artifact behaves as expected."""
     r = client.get("/api/v1/scenarios/S4/flood-extent?lead=110")
     assert r.status_code == 200
     assert r.headers["content-type"] == "image/png"
@@ -192,6 +203,7 @@ def test_m6_flood_extent_artifact():
 
 
 def test_m6_map_rendering_deterministic():
+    """Test that m6 map rendering deterministic behaves as expected."""
     a = client.get("/api/v1/scenarios/S1/flood-depth?lead=90").content
     b = client.get("/api/v1/scenarios/S1/flood-depth?lead=90").content
     assert a == b
@@ -202,6 +214,7 @@ def test_m6_map_rendering_deterministic():
 # ---------------------------------------------------------------------------
 
 def test_m6_invalid_scenario_404():
+    """Test that m6 invalid scenario 404 behaves as expected."""
     # These ids match the route and are rejected by the allow-list with a
     # structured error envelope.
     for bad in ("S5", "s1", "S0", "S1x"):
@@ -212,6 +225,7 @@ def test_m6_invalid_scenario_404():
 
 
 def test_m6_no_path_traversal_to_filesystem():
+    """Test that m6 no path traversal to filesystem behaves as expected."""
     # The API never accepts a client file path: artifact paths are derived
     # internally from an allow-listed scenario id and a validated lead. Any
     # traversal-looking scenario id is rejected by the allow-list, and the
@@ -227,6 +241,7 @@ def test_m6_no_path_traversal_to_filesystem():
 
 
 def test_m6_invalid_lead():
+    """Test that m6 invalid lead behaves as expected."""
     r = client.get("/api/v1/scenarios/S1/flood-depth?lead=999")
     assert r.status_code in (400, 422, 404)
     # lead 7 is not a valid snapshot lead (5-min cadence)
@@ -235,6 +250,7 @@ def test_m6_invalid_lead():
 
 
 def test_m6_structured_error_envelope():
+    """Test that m6 structured error envelope behaves as expected."""
     r = client.get("/api/v1/scenarios/NOPE")
     assert r.status_code == 404
     body = r.json()
@@ -247,6 +263,7 @@ def test_m6_structured_error_envelope():
 # ---------------------------------------------------------------------------
 
 def test_m6_provenance_status_labels():
+    """Test that m6 provenance status labels behaves as expected."""
     r = client.get("/api/v1/scenarios/S1")
     m = r.json()
     assert m["dataset_status"] == "SYNTHETIC"
@@ -265,6 +282,7 @@ def test_m6_provenance_status_labels():
 # ---------------------------------------------------------------------------
 
 def test_m6_store_does_not_rerun_simulation():
+    """Test that m6 store does not rerun simulation behaves as expected."""
     # The store only reads precomputed artifacts and the registry.
     results = store.load_results()
     assert set(results.keys()) == {"S1", "S2", "S3", "S4"}

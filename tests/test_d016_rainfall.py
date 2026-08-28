@@ -44,6 +44,7 @@ from services.scenarios.profiles import D016_STATUS, ProfileStatus, all_profiles
 # ---------------------------------------------------------------------------
 
 def test_d016_01_published_source_recorded():
+    """Test that d016 01 published source recorded behaves as expected."""
     for key in ("title", "authors", "journal", "doi", "url", "gauge_station",
                 "record_period", "geographic_applicability", "distribution"):
         assert key in SOURCE and SOURCE[key], f"SOURCE missing {key}"
@@ -58,6 +59,7 @@ def test_d016_01_published_source_recorded():
 # ---------------------------------------------------------------------------
 
 def test_d016_02_geographic_applicability():
+    """Test that d016 02 geographic applicability behaves as expected."""
     assert "Kolkata" in SOURCE["geographic_applicability"]
     assert "West Bengal" in SOURCE["geographic_applicability"]
     # The derivation is NOT claimed to apply to the exact synthetic fixture;
@@ -70,6 +72,7 @@ def test_d016_02_geographic_applicability():
 # ---------------------------------------------------------------------------
 
 def test_d016_03_scenario_mapping_explicit():
+    """Test that d016 03 scenario mapping explicit behaves as expected."""
     assert set(RECOMMENDED_SCENARIO_MAPPING) == {"NORMAL", "HEAVY", "EXTREME"}
     for sev, cfg in RECOMMENDED_SCENARIO_MAPPING.items():
         assert "return_period_yr" in cfg
@@ -85,6 +88,7 @@ def test_d016_03_scenario_mapping_explicit():
 # ---------------------------------------------------------------------------
 
 def test_d016_04_derivation_deterministic():
+    """Test that d016 04 derivation deterministic behaves as expected."""
     a = derived_scenario_depths_mm()
     b = derived_scenario_depths_mm()
     assert a == b
@@ -101,6 +105,7 @@ def test_d016_04_derivation_deterministic():
 # ---------------------------------------------------------------------------
 
 def test_d016_04b_published_anchors_reproduced():
+    """Test that d016 04b published anchors reproduced behaves as expected."""
     for d, i2, i100 in zip(PUBLISHED_DURATIONS_H, PUBLISHED_INTENSITY_2YR, PUBLISHED_INTENSITY_100YR):
         assert depth_mm(d, 2.0) == pytest.approx(i2 * d, abs=1e-9)
         assert depth_mm(d, 100.0) == pytest.approx(i100 * d, abs=1e-9)
@@ -111,6 +116,7 @@ def test_d016_04b_published_anchors_reproduced():
 # ---------------------------------------------------------------------------
 
 def test_d016_05_hyetograph_totals_and_structure():
+    """Test that d016 05 hyetograph totals and structure behaves as expected."""
     n = DURATION_MINUTES // INTERVAL_MINUTES
     assert n == 12
     for sev, total in DERIVED_DEPTHS_MM.items():
@@ -128,6 +134,7 @@ def test_d016_05_hyetograph_totals_and_structure():
 # ---------------------------------------------------------------------------
 
 def test_d016_05b_units():
+    """Test that d016 05b units behaves as expected."""
     # intensities are mm/h; depths are mm; durations in hours.
     for sev, hy in DERIVED_HYETOGRAPHS_MMH.items():
         # mean intensity = total depth / duration(hours)
@@ -142,6 +149,7 @@ def test_d016_05b_units():
 # ---------------------------------------------------------------------------
 
 def test_d016_06_no_negative_and_source_params_recorded():
+    """Test that d016 06 no negative and source params recorded behaves as expected."""
     for sev, hy in DERIVED_HYETOGRAPHS_MMH.items():
         assert all(v >= 0 for v in hy)
     # storm-shape exponent is an explicit ASSUMPTION, recorded
@@ -156,6 +164,7 @@ def test_d016_06_no_negative_and_source_params_recorded():
 # ---------------------------------------------------------------------------
 
 def test_d016_06b_monotonic_ordering():
+    """Test that d016 06b monotonic ordering behaves as expected."""
     d = DERIVED_DEPTHS_MM
     assert d["NORMAL"] < d["HEAVY"] < d["EXTREME"]
     # depth increases with return period (scientific expectation)
@@ -169,6 +178,7 @@ def test_d016_06b_monotonic_ordering():
 # ---------------------------------------------------------------------------
 
 def test_d016_07_no_fabricated_human_approval():
+    """Test that d016 07 no fabricated human approval behaves as expected."""
     # The live M5 profiles must NOT be marked APPROVED.
     profiles = all_profiles()
     for p in profiles.values():
@@ -184,6 +194,7 @@ def test_d016_07_no_fabricated_human_approval():
 # ---------------------------------------------------------------------------
 
 def test_d016_08_status_recorded():
+    """Test that d016 08 status recorded behaves as expected."""
     assert D016_STATUS == "PREPARED"
     # fingerprint stability: source parameters are recorded and stable
     assert len(derivation_fingerprint()) == 64
@@ -195,6 +206,7 @@ def test_d016_08_status_recorded():
 # ---------------------------------------------------------------------------
 
 def test_d016_09_m5_contract_unchanged():
+    """Test that d016 09 m5 contract unchanged behaves as expected."""
     # The alternating-block primitive used by M5 is unchanged and still works.
     hy = alternating_block_hyetograph(45.0, 180, 15, exponent=0.4)
     assert len(hy) == 12
@@ -212,6 +224,7 @@ def test_d016_09_m5_contract_unchanged():
 # ---------------------------------------------------------------------------
 
 def test_d016_10_invalid_inputs():
+    """Test that d016 10 invalid inputs behaves as expected."""
     with pytest.raises(ValueError):
         depth_mm(0.0, 2.0)          # non-positive duration
     with pytest.raises(ValueError):

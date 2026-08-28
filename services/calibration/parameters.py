@@ -229,6 +229,7 @@ class CalibrationParameterSet:
         return cls(**kwargs).validate_and_clip()
 
     def to_dict(self) -> dict[str, float]:
+        """Execute To Dict operation and return result."""
         d = {
             "pipe_manning_n": round(self.pipe_manning_n, 6),
             "surface_manning_n": round(self.surface_manning_n, 6),

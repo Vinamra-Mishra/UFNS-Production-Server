@@ -64,6 +64,7 @@ def calculate_exceedance_probabilities(
 
 @dataclass
 class ProbabilisticRiskResult:
+    """Probabilisticriskresult schema and data model representation."""
     scenario_id: str
     lead_minutes: int
     ensemble_size: int
@@ -75,6 +76,7 @@ class ProbabilisticRiskResult:
     provenance: dict[str, Any]
 
     def to_dict(self) -> dict[str, Any]:
+        """Execute To Dict operation and return result."""
         return {
             "scenario_id": self.scenario_id,
             "lead_minutes": self.lead_minutes,

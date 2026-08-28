@@ -30,6 +30,7 @@ class AlertAuditRecord:
     active: bool = True
 
     def to_dict(self) -> dict[str, Any]:
+        """Execute To Dict operation and return result."""
         return {
             "record_id": self.record_id,
             "alert": self.alert.to_dict(),
@@ -45,6 +46,7 @@ class AlertLedger:
     """In-memory and file-backed audit registry for early warning alerts."""
 
     def __init__(self, storage_path: Optional[Path] = None) -> None:
+        """Execute   Init   operation and return result."""
         self.storage_path = storage_path
         self._records: list[AlertAuditRecord] = []
         self._by_id: dict[str, AlertAuditRecord] = {}
@@ -134,6 +136,7 @@ class AlertLedger:
         self._by_id.clear()
 
     def _persist(self) -> None:
+        """Execute  Persist operation and return result."""
         if self.storage_path:
             try:
                 self.storage_path.parent.mkdir(parents=True, exist_ok=True)

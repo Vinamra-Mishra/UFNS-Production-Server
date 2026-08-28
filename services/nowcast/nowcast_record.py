@@ -70,6 +70,7 @@ class NowcastRecord:
     metadata: dict[str, Any] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
+        """Execute   Post Init   operation and return result."""
         if self.initialization_time.tzinfo is None:
             raise ValueError("initialization_time must be timezone-aware")
         if self.valid_time.tzinfo is None:
@@ -155,7 +156,7 @@ class NowcastRecord:
             "rate_min_mmh": round(float(np.min(self.rate_mmh)), 4),
         }
         if include_rates:
-            d["values"] = [round(float(v), 3) for v in self.rate_mmh.reshape(-1)]
+            d["values"] = np.round(self.rate_mmh.reshape(-1).astype(np.float64), 3).tolist()
         if self.metadata:
             d["metadata"] = self.metadata
         return d

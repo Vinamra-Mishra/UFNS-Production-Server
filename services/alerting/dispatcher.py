@@ -22,6 +22,7 @@ from services.alerting.cap import CAPAlert, CAPSeverity
 
 
 class DispatchChannel(str, Enum):
+    """Dispatchchannel schema and data model representation."""
     CAP_FEED = "CAP_FEED"
     WEBHOOK_PUSH = "WEBHOOK_PUSH"
     SMS_BROADCAST = "SMS_BROADCAST"
@@ -30,6 +31,7 @@ class DispatchChannel(str, Enum):
 
 
 class DeliveryStatus(str, Enum):
+    """Deliverystatus schema and data model representation."""
     DELIVERED = "DELIVERED"
     QUEUED = "QUEUED"
     FAILED = "FAILED"
@@ -50,6 +52,7 @@ class DispatchReceipt:
     message_preview: str
 
     def to_dict(self) -> dict[str, Any]:
+        """Execute To Dict operation and return result."""
         return {
             "receipt_id": self.receipt_id,
             "alert_id": self.alert_id,
@@ -67,6 +70,7 @@ class AlertDispatcher:
     """Dispatches CAP alerts across configured civic push channels."""
 
     def __init__(self, webhook_secret: str = "ufns-demo-secret-key") -> None:
+        """Execute   Init   operation and return result."""
         self.webhook_secret = webhook_secret
 
     def format_sms_message(self, alert: CAPAlert) -> str:

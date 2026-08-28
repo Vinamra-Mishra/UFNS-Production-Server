@@ -19,12 +19,14 @@ def _closed_ledger(rain_m3: float = 1000.0) -> MassLedger:
 
 
 def test_exact_closure_passes():
+    """Test that exact closure passes behaves as expected."""
     mb = _closed_ledger().close(T0, T1)
     assert mb.status == "pass"
     assert mb.residual_m3 == 0.0
 
 
 def test_three_percent_residual_warns():
+    """Test that three percent residual warns behaves as expected."""
     led = MassLedger()
     led.add_rainfall(1000.0)
     led.surface_storage_final_m3 = 970.0  # 30 m3 unaccounted = 3%
@@ -34,6 +36,7 @@ def test_three_percent_residual_warns():
 
 
 def test_ten_percent_residual_fails():
+    """Test that ten percent residual fails behaves as expected."""
     led = MassLedger()
     led.add_rainfall(1000.0)
     led.surface_storage_final_m3 = 900.0
@@ -41,6 +44,7 @@ def test_ten_percent_residual_fails():
 
 
 def test_dry_run_absolute_check():
+    """Test that dry run absolute check behaves as expected."""
     led = MassLedger()  # no rain; tiny numerical dust
     led.surface_storage_final_m3 = 1e-9
     mb = led.close(T0, T1)
@@ -70,6 +74,7 @@ def test_exchange_cancels_internally():
 
 
 def pytest_approx(x, rel=1e-9):
+    """Execute Pytest Approx operation and return result."""
     import pytest
 
     return pytest.approx(x, rel=rel)

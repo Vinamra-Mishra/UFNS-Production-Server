@@ -9,6 +9,7 @@ from services.contracts import ProvenanceClass, QualityFlag
 
 
 def test_rebuild_is_byte_identical(tmp_path):
+    """Test that rebuild is byte identical behaves as expected."""
     p1 = tmp_path / "a.tif"
     p2 = tmp_path / "b.tif"
     write_geotiff(synthetic_dem(seed=20260821), p1)
@@ -17,6 +18,7 @@ def test_rebuild_is_byte_identical(tmp_path):
 
 
 def test_manifest_checksum_matches_disk(tmp_path):
+    """Test that manifest checksum matches disk behaves as expected."""
     p = tmp_path / "dem.tif"
     write_geotiff(synthetic_dem(), p)
     lin = make_lineage(
@@ -35,6 +37,7 @@ def test_manifest_checksum_matches_disk(tmp_path):
 
 
 def test_tamper_detection(tmp_path):
+    """Test that tamper detection behaves as expected."""
     p = tmp_path / "dem.tif"
     write_geotiff(synthetic_dem(), p)
     digest = sha256_file(p)

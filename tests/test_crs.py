@@ -12,6 +12,7 @@ from services.ingestion.crs import (
 
 
 def test_lonlat_range_checks():
+    """Test that lonlat range checks behaves as expected."""
     with pytest.raises(ValueError):
         LonLat(181.0, 10.0)
     with pytest.raises(ValueError):
@@ -20,6 +21,7 @@ def test_lonlat_range_checks():
 
 
 def test_geographic_crs_rejected_for_simulation():
+    """Test that geographic crs rejected for simulation behaves as expected."""
     with pytest.raises(ValueError):
         require_projected_metric("EPSG:4326")
     crs = require_projected_metric("EPSG:32645")
@@ -27,12 +29,14 @@ def test_geographic_crs_rejected_for_simulation():
 
 
 def test_projected_roundtrip_closure():
+    """Test that projected roundtrip closure behaves as expected."""
     # Kolkata coordinates -> UTM 45N -> back; closure must be sub-centimetre
     err = roundtrip_error(88.36, 22.57)
     assert err < 0.01
 
 
 def test_axis_order_guard_roundtrip():
+    """Test that axis order guard roundtrip behaves as expected."""
     # to_projected is always (lon, lat) with always_xy; round trip must be exact.
     x, y = to_projected(88.36, 22.57)
     assert 0 < x < 1_000_000 and 0 < y < 10_000_000  # UTM easting/northing ranges

@@ -32,6 +32,7 @@ class RoadGraph:
     node_xy: dict[str, tuple[float, float]] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
+        """Execute   Post Init   operation and return result."""
         for nid, (r, c) in self.network.nodes.items():
             self.node_xy[nid] = cell_to_projected(r, c)
         for seg in self.network.segments:
@@ -39,15 +40,18 @@ class RoadGraph:
             self.adjacency.setdefault(seg.end_node, []).append((seg.start_node, seg.road_id))
 
     def segment(self, road_id: str) -> RoadSegment:
+        """Execute Segment operation and return result."""
         return self.network.by_id()[road_id]
 
     def travel_time_s(self, road_id: str) -> float:
+        """Execute Travel Time S operation and return result."""
         seg = self.segment(road_id)
         speed_ms = seg.baseline_speed_kmh / 3.6
         return seg.length_m / speed_ms
 
 
 def build_graph(network: RoadNetwork) -> RoadGraph:
+    """Execute Build Graph operation and return result."""
     return RoadGraph(network)
 
 
@@ -128,6 +132,7 @@ def baseline_edge_cost(graph: RoadGraph) -> Callable[[str], Optional[float]]:
     """Edge cost = travel time at baseline speed (no flood constraints)."""
 
     def cost(road_id: str) -> float:
+        """Execute Cost operation and return result."""
         return graph.travel_time_s(road_id)
 
     return cost
@@ -154,6 +159,7 @@ def flood_aware_edge_cost(
         raise ValueError(f"unknown routing mode: {mode!r}")
 
     def cost(road_id: str) -> Optional[float]:
+        """Execute Cost operation and return result."""
         seg = graph.segment(road_id)
         imp = impacts.get(road_id)
         cls = imp.classification if imp is not None else "DRY"

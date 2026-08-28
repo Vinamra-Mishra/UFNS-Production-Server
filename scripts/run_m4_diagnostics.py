@@ -60,6 +60,7 @@ def _line_chart(path: Path, series: dict[str, list[float]], x: list[float],
 
 
 def main() -> None:
+    """Execute Main operation and return result."""
     OUT.mkdir(parents=True, exist_ok=True)
     dem = synthetic_dem()
     cfgs = m4_scenario_configs(dem, ISSUE)
