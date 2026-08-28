@@ -174,6 +174,9 @@ def load_city_dem_and_mask(city_key: str) -> tuple[np.ndarray, np.ndarray, dict[
     grid_file = PROCESSED_DIR / city_key / "grid_spec.json"
     grid_meta = json.loads(grid_file.read_text(encoding="utf-8")) if grid_file.exists() else {}
 
+    if city_key.upper() != "DEMO" and (not dem_path.exists() or not mask_path.exists()):
+        raise RuntimeError(f"Missing essential dataset artifacts for {city_key}: dem_normalized.tif / land_sea_mask.npy")
+
     dem = np.zeros((134, 134), dtype=np.float32)
     if dem_path.exists():
         with rasterio.open(dem_path) as src:
@@ -306,4 +309,4 @@ def clear_artifact_caches() -> None:
     _load_json.cache_clear()
     read_depth_tif.cache_clear()
     load_city_dem_and_mask.cache_clear()
-    get_depth_grid.cache_clear()
+    _get_depth_grid_cached.cache_clear()

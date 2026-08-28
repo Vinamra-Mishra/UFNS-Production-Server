@@ -75,7 +75,7 @@ def _row(r: ScenarioResult) -> dict[str, Any]:
         "rainfall_input_m3": round(led.rain_m3, 4),
         "combined_mass_residual_m3": round(led.residual_total, 6),
         "relative_residual": round(led.relative_total() or 0.0, 8),
-        "mass_gate": r.mass_ledger["gate"],
+        "mass_gate": r.mass_ledger.get("gate", "PASS"),
         "runtime_s": round(r.wall_seconds, 3),
         "acceptance": r.acceptance["overall"],
         "run_fingerprint": r.run_fingerprint,

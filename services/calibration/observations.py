@@ -1,3 +1,4 @@
+import copy
 """Hydrological observation data models, sensor ingestion, and synthetic benchmark generator (Phase B).
 
 Provides:
@@ -63,11 +64,17 @@ class ObservedTimeSeries:
     metadata: dict[str, Any] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
-        """Execute   Post Init   operation and return result."""
+        """Execute Post Init validation on lengths, finiteness, and monotonicity."""
         if len(self.time_minutes) != len(self.values):
             raise ValueError(
                 f"Time length ({len(self.time_minutes)}) must match values length ({len(self.values)})"
             )
+        if len(self.time_minutes) > 0:
+            t_arr = np.asarray(self.time_minutes, dtype=np.float64)
+            if not np.all(np.isfinite(t_arr)):
+                raise ValueError("time_minutes contains non-finite values (NaN or Inf)")
+            if len(t_arr) > 1 and not np.all(np.diff(t_arr) > 0):
+                raise ValueError("time_minutes must contain strictly increasing timestamps")
 
     @property
     def time_array(self) -> np.ndarray:
@@ -108,7 +115,7 @@ class ObservedTimeSeries:
             "provenance": self.provenance.value,
             "noise_std": self.noise_std,
             "quality_flag": self.quality_flag,
-            "metadata": self.metadata,
+            "metadata": copy.deepcopy(self.metadata),
         }
 
     def fingerprint(self) -> str:

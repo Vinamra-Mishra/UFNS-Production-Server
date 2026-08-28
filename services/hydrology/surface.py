@@ -48,9 +48,9 @@ class HortonLoss:
     """
 
     def __init__(self, f0_ms: float, fmin_ms: float, k_s1: float) -> None:
-        """Execute   Init   operation and return result."""
-        if not (f0_ms >= fmin_ms >= 0 and k_s1 > 0):
-            raise ValueError("Horton parameters invalid (f0 >= fmin >= 0, k > 0)")
+        """Execute Init operation and return result."""
+        if not (np.isfinite(f0_ms) and np.isfinite(fmin_ms) and np.isfinite(k_s1) and f0_ms >= fmin_ms >= 0 and k_s1 > 0):
+            raise ValueError("Horton parameters invalid (f0 >= fmin >= 0, k > 0, all values must be finite)")
         self.f0, self.fmin, self.k = f0_ms, fmin_ms, k_s1
 
     def capacity(self, wetting_time_s: np.ndarray) -> np.ndarray:

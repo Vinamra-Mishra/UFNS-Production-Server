@@ -220,6 +220,8 @@ class DrainageCalibrationEngine:
         # Setup evaluation objective function
         target_times = observed.time_array
         obs_values = observed.value_array
+        if len(target_times) > 0 and (target_times[0] < 0.0 or target_times[-1] > duration_minutes):
+            raise ValueError(f"Observation time range [{target_times[0]}, {target_times[-1]}] exceeds simulation duration [0, {duration_minutes}]")
         dt_min = float(target_times[1] - target_times[0]) if len(target_times) > 1 else 1.0
 
         def objective_function(candidate: CalibrationParameterSet) -> float:
@@ -290,7 +292,7 @@ class DrainageCalibrationEngine:
                 "SYNTHETIC BENCHMARK: Calibrated parameters recovered against a known synthetic ground truth. "
                 "Verified algorithmic inverse accuracy for research demonstration."
             )
-        elif network_provenance == NetworkProvenance.SURVEYED_ASSET_NETWORK and observed.provenance != ObservationProvenance.SYNTHETIC_BENCHMARK:
+        elif network_provenance == NetworkProvenance.SURVEYED_ASSET_NETWORK and observed.provenance == ObservationProvenance.FIELD_SENSOR_QUALITY_CONTROLLED:
             validation_status = ValidationStatus.SCIENTIFICALLY_VALIDATED
             disclaimer = (
                 "SCIENTIFICALLY VALIDATED: Calibration executed against surveyed physical drainage network "
@@ -304,7 +306,8 @@ class DrainageCalibrationEngine:
                 "without verified physical GIS blueprints."
             )
 
-        cal_id = f"CAL-{int(time.time())}-{opt_res.optimal_parameters.fingerprint()[:6]}"
+        import uuid
+        cal_id = f"CAL-{uuid.uuid4().hex[:8].upper()}-{opt_res.optimal_parameters.fingerprint()[:6]}"
 
         return CalibrationResult(
             calibration_id=cal_id,

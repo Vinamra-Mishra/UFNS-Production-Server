@@ -154,6 +154,8 @@ class ProjectionPipeline:
         if cached is not None:
             timings = dict(cached.timings_ms)
             timings.update(timings_ms)
+            primary_keys = ["observation_fetch", "nowcast_generation", "frame_conversion", "run_config_build", "flood_projection", "road_impact"]
+            timings["total_projection"] = sum(timings.get(k, 0.0) for k in primary_keys)
             return ProjectionBundle(
                 config=cached.config,
                 observation=cached.observation,
@@ -202,7 +204,8 @@ class ProjectionPipeline:
             )
             road = self._build_road_projections(config, flood)
             timings_ms["road_impact"] = (perf_counter() - road_t0) * 1000.0
-            timings_ms["total_projection"] = sum(timings_ms.values())
+            primary_keys = ["observation_fetch", "nowcast_generation", "frame_conversion", "run_config_build", "flood_projection", "road_impact"]
+            timings_ms["total_projection"] = sum(timings_ms.get(k, 0.0) for k in primary_keys)
 
             bundle = ProjectionBundle(
                 config=config,

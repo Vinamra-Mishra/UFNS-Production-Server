@@ -369,7 +369,7 @@ def process_roads(city: str, spec: dict, dem: np.ndarray, transform: rasterio.Af
     Transforms road geometry into target UTM coordinates, clips to grid bounds,
     and assigns baseline speed and elevation metrics.
     """
-    print(f"  [3/4] Processing Road Graph & B13 Passability Network ...")
+    print("  [3/4] Processing Road Graph & B13 Passability Network ...")
     bounds = grid.bounds
     roads_path = spec["raw_dir"] / spec["roads_raw"]
     if not roads_path.exists():
@@ -473,7 +473,9 @@ def process_scenarios(city: str, spec: dict) -> dict:
         idf_data = json.load(f)
 
     scenarios = {}
-    scenarios_meta = idf_data.get("scenarios_3hr", {})
+    scenarios_meta = idf_data.get("scenarios_3hr")
+    if not isinstance(scenarios_meta, dict) or not scenarios_meta:
+        raise ValueError(f"Missing or empty scenarios_3hr in IDF dataset for {city}: {idf_path}")
     for sc_id, meta in scenarios_meta.items():
         hyetograph = synthesize_alternating_block_hyetograph(
             total_depth_mm=meta["total_depth_mm"],

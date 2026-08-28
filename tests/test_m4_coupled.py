@@ -211,7 +211,8 @@ def test_m4_08_snapshots(m4_results, cfgs):
     assert times[0] == ISSUE and times[-1] == ISSUE + timedelta(minutes=180)
     # deterministic: identical config -> identical snapshot statistics
     again = CoupledFloodModel(cfgs["heavy"]).run()
-    for s1, s2 in zip(res.snapshots, again.snapshots):
+    assert len(res.snapshots) == len(again.snapshots)
+    for s1, s2 in zip(res.snapshots, again.snapshots, strict=True):
         assert s1.max_depth_m == s2.max_depth_m
         assert s1.flooded_cells == s2.flooded_cells
         assert s1.drainage.st1_head_m == s2.drainage.st1_head_m

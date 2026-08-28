@@ -12,7 +12,7 @@ import math
 import time
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Callable, Dict, List, Optional, Sequence, Tuple
+from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple
 
 import numpy as np
 from scipy.optimize import differential_evolution, minimize
@@ -120,6 +120,8 @@ class ParameterOptimizer:
 
         # Evaluate initial guess
         init_loss = float(objective_fn(base_params))
+        if not math.isfinite(init_loss):
+            init_loss = 1e6
         best_so_far = init_loss
         best_param_set = base_params
         history.append(
@@ -218,13 +220,13 @@ class ParameterOptimizer:
                 wrapped_loss(pt)
                 if eval_count >= self.max_evaluations:
                     break
-            converged = True
+            converged = (best_so_far < 1e5 and eval_count > 1)
         elif self.strategy == OptimizationStrategy.RANDOM_SEARCH:
             rng = np.random.default_rng(20260825)
             for _ in range(self.max_evaluations - 1):
                 pt = rng.uniform(0.0, 1.0, size=len(norm_bounds))
                 wrapped_loss(pt)
-            converged = True
+            converged = (best_so_far < 1e5 and eval_count > 1)
 
         duration = float(time.perf_counter() - t_start)
 

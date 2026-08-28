@@ -77,12 +77,16 @@ class Manifest:
         extra: Optional[dict[str, Any]] = None,
     ) -> None:
         """Execute Add Asset operation and return result."""
-        uri = str(path)
+        p = Path(path)
         if self.base_dir is not None:
             try:
-                uri = str(Path(path).resolve().relative_to(Path(self.base_dir).resolve()))
+                uri = str(p.resolve().relative_to(Path(self.base_dir).resolve()))
             except ValueError:
-                uri = str(path)
+                if p.is_absolute():
+                    raise ValueError(f"Asset path {p} is absolute and outside base_dir {self.base_dir}")
+                uri = str(p)
+        else:
+            uri = str(p)
         base = {
             "role": role,
             "asset_uri": uri,

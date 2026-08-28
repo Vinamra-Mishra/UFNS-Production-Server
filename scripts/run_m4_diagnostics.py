@@ -49,11 +49,11 @@ def _line_chart(path: Path, series: dict[str, list[float]], x: list[float],
         y0 = pad_t + p_i * panel_h
         y1 = pad_t + (p_i + 1) * panel_h
         ymax = max(max(ys), 1e-9)
-        xs = [pad_l + (h - pad_l - pad_r) * (xi - x[0]) / max(x[-1] - x[0], 1) for xi in x]
+        xs = [pad_l + (w - pad_l - pad_r) * (xi - x[0]) / max(x[-1] - x[0], 1) for xi in x]
         pts = [(xs[i], y1 - (yi / ymax) * (panel_h - 28)) for i, yi in enumerate(ys)]
         d.line(pts, fill=colors.get(name, (0, 0, 0)), width=2)
         d.text((8, y0 + 2), f"{name} (max {ymax:.3g})", fill=(20, 20, 20))
-        d.line([(pad_l, y1), (h - pad_r, y1)], fill=(180, 180, 180), width=1)
+        d.line([(pad_l, y1), (w - pad_r, y1)], fill=(180, 180, 180), width=1)
     d.text((8, 4), f"{title} - SYNTHETIC / SIMULATED", fill=(20, 20, 20))
     d.text((pad_l, h - pad_b + 12), xlabel, fill=(60, 60, 60))
     img.save(path)
@@ -69,7 +69,7 @@ def main() -> None:
 
     # -- run every scenario once, keep results ---------------------------------
     results: dict[str, dict] = {}
-    runs: dict[str, "CoupledFloodModel"] = {}
+    runs: dict[str, Any] = {}
     print("running M4 scenario suite (zero, uniform, spatial, heavy, heavy_blocked)...")
     for key in ("zero", "uniform", "spatial", "heavy", "heavy_blocked"):
         model = CoupledFloodModel(cfgs[key])

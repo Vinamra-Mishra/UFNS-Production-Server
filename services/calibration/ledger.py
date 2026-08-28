@@ -45,6 +45,7 @@ class CalibrationLedger:
     def clear(self) -> None:
         """Execute Clear operation and return result."""
         self._records.clear()
+        self._save_to_disk()
 
     def _save_to_disk(self) -> None:
         """Execute  Save To Disk operation and return result."""
@@ -63,6 +64,10 @@ class CalibrationLedger:
             if not content:
                 return
             data = json.loads(content)
+            if not isinstance(data, dict):
+                import logging
+                logging.getLogger(__name__).warning("Malformed calibration ledger JSON (expected dict) in %s", self.storage_path)
+                return
             for cid, item in data.items():
                 try:
                     self._records[cid] = CalibrationResult.from_dict(item)

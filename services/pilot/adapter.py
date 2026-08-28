@@ -135,6 +135,8 @@ def select_real_pilot_roi(
         raise ValueError(f"ROI window {window} larger than terrain {elev.shape}")
     nodata = terrain.nodata
     start_r, start_c = offset
+    if start_r < 0 or start_c < 0 or start_r >= h or start_c >= w:
+        raise ValueError(f"Invalid ROI offset {offset} for terrain shape {elev.shape}")
     # Deterministic raster scan for the first fully-valid window.
     for r0 in range(start_r, h - window + 1):
         for c0 in range(start_c, w - window + 1):

@@ -202,6 +202,7 @@ class CalibrationParameterSet:
         vec: Sequence[float],
         param_names: Sequence[str],
         base: Optional[CalibrationParameterSet] = None,
+        definitions: Optional[Any] = None,
     ) -> CalibrationParameterSet:
         """Construct parameter set from an optimization vector on top of a base set."""
         if len(vec) != len(param_names):
@@ -226,7 +227,7 @@ class CalibrationParameterSet:
             else:
                 kwargs["extra_params"][name] = float(val)
 
-        return cls(**kwargs).validate_and_clip()
+        return cls(**kwargs).validate_and_clip(definitions=definitions)
 
     def to_dict(self) -> dict[str, float]:
         """Execute To Dict operation and return result."""
