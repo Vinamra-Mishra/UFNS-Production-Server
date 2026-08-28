@@ -379,7 +379,7 @@ class FloodSnapshot(BaseModel):
 # Multi-City Spatial & Pilot Registry
 # --------------------------------------------------------------------------
 
-DEFAULT_CITY = "MUMBAI"
+DEFAULT_CITY = "DEMO"
 
 CITY_METADATA: dict[str, dict[str, Any]] = {
     "MUMBAI": {

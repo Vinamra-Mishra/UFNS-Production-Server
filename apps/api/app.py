@@ -25,7 +25,7 @@ from fastapi import FastAPI, HTTPException, Query
 from fastapi.responses import HTMLResponse, JSONResponse, Response
 from pydantic import BaseModel, Field
 
-from apps.api import alerts_api, calibration_api, city_api, evacuation_api, impacts, mitigation_api, nwp_api, optimization_api, pilot, probabilistic_api, projections, rainfall_api, render, reports_api, store, validation_api, vulnerability_api
+from apps.api import alerts_api, calibration_api, city_api, evacuation_api, imd_api, impacts, mitigation_api, mosdac_api, nwp_api, optimization_api, pilot, probabilistic_api, projections, rainfall_api, render, reports_api, store, validation_api, vulnerability_api
 from services.nowcast import NOWCAST_VERSION
 from services.projection import MODEL_VERSION as PROJECTION_VERSION
 from services.projection.pipeline import ProjectionUnavailableError
@@ -49,6 +49,8 @@ if (DIST_DIR / "assets").exists():
     app.mount("/assets", StaticFiles(directory=str(DIST_DIR / "assets")), name="assets")
 
 app.include_router(city_api.router)
+app.include_router(imd_api.router)
+app.include_router(mosdac_api.router)
 app.include_router(calibration_api.router)
 app.include_router(alerts_api.router)
 app.include_router(nwp_api.router)
@@ -73,11 +75,12 @@ def _error(status_code: int, code: str, message: str, **details: Any) -> HTTPExc
 
 
 def _require_scenario(scenario_id: str) -> None:
-    if scenario_id not in store.VALID_SCENARIO_IDS:
+    valid = list(store.VALID_SCENARIO_IDS) + ["REALTIME"]
+    if scenario_id not in valid:
         raise _error(
             404, "SCENARIO_NOT_FOUND",
             f"unknown scenario id {scenario_id!r}",
-            valid_scenario_ids=list(store.VALID_SCENARIO_IDS),
+            valid_scenario_ids=valid,
         )
 
 
@@ -425,10 +428,35 @@ def scenario_frame(scenario_id: str, lead: int = Query(..., ge=0, le=180)) -> di
     """One efficient timeline payload: depth grid + road impacts + metrics."""
     _require_scenario(scenario_id)
     _require_lead(lead)
+    if scenario_id.upper() == "REALTIME":
+        return impacts.realtime_frame(lead)
     try:
         return impacts.frame(scenario_id, lead)
     except store.StoreError as exc:
         raise _store_not_ready() from exc
+
+
+@app.get("/api/v1/scenarios/{scenario_id}/horizon")
+def scenario_horizon(
+    scenario_id: str,
+    max_lead: int = Query(180, ge=0, le=180),
+    step: int = Query(5, ge=1, le=60)
+) -> dict[str, Any]:
+    """Precomputed/parallel batch of all nowcast frames across the entire 3-hour projection horizon."""
+    _require_scenario(scenario_id)
+    try:
+        return impacts.horizon_payload(scenario_id, max_lead, step)
+    except store.StoreError as exc:
+        raise _store_not_ready() from exc
+
+
+@app.get("/api/v1/nowcast/realtime/horizon")
+def nowcast_realtime_horizon(
+    max_lead: int = Query(180, ge=0, le=180),
+    step: int = Query(5, ge=1, le=60)
+) -> dict[str, Any]:
+    """Precomputed/parallel batch of all real-time nowcast frames across the entire 3-hour projection horizon."""
+    return impacts.horizon_payload("REALTIME", max_lead, step)
 
 
 @app.get("/api/v1/scenarios/{scenario_id}/rainfall")
@@ -570,7 +598,7 @@ def nowcast_status() -> dict[str, Any]:
 @app.get("/api/v1/nowcast/realtime/frame")
 def nowcast_realtime_frame(lead: int = Query(0, ge=0, le=180)) -> dict[str, Any]:
     """Live nowcast frame computed from real-time radar stream."""
-    return impacts.frame("S4", lead)
+    return impacts.realtime_frame(lead)
 
 
 @app.get("/api/v1/nowcast/providers")

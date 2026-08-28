@@ -19,7 +19,9 @@ import {
   ShieldAlert,
   ShieldCheck,
   Activity,
+  Radio,
 } from 'lucide-react';
+import { IMDWeatherPanel } from './IMDWeatherPanel';
 
 interface SidebarTabsProps {
   scenarios: ScenarioMeta[];
@@ -30,6 +32,7 @@ interface SidebarTabsProps {
   activeRoute: RouteResponse | null;
   onCalculateRoute: (origin: [number, number], destination: [number, number], mode: string) => void;
   criticalAssets: CriticalAssetItem[];
+  activeCity?: string;
 }
 
 export const SidebarTabs: React.FC<SidebarTabsProps> = ({
@@ -41,6 +44,7 @@ export const SidebarTabs: React.FC<SidebarTabsProps> = ({
   activeRoute,
   onCalculateRoute,
   criticalAssets,
+  activeCity,
 }) => {
   const [activeTab, setActiveTab] = useState<string>('tab-sim');
 
@@ -214,17 +218,18 @@ export const SidebarTabs: React.FC<SidebarTabsProps> = ({
   };
 
   const tabs = [
-    { id: 'tab-sim', label: 'Scenarios', icon: <CloudRain size={13} />, subtitle: 'Storms & Hydraulics' },
-    { id: 'tab-routes', label: 'Routing', icon: <Navigation size={13} />, subtitle: 'Evacuation Paths' },
-    { id: 'tab-calib', label: 'Calibration', icon: <Sliders size={13} />, subtitle: 'Model & Benchmark' },
-    { id: 'tab-mitigation', label: 'Mitigation', icon: <Sprout size={13} />, subtitle: 'Sponge & Capex' },
-    { id: 'tab-vuln', label: 'Assets & Alerts', icon: <Building2 size={13} />, subtitle: 'Exposure & CAP' },
-    { id: 'tab-risk-briefing', label: 'Risk & Briefing', icon: <BarChart3 size={13} />, subtitle: 'Ensembles & DMA' },
+    { id: 'tab-sim', label: 'Hydraulics', icon: <CloudRain size={12} />, subtitle: 'Coupled 1D/2D' },
+    { id: 'tab-imd', label: 'IMD Feeds', icon: <Radio size={12} />, subtitle: '20 Gov APIs' },
+    { id: 'tab-routes', label: 'Routing', icon: <Navigation size={12} />, subtitle: 'Evacuation' },
+    { id: 'tab-calib', label: 'Calibration', icon: <Sliders size={12} />, subtitle: 'Optimization' },
+    { id: 'tab-mitigation', label: 'Mitigation', icon: <Sprout size={12} />, subtitle: 'Sponge Cities' },
+    { id: 'tab-vuln', label: 'Assets & CAP', icon: <Building2 size={12} />, subtitle: 'Alert Protocol' },
+    { id: 'tab-risk-briefing', label: 'Risk & DMA', icon: <BarChart3 size={12} />, subtitle: 'Ensembles' },
   ];
 
   return (
     <aside style={{
-      width: '380px',
+      width: '420px',
       background: '#000000',
       borderRight: '1px solid #171717',
       display: 'flex',
@@ -232,13 +237,13 @@ export const SidebarTabs: React.FC<SidebarTabsProps> = ({
       height: '100%',
       overflow: 'hidden',
     }}>
-      {/* Unified 6-Module Navigation Strip */}
+      {/* Unified Multi-Module Navigation Strip */}
       <div style={{
         display: 'grid',
-        gridTemplateColumns: 'repeat(3, 1fr)',
-        gap: '4px',
+        gridTemplateColumns: 'repeat(4, 1fr)',
+        gap: '3px',
         background: '#000000',
-        padding: '6px',
+        padding: '5px',
         borderBottom: '1px solid #171717',
       }}>
         {tabs.map((t) => (
@@ -249,13 +254,13 @@ export const SidebarTabs: React.FC<SidebarTabsProps> = ({
               if (t.id === 'tab-risk-briefing' && !briefingData) handleLoadBriefing();
             }}
             style={{
-              background: activeTab === t.id ? '#13283d' : '#0a1019',
+              background: activeTab === t.id ? '#13283d' : '#070c14',
               color: activeTab === t.id ? '#38bdf8' : '#94a3b8',
               border: activeTab === t.id ? '1px solid #0284c7' : '1px solid #1e293b',
-              borderRadius: '6px',
-              padding: '6px 4px',
+              borderRadius: '5px',
+              padding: '5px 2px',
               cursor: 'pointer',
-              fontSize: '11px',
+              fontSize: '10.5px',
               fontWeight: 700,
               display: 'flex',
               flexDirection: 'column',
@@ -263,13 +268,14 @@ export const SidebarTabs: React.FC<SidebarTabsProps> = ({
               justifyContent: 'center',
               gap: '2px',
               transition: 'all 0.15s ease',
+              textAlign: 'center',
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
               {t.icon}
-              <span>{t.label}</span>
+              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.label}</span>
             </div>
-            <span style={{ fontSize: '8px', color: activeTab === t.id ? '#7dd3fc' : '#64748b', fontWeight: 500 }}>
+            <span style={{ fontSize: '7.5px', color: activeTab === t.id ? '#7dd3fc' : '#64748b', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               {t.subtitle}
             </span>
           </button>
@@ -366,6 +372,11 @@ export const SidebarTabs: React.FC<SidebarTabsProps> = ({
               </div>
             </div>
           </>
+        )}
+
+        {/* MODULE 1.5: IMD OFFICIAL METEOROLOGICAL OBSERVATORY */}
+        {activeTab === 'tab-imd' && (
+          <IMDWeatherPanel activeCity={activeCity || 'MUMBAI'} />
         )}
 
         {/* MODULE 2: EVACUATION & ROAD ROUTING */}

@@ -10,6 +10,8 @@ from typing import Any, Optional
 import numpy as np
 
 from services.ingestion.nasa_client import NASAClient, OpenWeatherMapClient
+from services.ingestion.imd_client import GLOBAL_IMD_CLIENT, CITY_STATION_MAP
+from services.ingestion.mosdac_client import GLOBAL_MOSDAC_CLIENT
 from services.ingestion.live_feeds import (
     RainViewerClient,
     OpenMeteoPrecipitationClient,
@@ -25,6 +27,8 @@ class RealtimeEnvironmentalState:
     timestamp: str
     weather: dict[str, Any]
     nasa_satellite: dict[str, Any]
+    imd_official: dict[str, Any]
+    mosdac_isro: dict[str, Any]
     radar: dict[str, Any]
     nwp_ensemble: dict[str, Any]
     marine_tide: dict[str, Any]
@@ -39,6 +43,8 @@ class RealtimeFusionEngine:
     def __init__(self) -> None:
         self.owm_client = OpenWeatherMapClient()
         self.nasa_client = NASAClient()
+        self.imd_client = GLOBAL_IMD_CLIENT
+        self.mosdac_client = GLOBAL_MOSDAC_CLIENT
         self.radar_client = RainViewerClient()
         self.precip_client = OpenMeteoPrecipitationClient()
         self.nwp_client = OpenMeteoNWPClient()
@@ -51,6 +57,10 @@ class RealtimeFusionEngine:
         weather = self.owm_client.get_weather(lat, lon)
         nasa_sat = self.nasa_client.get_satellite_telemetry(lat, lon)
         
+        meta = CITY_STATION_MAP.get(city_id.upper(), CITY_STATION_MAP['MUMBAI'])
+        imd_wx = self.imd_client.get_current_weather(meta['city_station_id'])
+        mosdac_obs = self.mosdac_client.get_latest_satellite_observation(city_id.upper())
+
         marine = {}
         if city_id.upper() in ['MUMBAI', 'DEMO']:
             try:
@@ -68,6 +78,7 @@ class RealtimeFusionEngine:
         rates = [
             weather.get('rain_rate_mmh', 0.0),
             nasa_sat.get('gpm_precip_rate_mmh', 0.0),
+            mosdac_obs.get('hydro_estimator_rain_rate_mmh', 0.0),
         ]
         fused_rate = float(np.mean(rates)) if rates else 0.0
         smap_sat = float(nasa_sat.get('smap_saturation_pct', 62.0))
@@ -79,8 +90,10 @@ class RealtimeFusionEngine:
             timestamp=now,
             weather=weather,
             nasa_satellite=nasa_sat,
+            imd_official=imd_wx,
+            mosdac_isro=mosdac_obs,
             radar={'status': 'ONLINE', 'station': f'{city_id.upper()} DWR (IMD)', 'provider': 'RainViewer / IMD Radar Network'},
-            nwp_ensemble={'models': ['ECMWF IFS', 'NOAA GFS', 'DWD ICON', 'NCUM'], 'status': 'SYNCHRONIZED'},
+            nwp_ensemble={'models': ['ECMWF IFS', 'NOAA GFS', 'DWD ICON', 'NCUM / NCMRWF'], 'status': 'SYNCHRONIZED'},
             marine_tide={'sea_level_m': tide_m, 'surge_active': tide_m > 2.5},
             river_discharge={'discharge_cms': river.get('daily', {}).get('river_discharge', [0.0])[0] if river else 0.0},
             iot_gauges=[],
@@ -88,6 +101,8 @@ class RealtimeFusionEngine:
             antecedent_soil_saturation_pct=smap_sat,
             tidal_backwater_level_m=tide_m,
             provenance_labels=[
+                'ISRO_MOSDAC_INSAT3DS',
+                'GOV_INDIA_IMD_OFFICIAL',
                 'NASA_GPM_IMERG_V07',
                 'NASA_SMAP_SOIL',
                 'OPENWEATHERMAP_LIVE',

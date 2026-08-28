@@ -1,0 +1,21 @@
+{
+  "user_credentials": {
+    "username/email": "acelabs",
+    "password": "Utkarsh@2005"
+  },
+  "search_parameters": {
+    "datasetId": "3SIMG_L2B_HEM",
+    "startTime": "2026-08-28",
+    "endTime": "2026-08-29",
+    "count": "10",
+    "boundingBox": "68.0,6.0,97.0,37.0",
+    "gId": ""
+  },
+  "download_settings": {
+    "download_path": "data/mosdac/downloads",
+    "organize_by_date": true,
+    "skip_user_input": true,
+    "generate_error_logs": true,
+    "error_logs_dir": "data/mosdac/error_logs"
+  }
+}

@@ -45,6 +45,7 @@ interface MapViewProps {
   cityMeta: CityMetadata | null;
   gridMeta: GridMeta;
   depthGrid: Float32Array | null;
+  rainfallGrid?: Float32Array | null;
   roads: RoadSegment[];
   roadImpacts: Record<string, RoadImpact>;
   drainage: DrainagePoints | null;
@@ -76,6 +77,7 @@ export const MapView: React.FC<MapViewProps> = ({
   cityMeta,
   gridMeta,
   depthGrid,
+  rainfallGrid,
   roads,
   roadImpacts,
   drainage,
@@ -104,6 +106,7 @@ export const MapView: React.FC<MapViewProps> = ({
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0, startPanX: 0, startPanY: 0 });
   const [hoveredSurchargeNode, setHoveredSurchargeNode] = useState<{ index: number; x: number; y: number } | null>(null);
+  const [hoveredAsset, setHoveredAsset] = useState<{ asset: CriticalAssetItem; x: number; y: number; waterDepthM: number } | null>(null);
 
   // UI Panels & Asset Filter State
   const [isLayersCollapsed, setIsLayersCollapsed] = useState(false);
@@ -170,15 +173,14 @@ export const MapView: React.FC<MapViewProps> = ({
 
     // 1. BASEMAP RENDERING
     if (layers.tiles) {
-      const isDemoCatchment = (cityMeta?.city_id === 'DEMO' || (gw === 134 && gh === 134));
+      const isDemoCatchment = (cityMeta?.city_id?.toUpperCase() === 'DEMO');
+      const [landMinSX, landMinSY] = worldToScreen(ox, oy + gh * cs, gridMeta, transform, w, h);
+      const [landMaxSX, landMaxSY] = worldToScreen(ox + gw * cs, oy, gridMeta, transform, w, h);
+      const domainW = landMaxSX - landMinSX;
+      const domainH = landMaxSY - landMinSY;
 
-      if (isDemoCatchment || basemapStyle === 'vector') {
+      if (basemapStyle === 'vector') {
         // --- 1A. VECTOR AMOLED BASEMAP & SYNTHETIC CATCHMENT TOPOGRAPHY ---
-        const [landMinSX, landMinSY] = worldToScreen(ox, oy + gh * cs, gridMeta, transform, w, h);
-        const [landMaxSX, landMaxSY] = worldToScreen(ox + gw * cs, oy, gridMeta, transform, w, h);
-        const domainW = landMaxSX - landMinSX;
-        const domainH = landMaxSY - landMinSY;
-
         // Vector Ocean / Outer Basin
         ctx.fillStyle = '#020617';
         ctx.fillRect(0, 0, w, h);
@@ -194,37 +196,60 @@ export const MapView: React.FC<MapViewProps> = ({
         ctx.strokeRect(landMinSX, landMinSY, domainW, domainH);
         ctx.restore();
 
-        // Synthetic Topographic Contour Rings & Micro-Grid
-        ctx.strokeStyle = isDemoCatchment ? 'rgba(56, 189, 248, 0.18)' : 'rgba(30, 41, 59, 0.4)';
-        ctx.lineWidth = 1;
-        const vStep = (isDemoCatchment ? 30 * cs : 80) * transform.zoom;
-        const vOffsetX = (transform.panX % Math.max(10, vStep));
-        const vOffsetY = (transform.panY % Math.max(10, vStep));
+        // Synthetic Topographic Elevation Grid Mesh (Inside domain)
+        ctx.save();
         ctx.beginPath();
-        for (let x = vOffsetX; x < w; x += vStep) {
-          ctx.moveTo(x, 0); ctx.lineTo(x, h);
+        ctx.rect(landMinSX, landMinSY, domainW, domainH);
+        ctx.clip();
+
+        // Subtle topographic elevation relief gradient
+        const reliefGrad = ctx.createLinearGradient(landMinSX, landMinSY, landMaxSX, landMaxSY);
+        reliefGrad.addColorStop(0, 'rgba(14, 165, 233, 0.12)');
+        reliefGrad.addColorStop(0.5, 'rgba(56, 189, 248, 0.04)');
+        reliefGrad.addColorStop(1.0, 'rgba(2, 132, 199, 0.16)');
+        ctx.fillStyle = reliefGrad;
+        ctx.fillRect(landMinSX, landMinSY, domainW, domainH);
+
+        ctx.strokeStyle = isDemoCatchment ? 'rgba(56, 189, 248, 0.22)' : 'rgba(30, 41, 59, 0.45)';
+        ctx.lineWidth = 1;
+        const cellStepPx = Math.max(12, (cs * 10) * transform.zoom * (domainW / Math.max(1, gw * cs)));
+        for (let x = landMinSX; x <= landMaxSX + 1; x += cellStepPx) {
+          ctx.beginPath();
+          ctx.moveTo(x, landMinSY); ctx.lineTo(x, landMaxSY);
+          ctx.stroke();
         }
-        for (let y = vOffsetY; y < h; y += vStep) {
-          ctx.moveTo(0, y); ctx.lineTo(w, y);
+        for (let y = landMinSY; y <= landMaxSY + 1; y += cellStepPx) {
+          ctx.beginPath();
+          ctx.moveTo(landMinSX, y); ctx.lineTo(landMaxSX, y);
+          ctx.stroke();
         }
-        ctx.stroke();
+        ctx.restore();
 
         // Vector Domain Coastline Glow
-        ctx.strokeStyle = 'rgba(56, 189, 248, 0.75)';
+        ctx.strokeStyle = 'rgba(56, 189, 248, 0.85)';
         ctx.lineWidth = 2.0;
         ctx.strokeRect(landMinSX - 1, landMinSY - 1, domainW + 2, domainH + 2);
 
         if (isDemoCatchment) {
-          ctx.fillStyle = 'rgba(56, 189, 248, 0.75)';
+          ctx.fillStyle = 'rgba(56, 189, 248, 0.85)';
           ctx.font = 'bold 10px -apple-system, BlinkMacSystemFont, monospace';
           ctx.fillText('SYNTHETIC HYDRODYNAMIC BASIN (134x134 @ 30m = 4.02km)', landMinSX + 8, landMinSY + 16);
         }
 
       } else if (basemapStyle === 'cad') {
         // --- 1B. CAD GRID BASEMAP ---
-        ctx.strokeStyle = 'rgba(56, 189, 248, 0.08)';
+        ctx.fillStyle = '#020617';
+        ctx.fillRect(0, 0, w, h);
+
+        ctx.fillStyle = '#040b17';
+        ctx.fillRect(landMinSX, landMinSY, domainW, domainH);
+        ctx.strokeStyle = '#0284c7';
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(landMinSX, landMinSY, domainW, domainH);
+
+        ctx.strokeStyle = 'rgba(56, 189, 248, 0.12)';
         ctx.lineWidth = 1;
-        const step = 60 * transform.zoom;
+        const step = 40 * transform.zoom;
         const offsetX = (transform.panX % step);
         const offsetY = (transform.panY % step);
         ctx.beginPath();
@@ -236,37 +261,23 @@ export const MapView: React.FC<MapViewProps> = ({
         }
         ctx.stroke();
 
+        ctx.strokeStyle = 'rgba(56, 189, 248, 0.75)';
+        ctx.lineWidth = 2.0;
+        ctx.strokeRect(landMinSX, landMinSY, domainW, domainH);
+
       } else {
-        // --- 1C. RASTER TILE BASEMAP (Carto Dark or Esri Satellite) ---
+        // --- 1C. RASTER TILE BASEMAP (Carto Dark, Voyager, or Esri Satellite) ---
         const [wMinX, wMinY] = screenToWorld(0, h, gridMeta, transform, w, h);
         const [wMaxX, wMaxY] = screenToWorld(w, 0, gridMeta, transform, w, h);
         const [lon1, lat1] = utmToLonLat(wMinX, wMinY, utmZone);
         const [lon2, lat2] = utmToLonLat(wMaxX, wMaxY, utmZone);
 
-        const minLon = Math.min(lon1, lon2);
-        const maxLon = Math.max(lon1, lon2);
-        const minLat = Math.min(lat1, lat2);
-        const maxLat = Math.max(lat1, lat2);
+        const minLon = Math.max(-180, Math.min(lon1, lon2));
+        const maxLon = Math.min(180, Math.max(lon1, lon2));
+        const minLat = Math.max(-85, Math.min(lat1, lat2));
+        const maxLat = Math.min(85, Math.max(lat1, lat2));
 
-        const demMinX = ox;
-        const demMinY = oy;
-        const demMaxX = demMinX + gw * cs;
-        const demMaxY = demMinY + gh * cs;
-
-        const [demLon1, demLat1] = utmToLonLat(demMinX, demMinY, utmZone);
-        const [demLon2, demLat2] = utmToLonLat(demMaxX, demMaxY, utmZone);
-
-        const demMinLon = Math.min(demLon1, demLon2);
-        const demMaxLon = Math.max(demLon1, demLon2);
-        const demMinLat = Math.min(demLat1, demLat2);
-        const demMaxLat = Math.max(demLat1, demLat2);
-
-        const effectiveMinLon = Math.max(minLon, demMinLon);
-        const effectiveMaxLon = Math.min(maxLon, demMaxLon);
-        const effectiveMinLat = Math.max(minLat, demMinLat);
-        const effectiveMaxLat = Math.min(maxLat, demMaxLat);
-
-        if (effectiveMinLon < effectiveMaxLon && effectiveMinLat < effectiveMaxLat) {
+        if (minLon < maxLon && minLat < maxLat) {
           const [s0] = worldToScreen(wMinX, wMinY, gridMeta, transform, w, h);
           const [s1] = worldToScreen(wMinX + 1000, wMinY, gridMeta, transform, w, h);
           const pxPerKm = Math.abs(s1 - s0);
@@ -280,16 +291,16 @@ export const MapView: React.FC<MapViewProps> = ({
           else zoom = 10;
           zoom = Math.max(9, Math.min(16, zoom));
 
-          const [minTileX, minTileY] = lonLatToTile(effectiveMinLon, effectiveMaxLat, zoom);
-          const [maxTileX, maxTileY] = lonLatToTile(effectiveMaxLon, effectiveMinLat, zoom);
+          const [minTileX, minTileY] = lonLatToTile(minLon, maxLat, zoom);
+          const [maxTileX, maxTileY] = lonLatToTile(maxLon, minLat, zoom);
 
           ctx.save();
-          ctx.globalAlpha = 0.88;
+          ctx.globalAlpha = 0.92;
 
           const startTx = Math.max(0, minTileX);
-          const endTx = maxTileX;
+          const endTx = Math.min(Math.pow(2, zoom) - 1, maxTileX + 1);
           const startTy = Math.max(0, minTileY);
-          const endTy = maxTileY;
+          const endTy = Math.min(Math.pow(2, zoom) - 1, maxTileY + 1);
 
           const vertexMap = new Map<string, [number, number]>();
           const getVertex = (gx: number, gy: number): [number, number] => {
@@ -342,8 +353,184 @@ export const MapView: React.FC<MapViewProps> = ({
             }
           }
           ctx.restore();
+
+          // Domain boundary overlay on satellite/dark/voyager
+          ctx.save();
+          ctx.strokeStyle = 'rgba(56, 189, 248, 0.85)';
+          ctx.lineWidth = 2.0;
+          ctx.strokeRect(landMinSX, landMinSY, domainW, domainH);
+          ctx.fillStyle = 'rgba(56, 189, 248, 0.85)';
+          ctx.font = 'bold 10px -apple-system, BlinkMacSystemFont, monospace';
+          ctx.fillText(
+            isDemoCatchment ? 'SYNTHETIC DOMAIN (4.02km)' : `${cityMeta?.name || 'HYDRODYNAMIC DOMAIN'}`,
+            landMinSX + 8,
+            landMinSY + 16
+          );
+          ctx.restore();
         }
       }
+    }
+
+    // 1.5. METEOROLOGICAL NOWCAST BACKDROP: Real-Time Precipitation & Doppler Radar
+    if (layers.rainfall && rainfallGrid && rainfallGrid.length > 0) {
+      const rainLen = rainfallGrid.length;
+      let effRW = gw;
+      let effRH = gh;
+      if (effRW * effRH !== rainLen) {
+        if (rainLen === 825 * 1486) { effRW = 825; effRH = 1486; }
+        else if (rainLen === 606 * 481) { effRW = 606; effRH = 481; }
+        else if (rainLen === 980 * 1240) { effRW = 980; effRH = 1240; }
+        else if (rainLen === 134 * 134) { effRW = 134; effRH = 134; }
+        else {
+          effRW = Math.round(Math.sqrt(rainLen));
+          effRH = Math.round(rainLen / effRW);
+        }
+      }
+
+      const [rMinX, rMinY] = worldToScreen(ox, oy + effRH * cs, gridMeta, transform, w, h);
+      const [rMaxX, rMaxY] = worldToScreen(ox + effRW * cs, oy, gridMeta, transform, w, h);
+      const rW = rMaxX - rMinX;
+      const rH = rMaxY - rMinY;
+
+      const rainCanvas = document.createElement('canvas');
+        rainCanvas.width = effRW;
+        rainCanvas.height = effRH;
+        const rainCtx = rainCanvas.getContext('2d')!;
+        const rainImg = rainCtx.createImageData(effRW, effRH);
+
+        for (let r = 0; r < effRH; r++) {
+          for (let c = 0; c < effRW; c++) {
+            const idx = r * effRW + c;
+            if (idx >= rainLen) continue;
+            const rate = rainfallGrid[idx];
+            if (rate > 2.0) {
+              const pIdx = idx * 4;
+              if (rate < 15.0) {
+                // Light Rain (2-15 mm/h - Emerald Green)
+                rainImg.data[pIdx] = 52; rainImg.data[pIdx + 1] = 211; rainImg.data[pIdx + 2] = 153; rainImg.data[pIdx + 3] = 90;
+              } else if (rate < 35.0) {
+                // Moderate Rain (15-35 mm/h - Amber)
+                rainImg.data[pIdx] = 245; rainImg.data[pIdx + 1] = 158; rainImg.data[pIdx + 2] = 11; rainImg.data[pIdx + 3] = 130;
+              } else if (rate < 65.0) {
+                // Heavy Rain (35-65 mm/h - Crimson)
+                rainImg.data[pIdx] = 239; rainImg.data[pIdx + 1] = 68; rainImg.data[pIdx + 2] = 68; rainImg.data[pIdx + 3] = 160;
+              } else {
+                // Torrential / Extreme (>65 mm/h - Deep Violet)
+                rainImg.data[pIdx] = 168; rainImg.data[pIdx + 1] = 85; rainImg.data[pIdx + 2] = 247; rainImg.data[pIdx + 3] = 190;
+              }
+            }
+          }
+        }
+        rainCtx.putImageData(rainImg, 0, 0);
+
+        ctx.save();
+        ctx.imageSmoothingEnabled = true;
+        ctx.drawImage(rainCanvas, rMinX, rMinY, rW, rH);
+        ctx.restore();
+      }
+
+    if (layers.radar) {
+      const [rMinX, rMinY] = worldToScreen(ox, oy + gh * cs, gridMeta, transform, w, h);
+      const [rMaxX, rMaxY] = worldToScreen(ox + gw * cs, oy, gridMeta, transform, w, h);
+      const rW = rMaxX - rMinX;
+      const rH = rMaxY - rMinY;
+      const centerX = rMinX + rW / 2;
+      const centerY = rMinY + rH / 2;
+      const maxRadius = Math.max(rW, rH) * 0.65;
+      const sweepSpan = Math.PI / 3.5; // ~51 degrees active phosphor sector
+
+      ctx.save();
+
+      // 1. Phosphor Decaying Radar Beam Sweep Sector Glow
+      const sweepGrad = ctx.createRadialGradient(centerX, centerY, 8, centerX, centerY, maxRadius);
+      sweepGrad.addColorStop(0, 'rgba(56, 189, 248, 0.40)');
+      sweepGrad.addColorStop(0.7, 'rgba(14, 165, 233, 0.18)');
+      sweepGrad.addColorStop(1.0, 'rgba(3, 105, 161, 0.02)');
+      ctx.fillStyle = sweepGrad;
+      ctx.beginPath();
+      ctx.moveTo(centerX, centerY);
+      ctx.arc(centerX, centerY, maxRadius, radarAngle - sweepSpan, radarAngle, false);
+      ctx.closePath();
+      ctx.fill();
+
+      // 2. Polar Gate Reflectivity Return Echoes (dBZ)
+      for (let g = 2; g < 26; g++) {
+        const gateR = (g / 26) * maxRadius;
+        const angleOffset = (((g * 17) % 100) / 100.0) * sweepSpan;
+        const gateTheta = radarAngle - angleOffset;
+        const gx = centerX + Math.cos(gateTheta) * gateR;
+        const gy = centerY + Math.sin(gateTheta) * gateR;
+
+        const echoSeed = (Math.sin(g * 2.9 + currentLead * 0.22) + 1.0) * 0.5;
+        if (echoSeed > 0.42) {
+          const echoDBZ = 18 + echoSeed * 48; // 18 to 66 dBZ
+          let echoCol = 'rgba(52, 211, 153, 0.60)'; // Light (green)
+          if (echoDBZ > 52) echoCol = 'rgba(168, 85, 247, 0.85)'; // Extreme (violet)
+          else if (echoDBZ > 40) echoCol = 'rgba(239, 68, 68, 0.75)'; // Heavy (red)
+          else if (echoDBZ > 28) echoCol = 'rgba(245, 158, 11, 0.65)'; // Moderate (amber)
+
+          ctx.fillStyle = echoCol;
+          ctx.beginPath();
+          ctx.arc(gx, gy, 3.5 + (g % 3) * 1.5, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+
+      // 3. Radar Distance Rings & Azimuth Radials
+      ctx.strokeStyle = 'rgba(56, 189, 248, 0.35)';
+      ctx.lineWidth = 1;
+      ctx.setLineDash([3, 4]);
+      for (const km of [3, 6, 12, 18]) {
+        const ringRadius = (km * 1000 / cs) * (rW / gw);
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, ringRadius, 0, Math.PI * 2);
+        ctx.stroke();
+
+        ctx.fillStyle = 'rgba(56, 189, 248, 0.85)';
+        ctx.font = '9px monospace';
+        ctx.fillText(`${km}km`, centerX + ringRadius - 24, centerY - 4);
+      }
+
+      // 4. Leading Active Sweep Scan Line
+      ctx.strokeStyle = '#38bdf8';
+      ctx.lineWidth = 2.0;
+      ctx.setLineDash([]);
+      ctx.beginPath();
+      ctx.moveTo(centerX, centerY);
+      ctx.lineTo(
+        centerX + Math.cos(radarAngle) * maxRadius,
+        centerY + Math.sin(radarAngle) * maxRadius
+      );
+      ctx.stroke();
+
+      // 5. Radar Center Dome Node
+      ctx.fillStyle = '#0284c7';
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, 6.0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#38bdf8';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      // 6. Dual-Polarization Telemetry HUD Badge
+      const stnName = telemetry?.radar_station || (cityMeta?.live_radar_station || 'IMD Doppler Weather Radar (5.6 GHz)');
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.90)';
+      ctx.fillRect(centerX - 125, centerY + 12, 250, 36);
+      ctx.strokeStyle = '#0284c7';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(centerX - 125, centerY + 12, 250, 36);
+
+      ctx.fillStyle = '#38bdf8';
+      ctx.font = 'bold 9px -apple-system, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(stnName, centerX, centerY + 24);
+
+      ctx.fillStyle = '#94a3b8';
+      ctx.font = '8px monospace';
+      ctx.fillText('0.5° PPI | Zdr: +1.4dB | Kdp: 2.1°/km | ρhv: 0.98', centerX, centerY + 38);
+      ctx.textAlign = 'left';
+
+      ctx.restore();
     }
 
     // 2. LAYER A: 2D Surface Inundation Depth Raster (Overland Flow)
@@ -655,14 +842,54 @@ export const MapView: React.FC<MapViewProps> = ({
         ctx.textBaseline = 'middle';
         ctx.fillText(glyph, sx, sy);
 
-        ctx.textAlign = 'left';
-        ctx.font = 'bold 11px -apple-system, sans-serif';
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.9)';
-        const textWidth = ctx.measureText(asset.name).width;
-        ctx.fillRect(sx + 14, sy - 8, textWidth + 6, 16);
+        // Tactical HUD tooltip on hover (No permanent labels cluttering the map)
+        const isHovered = hoveredAsset && hoveredAsset.asset.asset_id === asset.asset_id;
+        if (isHovered) {
+          ctx.save();
+          ctx.strokeStyle = '#38bdf8';
+          ctx.lineWidth = 2.5;
+          ctx.beginPath();
+          ctx.arc(sx, sy, 16, 0, Math.PI * 2);
+          ctx.stroke();
 
-        ctx.fillStyle = '#f8fafc';
-        ctx.fillText(asset.name, sx + 17, sy + 3);
+          const catName = asset.category.replace(/_/g, ' ');
+          const line1 = `${asset.name} (${catName})`;
+          const waterText = hoveredAsset.waterDepthM > 0.01 ? `${(hoveredAsset.waterDepthM * 100).toFixed(0)}cm Inundation` : 'DRY (Safe)';
+          const line2 = `Critical Depth: ${asset.critical_depth_m}m | ${waterText}`;
+
+          ctx.font = 'bold 10px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+          const w1 = ctx.measureText(line1).width;
+          ctx.font = '9px monospace';
+          const w2 = ctx.measureText(line2).width;
+          const boxW = Math.max(w1, w2) + 20;
+          const boxH = 34;
+          const boxX = sx + 14;
+          const boxY = sy - 38;
+
+          ctx.fillStyle = 'rgba(15, 23, 42, 0.95)';
+          ctx.strokeStyle = badgeCol;
+          ctx.lineWidth = 1.2;
+          if (ctx.roundRect) {
+            ctx.beginPath();
+            ctx.roundRect(boxX, boxY, boxW, boxH, 6);
+            ctx.fill();
+            ctx.stroke();
+          } else {
+            ctx.fillRect(boxX, boxY, boxW, boxH);
+            ctx.strokeRect(boxX, boxY, boxW, boxH);
+          }
+
+          ctx.fillStyle = '#f8fafc';
+          ctx.font = 'bold 10px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+          ctx.textAlign = 'left';
+          ctx.textBaseline = 'top';
+          ctx.fillText(line1, boxX + 8, boxY + 6);
+
+          ctx.fillStyle = hoveredAsset.waterDepthM > 0.15 ? '#ef4444' : '#38bdf8';
+          ctx.font = '9px monospace';
+          ctx.fillText(line2, boxX + 8, boxY + 19);
+          ctx.restore();
+        }
       }
     }
 
@@ -713,99 +940,7 @@ export const MapView: React.FC<MapViewProps> = ({
       ctx.restore();
     }
 
-    // 10. OG Continuous Rainfall Intensity Heatmap (mm/h)
-    if (layers.rainfall) {
-      const [rMinX, rMinY] = worldToScreen(ox, oy + gh * cs, gridMeta, transform, w, h);
-      const [rMaxX, rMaxY] = worldToScreen(ox + gw * cs, oy, gridMeta, transform, w, h);
-      const rW = rMaxX - rMinX;
-      const rH = rMaxY - rMinY;
-
-      ctx.save();
-      const stormProgress = (currentLead / 180.0);
-      const stormCenterX = rMinX + rW * (0.35 + 0.30 * stormProgress);
-      const stormCenterY = rMinY + rH * (0.65 - 0.30 * stormProgress);
-
-      const rainGrad = ctx.createRadialGradient(
-        stormCenterX, stormCenterY, 10,
-        stormCenterX, stormCenterY, Math.max(rW, rH) * 0.75
-      );
-      rainGrad.addColorStop(0, 'rgba(168, 85, 247, 0.75)');   // >65 mm/h (Purple)
-      rainGrad.addColorStop(0.25, 'rgba(239, 68, 68, 0.65)'); // 45 mm/h (Red)
-      rainGrad.addColorStop(0.50, 'rgba(245, 158, 11, 0.50)');// 25 mm/h (Amber)
-      rainGrad.addColorStop(0.75, 'rgba(52, 211, 153, 0.35)');// 10 mm/h (Green)
-      rainGrad.addColorStop(1.0, 'rgba(56, 189, 248, 0.0)');  // 0 mm/h
-
-      ctx.fillStyle = rainGrad;
-      ctx.fillRect(rMinX, rMinY, rW, rH);
-
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
-      ctx.fillRect(rMinX + 8, rMinY + 8, 260, 22);
-      ctx.strokeStyle = '#0284c7';
-      ctx.lineWidth = 1;
-      ctx.strokeRect(rMinX + 8, rMinY + 8, 260, 22);
-      ctx.fillStyle = '#38bdf8';
-      ctx.font = 'bold 10px -apple-system, sans-serif';
-      ctx.fillText('Precipitation Intensity Heatmap (mm/h)', rMinX + 16, rMinY + 23);
-      ctx.restore();
-    }
-
-    // 11. Real-Time Doppler Weather Radar Layer & Sweep
-    if (layers.radar) {
-      const [rMinX, rMinY] = worldToScreen(ox, oy + gh * cs, gridMeta, transform, w, h);
-      const [rMaxX, rMaxY] = worldToScreen(ox + gw * cs, oy, gridMeta, transform, w, h);
-      const rW = rMaxX - rMinX;
-      const rH = rMaxY - rMinY;
-      const centerX = rMinX + rW / 2;
-      const centerY = rMinY + rH / 2;
-
-      ctx.save();
-      ctx.strokeStyle = 'rgba(56, 189, 248, 0.4)';
-      ctx.lineWidth = 1;
-      ctx.setLineDash([3, 4]);
-      for (const km of [3, 6, 12]) {
-        const ringRadius = (km * 1000 / cs) * (rW / gw);
-        ctx.beginPath();
-        ctx.arc(centerX, centerY, ringRadius, 0, Math.PI * 2);
-        ctx.stroke();
-
-        ctx.fillStyle = 'rgba(56, 189, 248, 0.8)';
-        ctx.font = '9px monospace';
-        ctx.fillText(`${km}km`, centerX + ringRadius - 22, centerY - 4);
-      }
-
-      ctx.strokeStyle = 'rgba(56, 189, 248, 0.85)';
-      ctx.lineWidth = 2;
-      ctx.setLineDash([]);
-      ctx.beginPath();
-      ctx.moveTo(centerX, centerY);
-      ctx.lineTo(
-        centerX + Math.cos(radarAngle) * (Math.max(rW, rH) * 0.6),
-        centerY + Math.sin(radarAngle) * (Math.max(rW, rH) * 0.6)
-      );
-      ctx.stroke();
-
-      ctx.fillStyle = '#0284c7';
-      ctx.beginPath();
-      ctx.arc(centerX, centerY, 5.5, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.strokeStyle = '#38bdf8';
-      ctx.lineWidth = 2;
-      ctx.stroke();
-
-      const stnName = telemetry?.radar_station || (cityMeta?.live_radar_station || 'IMD Doppler Weather Radar');
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
-      ctx.fillRect(centerX - 90, centerY + 10, 180, 20);
-      ctx.strokeStyle = '#1f2937';
-      ctx.strokeRect(centerX - 90, centerY + 10, 180, 20);
-      ctx.fillStyle = '#38bdf8';
-      ctx.font = 'bold 9px -apple-system, sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText(stnName, centerX, centerY + 24);
-      ctx.textAlign = 'left';
-      ctx.restore();
-    }
-
-    // 12. Topographic DEM Contours (layers.elevation)
+    // 10. Topographic DEM Contours (layers.elevation)
     if (layers.elevation) {
       ctx.save();
       ctx.strokeStyle = 'rgba(251, 191, 36, 0.25)';
@@ -830,7 +965,7 @@ export const MapView: React.FC<MapViewProps> = ({
     }
 
     ctx.restore();
-  }, [transform, layers, basemapStyle, depthGrid, roads, roadImpacts, drainage, filteredAssets, activeRoute, gridMeta, minDepthThreshold, utmZone, radarAngle, currentLead, telemetry, cityMeta, hoveredSurchargeNode]);
+  }, [transform, layers, basemapStyle, depthGrid, roads, roadImpacts, drainage, filteredAssets, activeRoute, gridMeta, minDepthThreshold, utmZone, radarAngle, currentLead, telemetry, cityMeta, hoveredSurchargeNode, hoveredAsset]);
 
   useEffect(() => {
     let animId = requestAnimationFrame(draw);
@@ -871,15 +1006,55 @@ export const MapView: React.FC<MapViewProps> = ({
         panY: dragStart.startPanY + (e.clientY - dragStart.y),
       }));
       if (hoveredSurchargeNode) setHoveredSurchargeNode(null);
+      if (hoveredAsset) setHoveredAsset(null);
     } else {
-      // Hit testing for 1D pipe surcharge nodes on hover
       const rect = canvasRef.current?.getBoundingClientRect();
-      if (rect && layers.flood_1d && drainage) {
-        const mx = e.clientX - rect.left;
-        const my = e.clientY - rect.top;
-        const w = rect.width;
-        const h = rect.height;
+      if (!rect) return;
 
+      const mx = e.clientX - rect.left;
+      const my = e.clientY - rect.top;
+      const w = rect.width;
+      const h = rect.height;
+
+      // 1. Hit testing for critical assets on hover
+      if (layers.assets && filteredAssets.length > 0) {
+        const ox = gridMeta.origin_x;
+        const oy = gridMeta.origin_y;
+        const cs = gridMeta.cell_size_m;
+        const gw = gridMeta.width;
+        const gh = gridMeta.height;
+
+        let foundAsset: typeof hoveredAsset = null;
+        for (const a of filteredAssets) {
+          const [wx, wy] = a.coordinates_utm;
+          const [sx, sy] = worldToScreen(wx, wy, gridMeta, transform, w, h);
+          const dist = Math.hypot(mx - sx, my - sy);
+
+          if (dist <= 16) {
+            let waterD = 0.0;
+            if (depthGrid && depthGrid.length > 0) {
+              const col = Math.floor((wx - ox) / cs);
+              const row = Math.floor((wy - oy) / cs);
+              if (col >= 0 && col < gw && row >= 0 && row < gh) {
+                waterD = depthGrid[row * gw + col] || 0.0;
+              }
+            }
+            foundAsset = { asset: a, x: sx, y: sy, waterDepthM: waterD };
+            break;
+          }
+        }
+        if (
+          (!foundAsset && hoveredAsset) ||
+          (foundAsset && (!hoveredAsset || hoveredAsset.asset.asset_id !== foundAsset.asset.asset_id))
+        ) {
+          setHoveredAsset(foundAsset);
+        }
+      } else if (hoveredAsset) {
+        setHoveredAsset(null);
+      }
+
+      // 2. Hit testing for 1D pipe surcharge nodes on hover
+      if (layers.flood_1d && drainage) {
         const nodes = [...(drainage.inlets || []), ...(drainage.outfalls || [])];
         let foundNode: typeof hoveredSurchargeNode = null;
 
@@ -913,6 +1088,7 @@ export const MapView: React.FC<MapViewProps> = ({
   const handleMouseLeave = () => {
     setIsDragging(false);
     if (hoveredSurchargeNode) setHoveredSurchargeNode(null);
+    if (hoveredAsset) setHoveredAsset(null);
   };
 
   const handleWheel = (e: React.WheelEvent) => {
@@ -934,7 +1110,7 @@ export const MapView: React.FC<MapViewProps> = ({
         height: '100%',
         background: '#000000',
         overflow: 'hidden',
-        cursor: isDragging ? 'grabbing' : (hoveredSurchargeNode ? 'pointer' : 'grab'),
+        cursor: isDragging ? 'grabbing' : (hoveredSurchargeNode || hoveredAsset ? 'pointer' : 'grab'),
       }}
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}

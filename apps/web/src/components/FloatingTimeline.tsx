@@ -113,11 +113,7 @@ export const FloatingTimeline: React.FC<FloatingTimelineProps> = ({
         <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
           <button
             onClick={() => {
-              const nextPlaying = !isPlaying;
-              setIsPlaying(nextPlaying);
-              if (nextPlaying && onPreloadHorizon) {
-                onPreloadHorizon(60);
-              }
+              setIsPlaying(!isPlaying);
             }}
             className="glass-btn"
             style={{

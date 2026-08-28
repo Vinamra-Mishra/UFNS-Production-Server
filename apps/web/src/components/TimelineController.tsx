@@ -113,12 +113,7 @@ export const TimelineController: React.FC<TimelineControllerProps> = ({
         <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
           <button
             onClick={() => {
-              const nextPlaying = !isPlaying;
-              setIsPlaying(nextPlaying);
-              if (nextPlaying && onPreloadHorizon) {
-                // Automatically pre-buffer 1 hour ahead when playback starts
-                onPreloadHorizon(60);
-              }
+              setIsPlaying(!isPlaying);
             }}
             style={{
               background: isPlaying ? '#0284c7' : '#050505',

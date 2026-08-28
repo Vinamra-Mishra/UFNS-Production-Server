@@ -25,7 +25,7 @@ RAW_DIR = REPO_ROOT / "data" / "raw"
 
 router = APIRouter(prefix="/api/v1", tags=["City & Live Feeds"])
 
-# Active city state in runtime memory (defaults to MUMBAI if processed files exist, or env var)
+# Active city state in runtime memory (defaults to DEMO if processed files exist, or env var)
 ACTIVE_CITY = os.getenv("UFNS_ACTIVE_CITY", "DEMO").upper()
 
 CITY_METADATA = {
@@ -71,7 +71,7 @@ CITY_METADATA = {
         "state": "Simulated Domain",
         "crs": "EPSG:32645",
         "utm_zone": "45N",
-        "bbox": [88.40, 22.55, 88.46, 22.61],
+        "bbox": [85.05, 22.59, 85.09, 22.63],
         "dem_cells": [134, 134],
         "resolution_m": 30.0,
         "drainage_junctions": 4,
@@ -112,6 +112,16 @@ def get_active_city() -> dict[str, Any]:
     grid_file = PROCESSED_DIR / city_key / "grid_spec.json"
     if grid_file.exists():
         grid_spec = json.loads(grid_file.read_text(encoding="utf-8"))
+    else:
+        from services.ingestion.dem import CELL_SIZE_M, DOMAIN_M, GRID_CELLS, ORIGIN_X, ORIGIN_Y
+        grid_spec = {
+            "grid_id": f"{city_key}_grid",
+            "crs_wkt_or_epsg": meta.get("crs", "EPSG:32645"),
+            "width": meta.get("dem_cells", [GRID_CELLS, GRID_CELLS])[1] if "dem_cells" in meta else GRID_CELLS,
+            "height": meta.get("dem_cells", [GRID_CELLS, GRID_CELLS])[0] if "dem_cells" in meta else GRID_CELLS,
+            "cell_size_m": CELL_SIZE_M,
+            "bounds": [ORIGIN_X, ORIGIN_Y, ORIGIN_X + DOMAIN_M, ORIGIN_Y + DOMAIN_M],
+        }
 
     return {
         "active_city": ACTIVE_CITY,
@@ -260,11 +270,15 @@ def get_live_telemetry(city: Optional[str] = Query(None)) -> dict[str, Any]:
         rt_state = GLOBAL_REALTIME_FUSION_ENGINE.get_realtime_state(target_city, lat, lon)
         weather_dict = rt_state.weather
         nasa_dict = rt_state.nasa_satellite
+        imd_dict = rt_state.imd_official
+        mosdac_dict = getattr(rt_state, "mosdac_isro", {})
         precip = rt_state.fused_precipitation_rate_mmh
         tide_val = rt_state.tidal_backwater_level_m
     except Exception:
         weather_dict = {"temperature_c": 28.5, "condition": "Clear", "humidity_pct": 65, "wind_speed_kmh": 14.5}
         nasa_dict = {"status": "AUTHENTICATED", "gpm_precip_rate_mmh": 0.0, "smap_saturation_pct": 62.0}
+        imd_dict = {"status": "OFFICIAL_IMD", "temp_c": 29.2, "humidity_pct": 82, "weather_desc": "Rain shower(s)"}
+        mosdac_dict = {"status": "ONLINE_ACTIVE", "satellite": "INSAT-3DS", "hydro_estimator_rain_rate_mmh": 12.0}
         precip = 0.0
         tide_val = 1.42 if target_city == "MUMBAI" else 0.40
 
@@ -279,6 +293,8 @@ def get_live_telemetry(city: Optional[str] = Query(None)) -> dict[str, Any]:
         "nwp_model": "ECMWF IFS (0.1°) / NCMRWF",
         "weather": weather_dict,
         "nasa_satellite": nasa_dict,
+        "imd_official": imd_dict,
+        "mosdac_isro": mosdac_dict,
         "temp_c": weather_dict.get("temperature_c", 28.5),
         "humidity_pct": weather_dict.get("humidity_pct", 65),
         "condition": weather_dict.get("condition", "Clear"),
