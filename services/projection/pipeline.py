@@ -139,9 +139,14 @@ class ProjectionPipeline:
         if not nowcast_records:
             raise ProjectionUnavailableError("projection nowcast generation returned no records")
 
+        t_fc = perf_counter()
         frames = nowcast_records_to_frames(nowcast_records, interval_minutes=config.rainfall_interval_minutes)
+        timings_ms["frame_conversion"] = (perf_counter() - t_fc) * 1000.0
+
+        t_rc = perf_counter()
         dem = synthetic_dem()
         run_config = build_runconfig_from_frames(config, frames, dem)
+        timings_ms["run_config_build"] = (perf_counter() - t_rc) * 1000.0
         combined_nowcast_fp = self._combine_nowcast_fingerprints(nowcast_records)
         projection_key = self._bundle_key(
             observation_fingerprint=observation.fingerprint(),
@@ -175,6 +180,8 @@ class ProjectionPipeline:
             if cached is not None:
                 timings = dict(cached.timings_ms)
                 timings.update(timings_ms)
+                primary_keys = ["observation_fetch", "nowcast_generation", "frame_conversion", "run_config_build", "flood_projection", "road_impact"]
+                timings["total_projection"] = sum(timings.get(k, 0.0) for k in primary_keys)
                 return ProjectionBundle(
                     config=cached.config,
                     observation=cached.observation,

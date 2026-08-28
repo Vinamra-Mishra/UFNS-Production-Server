@@ -131,8 +131,8 @@ def select_real_pilot_roi(
     """
     elev = terrain.elevation
     h, w = elev.shape
-    if window > h or window > w:
-        raise ValueError(f"ROI window {window} larger than terrain {elev.shape}")
+    if window <= 0 or window > h or window > w:
+        raise ValueError(f"Invalid ROI window {window} for terrain shape {elev.shape}")
     nodata = terrain.nodata
     start_r, start_c = offset
     if start_r < 0 or start_c < 0 or start_r >= h or start_c >= w:

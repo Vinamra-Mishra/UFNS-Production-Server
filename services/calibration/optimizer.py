@@ -156,7 +156,7 @@ class ParameterOptimizer:
                 for pdef, u_val in zip(target_defs, u_clipped)
             ]
             pset = CalibrationParameterSet.from_vector(
-                denorm_vec, self.param_names, base=base_params
+                denorm_vec, self.param_names, base=base_params, definitions=self.definitions
             )
             raw_loss = float(objective_fn(pset))
             if not math.isfinite(raw_loss):
@@ -223,10 +223,14 @@ class ParameterOptimizer:
             converged = (best_so_far < 1e5 and eval_count > 1)
         elif self.strategy == OptimizationStrategy.RANDOM_SEARCH:
             rng = np.random.default_rng(20260825)
+            improved = False
             for _ in range(self.max_evaluations - 1):
                 pt = rng.uniform(0.0, 1.0, size=len(norm_bounds))
+                loss_before = best_so_far
                 wrapped_loss(pt)
-            converged = (best_so_far < 1e5 and eval_count > 1)
+                if best_so_far < loss_before - 1e-9:
+                    improved = True
+            converged = (improved and best_so_far < 1e5 and eval_count > 1)
 
         duration = float(time.perf_counter() - t_start)
 

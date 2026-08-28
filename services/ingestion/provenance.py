@@ -83,7 +83,7 @@ class Manifest:
                 uri = str(p.resolve().relative_to(Path(self.base_dir).resolve()))
             except ValueError:
                 if p.is_absolute():
-                    raise ValueError(f"Asset path {p} is absolute and outside base_dir {self.base_dir}")
+                    raise ValueError(f"Asset path {p} is absolute and outside base_dir {self.base_dir}") from None
                 uri = str(p)
         else:
             uri = str(p)
