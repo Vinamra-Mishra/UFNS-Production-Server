@@ -131,19 +131,9 @@ class MOSDACClient:
         password: Optional[str] = None,
         timeout_sec: float = 12.0,
     ) -> None:
-        """Execute   Init   operation and return result."""
-        cfg_user, cfg_pass = "", ""
-        cfg_file = Path(__file__).resolve().parents[2] / "data" / "mosdac" / "config.json"
-        if cfg_file.exists():
-            try:
-                cfg_data = json.loads(cfg_file.read_text(encoding="utf-8"))
-                cfg_user = cfg_data.get("user_credentials", {}).get("username/email", "")
-                cfg_pass = cfg_data.get("user_credentials", {}).get("password", "")
-            except Exception:
-                pass
-
-        self.username = username or os.getenv("MOSDAC_USERNAME") or cfg_user or ""
-        self.password = password or os.getenv("MOSDAC_PASSWORD") or cfg_pass or "" 
+        """Initialize the ISRO MOSDAC client with environment or explicit credentials."""
+        self.username = username or os.getenv("MOSDAC_USERNAME") or ""
+        self.password = password or os.getenv("MOSDAC_PASSWORD") or ""
         self.timeout_sec = timeout_sec
         self.access_token: Optional[str] = None
         self.refresh_token: Optional[str] = None
@@ -153,6 +143,13 @@ class MOSDACClient:
 
     def get_token(self, force_refresh: bool = False) -> dict[str, Any]:
         """Authenticate or refresh session token against MOSDAC download API."""
+        if not self.username or not self.password:
+            return {
+                "status": "OFFLINE_NO_CREDENTIALS",
+                "access_token": None,
+                "message": "MOSDAC credentials not configured (set MOSDAC_USERNAME and MOSDAC_PASSWORD in environment)",
+            }
+
         now = time.time()
         if not force_refresh and self.access_token and (now < self.token_expiry - 120):
             return {

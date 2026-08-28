@@ -52,3 +52,8 @@ data/demo/m4/blocked/depth_*.tif
 # Problem statement and reference docs
 PS/
 PS/**/*
+
+# Satellite / API Credentials
+data/mosdac/config.json
+data/mosdac/downloads/
+data/mosdac/error_logs/

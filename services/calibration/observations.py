@@ -1,4 +1,3 @@
-import copy
 """Hydrological observation data models, sensor ingestion, and synthetic benchmark generator (Phase B).
 
 Provides:
@@ -10,6 +9,7 @@ Provides:
 
 from __future__ import annotations
 
+import copy
 import hashlib
 import json
 from dataclasses import dataclass, field

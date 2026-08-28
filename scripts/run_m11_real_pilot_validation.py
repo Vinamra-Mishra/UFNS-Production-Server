@@ -1,4 +1,3 @@
-EXPECTED_DRAIN_FEATURES = 90395
 """M11 — Real-pilot integration validation runner (Section 16 experiments).
 
 Runs the deterministic M11 experiments M11-01 .. M11-12 against the real
@@ -22,6 +21,8 @@ from pathlib import Path
 from typing import Any
 
 import numpy as np
+
+EXPECTED_DRAIN_FEATURES = 90395
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:

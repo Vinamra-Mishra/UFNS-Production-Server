@@ -1,7 +1,7 @@
 {
   "user_credentials": {
-    "username/email": "acelabs",
-    "password": "Utkarsh@2005"
+    "username/email": "YOUR_MOSDAC_USERNAME",
+    "password": "YOUR_MOSDAC_PASSWORD"
   },
   "search_parameters": {
     "datasetId": "3SIMG_L2B_HEM",

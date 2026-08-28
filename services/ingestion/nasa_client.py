@@ -10,8 +10,6 @@ from typing import Any, Optional
 
 USER_AGENT = 'UFNS-SIH26085/2.2 (Urban Flood Nowcasting System)'
 SSL_CTX = ssl.create_default_context()
-SSL_CTX.check_hostname = False
-SSL_CTX.verify_mode = ssl.CERT_NONE
 
 def _http_get(url: str, headers: Optional[dict[str, str]] = None, timeout: float = 12.0) -> Any:
     """Execute  Http Get operation and return result."""

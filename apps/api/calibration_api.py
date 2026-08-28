@@ -1,4 +1,3 @@
-import numpy as np
 """Calibration API router (Phase B).
 
 Exposes endpoints for triggering automated drainage calibration, retrieving
@@ -10,6 +9,7 @@ from __future__ import annotations
 
 from typing import Any, List, Optional
 
+import numpy as np
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel, Field
 
