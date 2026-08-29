@@ -92,8 +92,8 @@ def init_providers() -> None:
     _providers["rainviewer-dwr-v1"] = radar
     _providers["dwr-kolkata-v1"] = radar
 
-    # Default provider
-    _active_provider_id = "rainviewer-dwr-v1"
+    # Default provider (demo default is synthetic)
+    _active_provider_id = "synthetic-v1"
 
 
 # Initialize providers upon module loading
@@ -123,7 +123,7 @@ def get_active_provider_id() -> str:
     """Return identifier of the active provider."""
     global _active_provider_id
     if _active_provider_id is None or _active_provider_id not in _providers:
-        _active_provider_id = "rainviewer-dwr-v1" if "rainviewer-dwr-v1" in _providers else "synthetic-v1"
+        _active_provider_id = "synthetic-v1"
     return _active_provider_id
 
 
@@ -141,7 +141,7 @@ def get_nowcast_config() -> NowcastConfig:
 
 
 def set_nowcast_config(config: NowcastConfig) -> None:
-    """Execute Set Nowcast Config operation and return result."""
+    """Set and apply new nowcast config."""
     global _nowcast_config, _default_engine
     _nowcast_config = config
     _default_engine = PersistenceNowcast(config)
@@ -163,7 +163,7 @@ def get_nowcast_cache() -> NowcastCache:
 
 def fetch_latest_observation(
     provider_id: str | None = None,
-) -> tuple[RainfallProvider, RainfallObservation, QualityResult]:
+) -> tuple[RainfallProvider, RainfallObservation | None, QualityResult]:
     """Fetch latest observation from specified or active provider with quality validation."""
     pid = provider_id or get_active_provider_id()
     prov = get_provider(pid)
@@ -171,6 +171,10 @@ def fetch_latest_observation(
         raise ValueError(f"Provider {pid!r} not found.")
 
     obs = prov.fetch_latest()
+    if obs is None:
+        from services.nowcast.quality import QualityFlag
+        qual = QualityResult(valid=False, freshness=DataFreshness.UNAVAILABLE, flags=(QualityFlag.UNAVAILABLE,), errors=("no observation available",))
+        return prov, None, qual
     qual = validate_observation(obs, _quality_config)
     return prov, obs, qual
 
@@ -179,9 +183,11 @@ def fetch_latest_nowcast_records(
     provider_id: str | None = None,
     method: str | None = None,
     lead_minutes: int | None = None,
-) -> tuple[RainfallProvider, RainfallObservation, QualityResult, list[NowcastRecord]]:
+) -> tuple[RainfallProvider, RainfallObservation | None, QualityResult, list[NowcastRecord]]:
     """Fetch observation and compute nowcast records across configured horizons."""
     prov, obs, qual = fetch_latest_observation(provider_id)
+    if obs is None:
+        return prov, None, qual, []
 
     engine_method = method or _nowcast_config.method
     cfg = NowcastConfig(

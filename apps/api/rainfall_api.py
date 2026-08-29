@@ -38,63 +38,21 @@ from services.nowcast.quality import (
 )
 from services.nowcast.verification import no_evaluation_available
 
-# ---------------------------------------------------------------------------
-# Global state (module-level singleton)
-# ---------------------------------------------------------------------------
+from services.nowcast import service as nowcast_service
 
-_default_providers: dict[str, RainfallProvider] = {}
-_active_provider_id: str | None = None
-_cache = NowcastCache(ttl_seconds=300)
-_nowcast_config = NowcastConfig()
-_quality_config = QualityConfig()
-_engine = PersistenceNowcast(_nowcast_config)
+_default_providers: dict[str, RainfallProvider] = nowcast_service._providers
+_active_provider_id: str | None = nowcast_service.get_active_provider_id()
+_cache = nowcast_service._nowcast_cache
+_nowcast_config = nowcast_service._nowcast_config
+_quality_config = nowcast_service._quality_config
+_engine = nowcast_service._default_engine
 
 
 def _init_default_providers() -> None:
-    """Initialize default providers (synthetic + fixture + radar)."""
+    """Initialize default providers delegating to services layer."""
     global _active_provider_id
-
-    grid_shape = (DEFAULT_GRID_CELLS, DEFAULT_GRID_CELLS)
-
-    # Synthetic provider
-    synthetic = SyntheticRainfallProvider(
-        provider_id="synthetic-v1",
-        base_rate_mmh=15.0,
-        pattern="convective_cell",
-        grid_shape=grid_shape,
-        seed=20260822,
-    )
-    _default_providers["synthetic-v1"] = synthetic
-
-    # Fixture provider (based on the M5 S3 Extreme profile)
-    from services.scenarios.profiles import build_profile_record
-    extreme_profile = build_profile_record("P_EXTREME")
-    fixture = FixtureRainfallProvider(
-        provider_id="fixture-extreme-v1",
-        profile_intensities_mmh=list(extreme_profile.intensities_mmh),
-        interval_minutes=extreme_profile.temporal_resolution_minutes,
-        pattern="convective_cell",
-        grid_shape=grid_shape,
-        seed=20260822,
-        scenario_label="S3_EXTREME_FIXTURE",
-    )
-    _default_providers["fixture-extreme-v1"] = fixture
-
-    # Radar provider (Doppler Weather Radar Mosaic)
-    radar = RadarRainfallProvider(
-        provider_id="rainviewer-dwr-v1",
-        source_name="Live Doppler Weather Radar Mosaic (IMD / RainViewer)",
-        grid_shape=grid_shape,
-    )
-    _default_providers["rainviewer-dwr-v1"] = radar
-    _default_providers["dwr-kolkata-v1"] = radar
-
-    # Default active provider is live Doppler radar
-    _active_provider_id = "rainviewer-dwr-v1"
-
-
-# Initialize on import
-_init_default_providers()
+    nowcast_service.init_providers()
+    _active_provider_id = nowcast_service.get_active_provider_id()
 
 
 # ---------------------------------------------------------------------------
@@ -103,7 +61,10 @@ _init_default_providers()
 
 def get_active_provider() -> RainfallProvider:
     """Return the currently active rainfall provider."""
-    if _active_provider_id is None or _active_provider_id not in _default_providers:
+    global _active_provider_id
+    if _active_provider_id is None:
+        _active_provider_id = nowcast_service.get_active_provider_id()
+    if _active_provider_id not in _default_providers:
         raise RuntimeError("No active rainfall provider configured")
     return _default_providers[_active_provider_id]
 
@@ -135,6 +96,7 @@ def set_active_provider(provider_id: str) -> bool:
     if provider_id not in _default_providers:
         return False
     _active_provider_id = provider_id
+    nowcast_service.set_active_provider_id(provider_id)
     _cache.clear()  # clear cache when provider changes
     return True
 

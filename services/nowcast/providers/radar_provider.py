@@ -221,19 +221,23 @@ class RadarRainfallProvider(RainfallProvider):
                 message="No radar frames ingested yet",
             )
             
-        age_min = (datetime.now(timezone.utc) - latest.observation_time).total_seconds() / 60.0
-        if age_min <= 20.0:
+        if self._source_type != SourceType.REAL:
             status = ProviderStatus.HEALTHY
-            msg = f"Radar operational (FRESH, age={age_min:.1f}m): {len(self._observations)} frames cached"
-        elif age_min <= 45.0:
-            status = ProviderStatus.HEALTHY
-            msg = f"Radar operational (AGING, age={age_min:.1f}m): {len(self._observations)} frames cached"
-        elif age_min <= 90.0:
-            status = ProviderStatus.DEGRADED
-            msg = f"Radar degraded (STALE, age={age_min:.1f}m)"
+            msg = f"Simulated radar operational: {len(self._observations)} frames cached"
         else:
-            status = ProviderStatus.UNAVAILABLE
-            msg = f"Radar feed unavailable (EXPIRED, age={age_min:.1f}m)"
+            age_min = (datetime.now(timezone.utc) - latest.observation_time).total_seconds() / 60.0
+            if age_min <= 20.0:
+                status = ProviderStatus.HEALTHY
+                msg = f"Radar operational (FRESH, age={age_min:.1f}m): {len(self._observations)} frames cached"
+            elif age_min <= 45.0:
+                status = ProviderStatus.HEALTHY
+                msg = f"Radar operational (AGING, age={age_min:.1f}m): {len(self._observations)} frames cached"
+            elif age_min <= 90.0:
+                status = ProviderStatus.DEGRADED
+                msg = f"Radar degraded (STALE, age={age_min:.1f}m)"
+            else:
+                status = ProviderStatus.UNAVAILABLE
+                msg = f"Radar feed unavailable (EXPIRED, age={age_min:.1f}m)"
 
         return ProviderHealth(
             provider_id=self._provider_id,

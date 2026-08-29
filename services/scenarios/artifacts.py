@@ -244,11 +244,57 @@ def _get_depth_grid_cached(sid: str, lead: int, active: str) -> np.ndarray:
         depth *= mask
         return np.maximum(0.0, depth).astype(np.float64)
 
-    # Synthetic demo fixture
-    tif = ARTIFACT_ROOT / sid / "depth_tifs" / f"depth_{lead:03d}.tif"
-    if not tif.exists():
-        raise ArtifactStoreError(f"depth GeoTIFF missing for {sid} at lead {lead}: {tif}")
-    return read_depth_tif(str(tif))
+    # Synthetic demo fixture: check standard candidate paths
+    candidates = [
+        ARTIFACT_ROOT / sid.lower() / f"depth_t{lead:03d}.tif",
+        ARTIFACT_ROOT / sid / f"depth_t{lead:03d}.tif",
+        ARTIFACT_ROOT / sid / "depth_tifs" / f"depth_{lead:03d}.tif",
+        ARTIFACT_ROOT / sid.lower() / f"depth_{lead:03d}.tif",
+        ARTIFACT_ROOT / sid / f"depth_{lead:03d}.tif",
+    ]
+    for c in candidates:
+        if c.exists():
+            return read_depth_tif(str(c))
+
+    # Search for all available depth tifs for this scenario to interpolate
+    search_dirs = [ARTIFACT_ROOT / sid.lower(), ARTIFACT_ROOT / sid, ARTIFACT_ROOT / sid / "depth_tifs"]
+    available_tifs: list[tuple[int, Path]] = []
+    for s_dir in search_dirs:
+        if s_dir.exists():
+            for p in s_dir.glob("depth_*.tif"):
+                stem = p.stem
+                # stem could be depth_t110 or depth_110
+                digits = "".join([ch for ch in stem if ch.isdigit()])
+                if digits:
+                    try:
+                        available_tifs.append((int(digits), p))
+                    except ValueError:
+                        pass
+
+    if not available_tifs:
+        raise ArtifactStoreError(f"depth GeoTIFF missing for {sid} at lead {lead}")
+
+    available_tifs = sorted(available_tifs, key=lambda x: x[0])
+    leads_list = [x[0] for x in available_tifs]
+
+    if lead <= leads_list[0]:
+        return read_depth_tif(str(available_tifs[0][1]))
+    if lead >= leads_list[-1]:
+        return read_depth_tif(str(available_tifs[-1][1]))
+
+    # Temporal interpolation between surrounding snapshots
+    t0_idx = max([i for i, l in enumerate(leads_list) if l <= lead])
+    t1_idx = min([i for i, l in enumerate(leads_list) if l >= lead])
+    if t0_idx == t1_idx:
+        return read_depth_tif(str(available_tifs[t0_idx][1]))
+
+    t0_lead, t0_path = available_tifs[t0_idx]
+    t1_lead, t1_path = available_tifs[t1_idx]
+    w1 = float(lead - t0_lead) / float(t1_lead - t0_lead)
+    w0 = 1.0 - w1
+    g0 = read_depth_tif(str(t0_path))
+    g1 = read_depth_tif(str(t1_path))
+    return (w0 * g0 + w1 * g1).astype(np.float64)
 
 
 def get_road_network(city_key: str | None = None) -> dict[str, Any]:

@@ -94,7 +94,7 @@ def _store_not_ready() -> HTTPException:
     )
 
 
-VALID_LEADS = tuple(range(0, 181, 1))
+VALID_LEADS = tuple(range(0, 181, 5))
 VALID_PROJECTION_LEADS = tuple(range(0, 181, 5))
 VALID_ROUTE_MODES = ("flood_aware", "avoid_impassable")
 VALID_PROJECTION_CONFIG_IDS = tuple(projections.PROJECTION_CONFIGS.keys())
@@ -104,11 +104,11 @@ _DOMAIN_XMIN, _DOMAIN_YMIN, _DOMAIN_XMAX, _DOMAIN_YMAX = 300000.0, 2500000.0, 30
 
 def _require_lead(lead: int) -> None:
     """Execute  Require Lead operation and return result."""
-    if not (0 <= lead <= 180):
+    if lead not in VALID_LEADS:
         raise _error(
             400, "INVALID_LEAD",
-            f"lead {lead} is out of range [0, 180]",
-            valid_leads=list(range(0, 181, 5)),
+            f"lead {lead} is not a valid 5-minute snapshot lead",
+            valid_leads=list(VALID_LEADS),
         )
 
 

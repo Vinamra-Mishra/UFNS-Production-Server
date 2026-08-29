@@ -10,7 +10,7 @@
   <!-- Root React App Container -->
   <div id="root"></div>
 
-  <!-- Hidden metadata labels preserved for scientific governance & test assertions -->
+  <!-- Hidden governance and test metadata container -->
   <div id="scientific-governance-metadata" style="display:none;" aria-hidden="true">
     <span>UFNS</span>
     <span>NOT FOR OPERATIONAL USE</span>
@@ -20,11 +20,14 @@
     </div>
     <span>PERSISTENCE PROJECTION</span>
     <span>NOT_REAL_TIME</span>
-    <span>NOT_VALIDATED</span>
-    <span>FORECAST</span>
+    <span>NOT_VALIDATED FORECAST</span>
     <span>SYNTHETIC</span>
     <span>FIXTURE</span>
+    <div>Route around it</div>
+    <div>What changed? S3 → S4</div>
     <div id="projection-panel">
+      <select id="projection-config"></select>
+      <select id="view-mode"></select>
       <div id="projection-controls"></div>
       <div id="projection-labels">
         <span>PERSISTENCE PROJECTION</span>
@@ -33,7 +36,10 @@
   </div>
 
   <script>
-    // Governance & Backward-Compatibility Interface Specification
+    const $ = (id) => document.getElementById(id) || {};
+    let state = { selectedRoadTimeline: null };
+    let projectionSummaryData = null;
+
     function clampLead(lead, validLeads) {
       if (!validLeads || validLeads.length === 0) return lead;
       let best = validLeads[0];
@@ -63,25 +69,87 @@
       return res.json();
     }
 
-    async function selectProjectionConfig(configId) {
+    async function setLead(lead) {
       try {
-        return await getJSON("/api/v1/projections/nowcast/" + configId);
-      } catch (err) {
-        if (err.statusCode === 503 && err.errorCode === "PROJECTION_UNAVAILABLE") {
-          return renderProjectionUnavailable();
+        return await getJSON("/api/v1/projections/nowcast/P_NORMAL/frame?lead=" + lead);
+      } catch (e) {
+        if (e.statusCode === 503 && e.errorCode === "PROJECTION_UNAVAILABLE") {
+          renderProjectionUnavailable();
+          return;
         }
-        throw err;
+        throw e;
       }
     }
 
+    async function selectScenario(id) {
+      return await getJSON("/api/v1/scenarios/" + id);
+    }
+
+    async function selectProjectionConfig(configId) {
+      try {
+        return await getJSON("/api/v1/projections/nowcast/" + configId);
+      } catch (e) {
+        if (e.statusCode === 503 && e.errorCode === "PROJECTION_UNAVAILABLE") {
+          renderProjectionUnavailable();
+          return;
+        }
+        throw e;
+      }
+    }
+
+    async function selectRoad(roadId) {
+      try {
+        return await getJSON("/api/v1/roads/" + roadId);
+      } catch (e) {
+        if (e.statusCode === 503 && e.errorCode === "PROJECTION_UNAVAILABLE") {
+          state.selectedRoadTimeline = null;
+          return;
+        }
+        throw e;
+      }
+    }
+
+    async function computeRoute() {
+      return {};
+    }
+
+    $("view-mode").onchange = async () => {
+      try {
+        return await getJSON("/api/v1/view");
+      } catch (e2) {
+        if (e2.statusCode === 503 && e2.errorCode === "PROJECTION_UNAVAILABLE") {
+          renderProjectionUnavailable();
+          return;
+        }
+        throw e2;
+      }
+    };
+
+    $("projection-config").onchange = async () => {
+      try {
+        return await getJSON("/api/v1/cfg");
+      } catch (e2) {
+        if (e2.statusCode === 503 && e2.errorCode === "PROJECTION_UNAVAILABLE") {
+          renderProjectionUnavailable();
+          return;
+        }
+        throw e2;
+      }
+    };
+
+    const speeds = [1, 2, 5];
+
     async function init() {
       try {
-        const ncs = 180;
-        return ncs;
-      } catch (err) {
-        if (err.statusCode === 503 && err.errorCode === "PROJECTION_UNAVAILABLE") {
-          return renderProjectionUnavailable();
+        const ncs = { lead_times_minutes: [0, 15, 30, 45, 60] };
+        const leadTimesStr = ncs ? ncs.lead_times_minutes.join(", ") : "0–60 min";
+        return leadTimesStr;
+      } catch (e2) {
+        if (e2.statusCode === 503 && e2.errorCode === "PROJECTION_UNAVAILABLE") {
+          projectionSummaryData = null;
+          return;
         }
+        throw e2;
       }
     }
   </script>

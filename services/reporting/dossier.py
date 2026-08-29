@@ -214,7 +214,7 @@ def compile_dossier_from_scenario(scenario_id: str = "S4", lead_minutes: int = 1
         road_impacts.append({
             "road_id": road.road_id,
             "road_class": road.road_class,
-            "name": road.name,
+            "name": getattr(road, "name", road.road_id),
             "max_depth_m": max_d_road,
             "classification": cls,
         })
