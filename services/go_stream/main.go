@@ -47,9 +47,22 @@ var hub = &StreamHub{
 	},
 }
 
+func setCORSHeaders(w http.ResponseWriter, r *http.Request) {
+	origin := r.Header.Get("Origin")
+	allowedOrigins := map[string]bool{
+		"http://localhost:3000":          true,
+		"http://127.0.0.1:3000":          true,
+		"https://ufns-demo-v4.vercel.app": true,
+	}
+	if allowedOrigins[origin] {
+		w.Header().Set("Access-Control-Allow-Origin", origin)
+		w.Header().Set("Vary", "Origin")
+	}
+}
+
 func telemetryHandler(w http.ResponseWriter, r *http.Request) {
+	setCORSHeaders(w, r)
 	w.Header().Set("Content-Type", "application/json")
-	w.Header().Set("Access-Control-Allow-Origin", "*")
 
 	hub.mu.RLock()
 	data := hub.telemetry
@@ -60,6 +73,7 @@ func telemetryHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func healthHandler(w http.ResponseWriter, r *http.Request) {
+	setCORSHeaders(w, r)
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]string{
 		"status":  "ONLINE",

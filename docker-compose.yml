@@ -20,13 +20,11 @@ services:
       retries: 3
 
   frontend:
-    image: node:20-alpine
+    build:
+      context: ./apps/web
+      dockerfile: Dockerfile
     container_name: ufns-web-frontend
     restart: always
-    working_dir: /app/apps/web
-    volumes:
-      - .:/app
-    command: sh -c "npm install && npm run build && npx serve -s dist -l 3000"
     ports:
       - "3000:3000"
     depends_on:

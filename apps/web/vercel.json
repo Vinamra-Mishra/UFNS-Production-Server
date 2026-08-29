@@ -6,15 +6,15 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://BACKEND_URL_PLACEHOLDER/api/:path*"
+      "destination": "https://ufns-backend.onrender.com/api/:path*"
     },
     {
       "source": "/health",
-      "destination": "https://BACKEND_URL_PLACEHOLDER/health"
+      "destination": "https://ufns-backend.onrender.com/health"
     },
     {
       "source": "/data/:path*",
-      "destination": "https://BACKEND_URL_PLACEHOLDER/data/:path*"
+      "destination": "https://ufns-backend.onrender.com/data/:path*"
     },
     {
       "source": "/(.*)",

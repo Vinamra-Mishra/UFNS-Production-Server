@@ -19,7 +19,7 @@ UFNS is composed of two distinct tiers:
 1. Go to [render.com](https://render.com) and log in with your GitHub account (`Vinamra-Mishra`).
 2. Click **New +** $\rightarrow$ **Web Service**.
 3. Select the repository: `Vynex-Labs/UFNS-Demo-V4`.
-4. Choose **Docker** as the Runtime (Render automatically detects the root [`Dockerfile`](file:///c:/Users/vkmuk/OneDrive/Documents/Project/SIH%202026/Dockerfile)).
+4. Choose **Docker** as the Runtime (Render automatically detects the root [`Dockerfile`](../Dockerfile)).
 5. Under Settings:
    - **Branch:** `main` or `final-demo`
    - **Health Check Path:** `/health`
@@ -40,7 +40,7 @@ UFNS is composed of two distinct tiers:
    - **Build Command:** `npm run build`
    - **Output Directory:** `dist`
 5. **Configure Backend Proxy (`vercel.json`)**:
-   - In [`apps/web/vercel.json`](file:///c:/Users/vkmuk/OneDrive/Documents/Project/SIH%202026/apps/web/vercel.json), replace `https://BACKEND_URL_PLACEHOLDER` with your Render/Railway backend URL (e.g., `https://ufns-backend.onrender.com`):
+   - In [`apps/web/vercel.json`](../apps/web/vercel.json), replace the backend destination URL with your active Render/Railway backend URL (e.g., `https://ufns-backend.onrender.com`):
      ```json
      {
        "rewrites": [
@@ -91,15 +91,15 @@ If you have a Linux Cloud VM (AWS EC2, DigitalOcean Droplet, GCP Compute Engine,
 ## 4. Option C: Direct Vercel Monorepo Deployment
 
 If you prefer deploying directly from the repository root without setting a subfolder:
-1. Vercel automatically detects the root [`vercel.json`](file:///c:/Users/vkmuk/OneDrive/Documents/Project/SIH%202026/vercel.json).
-2. It executes `npm --prefix apps/web run build` and serves `apps/web/dist`.
-3. Requests to `/api/*`, `/health`, and `/data/*` are transparently routed through Vercel Edge rewrites to your backend service.
+1. In the root [`vercel.json`](../vercel.json), update the rewrite destinations to point to your live backend service URL.
+2. Vercel automatically detects the root configuration, executes `npm --prefix apps/web run build`, and serves `apps/web/dist`.
+3. Requests to `/api/*`, `/health`, and `/data/*` are transparently routed through Vercel Edge rewrites with full security headers (`X-Content-Type-Options`, `X-Frame-Options`).
 
 ---
 
 ## 5. Production Environment Checklist
 
-* [x] **CORS Middleware:** Allowed origins in [`app.py`](file:///c:/Users/vkmuk/OneDrive/Documents/Project/SIH%202026/apps/api/app.py) include `*`, `localhost:3000`, and `*.vercel.app`.
-* [x] **Health Check Endpoint:** Active at `/health` returning `{ "status": "ok", "app": "ufns-m9" }`.
+* [x] **CORS Middleware & Allowlist:** Allowed origins in [`apps/api/app.py`](../apps/api/app.py), [`rust_api/src/main.rs`](../rust_api/src/main.rs), and [`services/go_stream/main.go`](../services/go_stream/main.go) restrict access to `localhost:3000`, `127.0.0.1:3000`, and `https://*.vercel.app`.
+* [x] **Health Check Endpoint:** Active at `/health` returning status `"ok"` when all artifacts and providers are operational, or `"degraded"` when artifacts are missing or rainfall provider is unavailable.
 * [x] **Fallback Data Providers:** Autonomous synthetic fallbacks ensure 100% uptime when external IMD/MOSDAC servers are unreachable.
 * [x] **Single-Page Application (SPA) Routing:** `vercel.json` rewrites all client routes to `/index.html` preventing 404s on page refresh.
