@@ -5,15 +5,15 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://ufns-backend.onrender.com/api/:path*"
+      "destination": "https://ufns-demo-v4.onrender.com/api/:path*"
     },
     {
       "source": "/health",
-      "destination": "https://ufns-backend.onrender.com/health"
+      "destination": "https://ufns-demo-v4.onrender.com/health"
     },
     {
       "source": "/data/:path*",
-      "destination": "https://ufns-backend.onrender.com/data/:path*"
+      "destination": "https://ufns-demo-v4.onrender.com/data/:path*"
     },
     {
       "source": "/(.*)",
