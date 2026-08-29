@@ -99,7 +99,7 @@ If you prefer deploying directly from the repository root without setting a subf
 
 ## 5. Production Environment Checklist
 
-* [x] **CORS Middleware & Allowlist:** Allowed origins in [`apps/api/app.py`](../apps/api/app.py), [`rust_api/src/main.rs`](../rust_api/src/main.rs), and [`services/go_stream/main.go`](../services/go_stream/main.go) restrict access to `localhost:3000`, `127.0.0.1:3000`, and `https://*.vercel.app`.
+* [x] **CORS Middleware & Allowlist:** Allowed origins in [`apps/api/app.py`](../apps/api/app.py), [`rust_api/src/main.rs`](../rust_api/src/main.rs), and [`services/go_stream/main.go`](../services/go_stream/main.go) restrict access to `http://localhost:3000`, `http://127.0.0.1:3000`, and `https://ufns-demo-v4.vercel.app` (additional deployment origins can be configured in their respective allowlist constants).
 * [x] **Health Check Endpoint:** Active at `/health` returning status `"ok"` when all artifacts and providers are operational, or `"degraded"` when artifacts are missing or rainfall provider is unavailable.
 * [x] **Fallback Data Providers:** Autonomous synthetic fallbacks ensure 100% uptime when external IMD/MOSDAC servers are unreachable.
 * [x] **Single-Page Application (SPA) Routing:** `vercel.json` rewrites all client routes to `/index.html` preventing 404s on page refresh.

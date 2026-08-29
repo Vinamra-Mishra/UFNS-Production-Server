@@ -3,6 +3,7 @@
 use axum::{
     extract::ws::{Message, WebSocket, WebSocketUpgrade},
     extract::State,
+    http::{HeaderMap, StatusCode},
     response::{IntoResponse, Json},
     routing::get,
     Router,
@@ -16,6 +17,12 @@ use tokio::sync::{broadcast, RwLock};
 use tower_http::cors::CorsLayer;
 use tracing::{info, Level};
 use tracing_subscriber::FmtSubscriber;
+
+pub const ALLOWED_ORIGINS: &[&str] = &[
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "https://ufns-demo-v4.vercel.app",
+];
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct LiveTelemetry {
@@ -90,14 +97,13 @@ async fn main() {
         }
     });
 
-    let allowed_origins = [
-        "http://localhost:3000".parse().unwrap(),
-        "http://127.0.0.1:3000".parse().unwrap(),
-        "https://ufns-demo-v4.vercel.app".parse().unwrap(),
-    ];
+    let allowed_header_origins: Vec<_> = ALLOWED_ORIGINS
+        .iter()
+        .map(|o| o.parse().unwrap())
+        .collect();
 
     let cors = CorsLayer::new()
-        .allow_origin(allowed_origins)
+        .allow_origin(allowed_header_origins)
         .allow_methods([axum::http::Method::GET, axum::http::Method::OPTIONS])
         .allow_headers(tower_http::cors::Any);
 
@@ -116,6 +122,13 @@ async fn main() {
     axum::serve(listener, app).await.unwrap();
 }
 
+pub fn is_allowed_origin(origin: Option<&str>) -> bool {
+    match origin {
+        Some(o) => ALLOWED_ORIGINS.iter().any(|&allowed| allowed == o),
+        None => false,
+    }
+}
+
 async fn telemetry_handler(State(state): State<AppState>) -> Json<LiveTelemetry> {
     let tel = state.telemetry.read().await;
     Json(tel.clone())
@@ -132,9 +145,15 @@ async fn health_handler() -> Json<serde_json::Value> {
 
 async fn ws_handler(
     ws: WebSocketUpgrade,
+    headers: HeaderMap,
     State(state): State<AppState>,
-) -> impl IntoResponse {
-    ws.on_upgrade(|socket| handle_socket(socket, state))
+) -> Result<impl IntoResponse, StatusCode> {
+    let origin_header = headers.get("origin").and_then(|h| h.to_str().ok());
+    if is_allowed_origin(origin_header) {
+        Ok(ws.on_upgrade(move |socket| handle_socket(socket, state)))
+    } else {
+        Err(StatusCode::FORBIDDEN)
+    }
 }
 
 async fn handle_socket(mut socket: WebSocket, state: AppState) {
@@ -186,5 +205,21 @@ mod tests {
         let data = res.0;
         assert_eq!(data.active_city, "MUMBAI");
         assert_eq!(data.precip_rate_mmh, 18.5);
+    }
+
+    #[test]
+    fn test_ws_origin_validation() {
+        // Approved origins
+        assert!(is_allowed_origin(Some("http://localhost:3000")));
+        assert!(is_allowed_origin(Some("http://127.0.0.1:3000")));
+        assert!(is_allowed_origin(Some("https://ufns-demo-v4.vercel.app")));
+
+        // Unapproved origins
+        assert!(!is_allowed_origin(Some("http://malicious-attacker.com")));
+        assert!(!is_allowed_origin(Some("https://evil.org")));
+        assert!(!is_allowed_origin(Some("http://localhost:8080")));
+
+        // Missing origin
+        assert!(!is_allowed_origin(None));
     }
 }
