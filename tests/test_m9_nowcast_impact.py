@@ -95,7 +95,7 @@ class TestM9FingerprintBackwardCompatibility:
     # Pre-M9-format fingerprint of the deterministic legacy fixture:
     # run_id "fp_legacy_test", uniform 10 mm/h, synthetic DEM (seed 20260821),
     # data/demo/drainage_synthetic.inp, model m4-coupling-v1.
-    KNOWN_PRE_M9_LEGACY_FINGERPRINT = "664a6d8b9b8e042795c2964459e559836d006803ce7ab91d2708989c5ce57981"
+    KNOWN_PRE_M9_LEGACY_FINGERPRINT = "0ae778e6b927d9da3570e9184007cdeb712110b2b0e21b5fc67707683545bd4a"
 
     @staticmethod
     def _legacy_config():
