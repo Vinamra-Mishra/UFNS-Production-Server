@@ -4,19 +4,19 @@
   "outputDirectory": "apps/web/dist",
   "rewrites": [
     {
-      "source": "/api/:path*",
-      "destination": "https://ufns-demo-v4.onrender.com/api/:path*"
+      "source": "/api/(.*)",
+      "destination": "https://ufns-demo-v4.onrender.com/api/$1"
     },
     {
       "source": "/health",
       "destination": "https://ufns-demo-v4.onrender.com/health"
     },
     {
-      "source": "/data/:path*",
-      "destination": "https://ufns-demo-v4.onrender.com/data/:path*"
+      "source": "/data/(.*)",
+      "destination": "https://ufns-demo-v4.onrender.com/data/$1"
     },
     {
-      "source": "/(.*)",
+      "source": "/((?!assets/).*)",
       "destination": "/index.html"
     }
   ],

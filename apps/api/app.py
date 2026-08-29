@@ -22,6 +22,7 @@ from pathlib import Path
 from typing import Any, Literal, Optional
 
 from fastapi import FastAPI, HTTPException, Query
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, JSONResponse, Response
 from pydantic import BaseModel, Field
 
@@ -43,6 +44,14 @@ DIST_DIR = REPO_ROOT / "apps" / "web" / "dist"
 INDEX_HTML = REPO_ROOT / "apps" / "web" / "index.html"
 
 app = FastAPI(title=APP_TITLE, version=API_VERSION)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Mount compiled assets if available
 if (DIST_DIR / "assets").exists():
