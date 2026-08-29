@@ -1,0 +1,22 @@
+[package]
+name = "ufns_rs"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "ufns_rs"
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+pyo3 = { version = "0.22", features = ["extension-module", "abi3-py39"] }
+numpy = "0.22"
+ndarray = "0.15"
+sha2 = "0.10"
+rayon = "1.8"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1

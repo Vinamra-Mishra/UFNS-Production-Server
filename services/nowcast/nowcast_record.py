@@ -25,6 +25,13 @@ from typing import Any, Optional
 
 import numpy as np
 
+try:
+    import ufns_rs
+    _HAS_RUST_CORE = True
+except ImportError:
+    ufns_rs = None
+    _HAS_RUST_CORE = False
+
 
 @dataclass(frozen=True)
 class NowcastRecord:
@@ -105,7 +112,13 @@ class NowcastRecord:
         distinguished. Metadata and summary fields are retained.
         """
         contiguous_array = np.ascontiguousarray(self.rate_mmh)
-        field_hash = hashlib.sha256(contiguous_array.tobytes()).hexdigest()
+        if _HAS_RUST_CORE and ufns_rs is not None:
+            try:
+                field_hash = ufns_rs.sha256_hex(contiguous_array.tobytes())
+            except Exception:
+                field_hash = hashlib.sha256(contiguous_array.tobytes()).hexdigest()
+        else:
+            field_hash = hashlib.sha256(contiguous_array.tobytes()).hexdigest()
         payload = {
             "initialization_time": self.initialization_time.isoformat(),
             "valid_time": self.valid_time.isoformat(),
@@ -126,7 +139,13 @@ class NowcastRecord:
             "dtype": str(self.rate_mmh.dtype),
         }
         canon = json.dumps(payload, sort_keys=True, separators=(",", ":"))
-        return hashlib.sha256(canon.encode("utf-8")).hexdigest()
+        canon_bytes = canon.encode("utf-8")
+        if _HAS_RUST_CORE and ufns_rs is not None:
+            try:
+                return ufns_rs.sha256_hex(canon_bytes)
+            except Exception:
+                return hashlib.sha256(canon_bytes).hexdigest()
+        return hashlib.sha256(canon_bytes).hexdigest()
 
     def to_dict(self, include_rates: bool = False) -> dict[str, Any]:
         """JSON-safe serialisation.

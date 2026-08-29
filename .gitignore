@@ -57,3 +57,10 @@ PS/**/*
 data/mosdac/config.json
 data/mosdac/downloads/
 data/mosdac/error_logs/
+
+# Rust build targets
+target/
+rust_core/target/
+rust_api/target/
+**/*.rs.bk
+

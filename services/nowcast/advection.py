@@ -43,6 +43,13 @@ from services.nowcast.nowcast_record import NowcastRecord
 from services.nowcast.providers import RainfallObservation, SourceType
 from services.nowcast.quality import QualityResult
 
+try:
+    import ufns_rs
+    _HAS_RUST_CORE = True
+except ImportError:
+    ufns_rs = None
+    _HAS_RUST_CORE = False
+
 
 def compute_motion_field(
     frame_prev: np.ndarray,
@@ -65,6 +72,17 @@ def compute_motion_field(
     p_prev = np.asarray(frame_prev, dtype=np.float64)
     p_curr = np.asarray(frame_curr, dtype=np.float64)
     h, w = p_curr.shape
+
+    if _HAS_RUST_CORE and ufns_rs is not None:
+        try:
+            p_prev_c = np.ascontiguousarray(p_prev)
+            p_curr_c = np.ascontiguousarray(p_curr)
+            u_dense, v_dense, u_g, v_g = ufns_rs.compute_motion_field(
+                p_prev_c, p_curr_c, float(cell_size_m), float(dt_seconds)
+            )
+            return u_dense, v_dense, float(u_g), float(v_g)
+        except Exception:
+            pass
 
     # Spatial and temporal gradients
     # Ix: gradient along x (axis 1)
@@ -146,6 +164,22 @@ def semi_lagrangian_extrapolate(
     h, w = arr.shape
     if lead_minutes <= 0.0:
         return arr.copy()
+
+    if _HAS_RUST_CORE and ufns_rs is not None:
+        try:
+            u_arr = np.ascontiguousarray(np.broadcast_to(np.asarray(u_mps, dtype=np.float64), (h, w)))
+            v_arr = np.ascontiguousarray(np.broadcast_to(np.asarray(v_mps, dtype=np.float64), (h, w)))
+            f_arr = np.ascontiguousarray(arr)
+            return ufns_rs.advect_semi_lagrangian(
+                f_arr,
+                u_arr,
+                v_arr,
+                float(lead_minutes),
+                float(cell_size_m),
+                decay_tau_minutes,
+            )
+        except Exception:
+            pass
 
     dt_s = lead_minutes * 60.0
     u_arr = np.broadcast_to(np.asarray(u_mps, dtype=np.float64), (h, w))
