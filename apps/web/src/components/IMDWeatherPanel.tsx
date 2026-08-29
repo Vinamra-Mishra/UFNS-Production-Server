@@ -221,13 +221,15 @@ export const IMDWeatherPanel: React.FC<IMDWeatherPanelProps> = ({ activeCity }) 
         <div
           role="tablist"
           aria-label="IMD Observations Sub-Tabs"
-          className="glass-pill"
           style={{
             display: 'grid',
             gridTemplateColumns: 'repeat(3, 1fr)',
-            gap: '3px',
-            padding: '3px',
+            gap: '4px',
+            padding: '4px',
             width: '100%',
+            background: 'rgba(28, 28, 30, 0.85)',
+            border: '1px solid var(--hairline-soft)',
+            borderRadius: '8px',
             boxSizing: 'border-box',
           }}
         >
