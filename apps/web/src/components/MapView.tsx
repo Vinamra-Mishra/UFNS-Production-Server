@@ -124,9 +124,6 @@ export const MapView: React.FC<MapViewProps> = ({
     setTransform({ panX: 0, panY: 0, zoom: 0.92 });
   }, [gridMeta.origin_x, gridMeta.origin_y, cityMeta?.city_id]);
 
-  // Static deterministic radar azimuth angle tied to timeline lead
-  const radarAngle = ((currentLead % 60) / 60) * Math.PI * 2;
-
   // Filtered Assets based on user category selection
   const filteredAssets = criticalAssets.filter((a) => {
     if (selectedAssetCategory === 'ALL') return true;
@@ -641,6 +638,7 @@ export const MapView: React.FC<MapViewProps> = ({
       const centerY = isMumbai ? rMinY + rH * 0.38 : (isVijayawada ? rMinY + rH * 0.52 : rMinY + rH / 2);
       const maxRadius = Math.max(rW, rH) * 0.75;
       const sweepSpan = Math.PI / 3.2; // ~56 degrees active phosphor sector
+      const radarAngle = ((Date.now() / 4500) % 1) * Math.PI * 2;
 
       ctx.save();
 
@@ -1026,10 +1024,21 @@ export const MapView: React.FC<MapViewProps> = ({
 
 
     ctx.restore();
-  }, [transform, layers, basemapStyle, depthGrid, roads, roadImpacts, drainage, filteredAssets, activeRoute, gridMeta, minDepthThreshold, utmZone, radarAngle, currentLead, telemetry, cityMeta, hoveredSurchargeNode, hoveredAsset]);
+  }, [transform, layers, basemapStyle, depthGrid, roads, roadImpacts, drainage, filteredAssets, activeRoute, gridMeta, minDepthThreshold, utmZone, currentLead, telemetry, cityMeta, hoveredSurchargeNode, hoveredAsset]);
 
   useEffect(() => {
-    let animId = requestAnimationFrame(draw);
+    let animId: number;
+    let isMounted = true;
+
+    const renderLoop = () => {
+      draw();
+      if (layers.radar && isMounted) {
+        animId = requestAnimationFrame(renderLoop);
+      }
+    };
+
+    renderLoop();
+
     const canvas = canvasRef.current;
     let ro: ResizeObserver | null = null;
     if (canvas && canvas.parentElement && typeof ResizeObserver !== 'undefined') {
@@ -1042,11 +1051,12 @@ export const MapView: React.FC<MapViewProps> = ({
     window.addEventListener('resize', handleResize);
 
     return () => {
+      isMounted = false;
       cancelAnimationFrame(animId);
       if (ro) ro.disconnect();
       window.removeEventListener('resize', handleResize);
     };
-  }, [draw]);
+  }, [draw, layers.radar]);
 
   // Pan & Zoom Event Handlers
   const handleMouseDown = (e: React.MouseEvent) => {
