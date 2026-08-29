@@ -139,3 +139,46 @@ async fn handle_socket(mut socket: WebSocket, state: AppState) {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn test_health_endpoint() {
+        let res = health_handler().await;
+        let json_val = res.0;
+        assert_eq!(json_val["status"], "ONLINE");
+        assert_eq!(json_val["runtime"], "Tokio Async + Axum 0.7");
+    }
+
+    #[tokio::test]
+    async fn test_telemetry_state() {
+        let (tx, _rx) = broadcast::channel::<String>(10);
+        let tel = LiveTelemetry {
+            timestamp: Utc::now().to_rfc3339(),
+            active_city: "MUMBAI".to_string(),
+            radar_station: "Mumbai Colaba (DWR-C01)".to_string(),
+            radar_status: "ONLINE_STREAMING".to_string(),
+            radar_frames_count: 24,
+            precip_rate_mmh: 18.5,
+            precip_source: "IMD DWR + ISRO MOSDAC".to_string(),
+            temp_c: 28.5,
+            humidity_pct: 85.0,
+            tide_level_m: 1.45,
+            nwp_model: "NCUM-R 4km".to_string(),
+            engine_throughput: "Sub-100us Tokio Async Ingestion".to_string(),
+            engine_runtime: "Rust Axum/Tokio".to_string(),
+        };
+
+        let state = AppState {
+            telemetry: Arc::new(RwLock::new(tel)),
+            tx,
+        };
+
+        let res = telemetry_handler(State(state)).await;
+        let data = res.0;
+        assert_eq!(data.active_city, "MUMBAI");
+        assert_eq!(data.precip_rate_mmh, 18.5);
+    }
+}
