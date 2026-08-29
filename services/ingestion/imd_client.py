@@ -195,16 +195,25 @@ CITY_STATION_MAP = {
 }
 
 
-def _resolve_city_key(key: Optional[str]) -> str:
+def _resolve_city_key(key: Any) -> str:
     """Execute  Resolve City Key operation and return result."""
-    if not key:
+    if key is None:
         return "MUMBAI"
-    k = key.upper()
-    if k in CITY_STATION_MAP:
-        return k
+    key_str = str(key).strip().upper()
+    if key_str in CITY_STATION_MAP:
+        return key_str
     # Check station ids or district ids
     for c_name, meta in CITY_STATION_MAP.items():
-        if key in (meta["city_station_id"], meta["district_id"], meta["district_name"], meta["state_id"], meta["state_name"], meta["port_id"], meta["basin_id"]):
+        matched_vals = [
+            str(meta.get("city_station_id", "")),
+            str(meta.get("district_id", "")),
+            str(meta.get("district_name", "")).upper(),
+            str(meta.get("state_id", "")),
+            str(meta.get("state_name", "")).upper(),
+            str(meta.get("port_id", "")),
+            str(meta.get("basin_id", "")),
+        ]
+        if key_str in matched_vals or key in (meta.get("city_station_id"), meta.get("district_id"), meta.get("state_id")):
             return c_name
     return "MUMBAI"
 
