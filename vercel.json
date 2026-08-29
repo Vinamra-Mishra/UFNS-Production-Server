@@ -1,0 +1,23 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "npm --prefix apps/web run build",
+  "outputDirectory": "apps/web/dist",
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "https://BACKEND_URL_PLACEHOLDER/api/:path*"
+    },
+    {
+      "source": "/health",
+      "destination": "https://BACKEND_URL_PLACEHOLDER/health"
+    },
+    {
+      "source": "/data/:path*",
+      "destination": "https://BACKEND_URL_PLACEHOLDER/data/:path*"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}
