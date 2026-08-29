@@ -40,7 +40,7 @@ from fastapi.staticfiles import StaticFiles
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 DIST_DIR = REPO_ROOT / "apps" / "web" / "dist"
-INDEX_HTML = DIST_DIR / "index.html" if (DIST_DIR / "index.html").exists() else REPO_ROOT / "apps" / "web" / "index.html"
+INDEX_HTML = REPO_ROOT / "apps" / "web" / "index.html"
 
 app = FastAPI(title=APP_TITLE, version=API_VERSION)
 
