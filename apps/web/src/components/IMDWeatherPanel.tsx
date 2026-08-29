@@ -235,7 +235,7 @@ export const IMDWeatherPanel: React.FC<IMDWeatherPanelProps> = ({ activeCity }) 
             { id: 'synoptic', label: '🌡️ Surface' },
             { id: 'forecast', label: '📅 7-Day' },
             { id: 'warnings', label: '⚠️ Alerts' },
-            { id: 'radar', label: '📡 DWR Radar' },
+            { id: 'radar', label: '📡 Radar' },
             { id: 'marine', label: '🌊 Marine' },
             { id: 'rainfall', label: '📊 Rain' },
           ].map((tab) => {
@@ -248,17 +248,22 @@ export const IMDWeatherPanel: React.FC<IMDWeatherPanelProps> = ({ activeCity }) 
                 type="button"
                 onClick={() => setActiveSubTab(tab.id as any)}
                 style={{
-                  padding: '5px 4px',
-                  fontSize: '10px',
-                  fontWeight: 600,
-                  background: isSubActive ? 'var(--primary-focus)' : 'transparent',
-                  color: isSubActive ? '#ffffff' : 'var(--body-muted)',
-                  border: 'none',
-                  borderRadius: '5px',
+                  padding: '6px 4px',
+                  fontSize: '10.5px',
+                  fontWeight: isSubActive ? 700 : 500,
+                  background: isSubActive ? 'var(--primary-focus, #007aff)' : 'rgba(255, 255, 255, 0.04)',
+                  color: isSubActive ? '#ffffff' : 'var(--body-muted, #94a3b8)',
+                  border: isSubActive ? '1px solid rgba(255, 255, 255, 0.2)' : '1px solid transparent',
+                  borderRadius: '6px',
                   cursor: 'pointer',
                   textAlign: 'center',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '4px',
                   whiteSpace: 'nowrap',
                   boxSizing: 'border-box',
+                  transition: 'all 0.15s ease',
                 }}
               >
                 {tab.label}
