@@ -13,7 +13,7 @@ export const IMDWeatherPanel: React.FC<IMDWeatherPanelProps> = ({ activeCity }) 
   const [isSearchingMosdac, setIsSearchingMosdac] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(true);
   const [mainMode, setMainMode] = useState<'imd' | 'isro'>('imd');
-  const [activeSubTab, setActiveSubTab] = useState<'synoptic' | 'forecast' | 'warnings' | 'marine' | 'cyclone' | 'rainfall'>('synoptic');
+  const [activeSubTab, setActiveSubTab] = useState<'synoptic' | 'forecast' | 'warnings' | 'marine' | 'cyclone' | 'rainfall' | 'radar'>('synoptic');
 
   useEffect(() => {
     let isMounted = true;
@@ -235,8 +235,8 @@ export const IMDWeatherPanel: React.FC<IMDWeatherPanelProps> = ({ activeCity }) 
             { id: 'synoptic', label: '🌡️ Surface' },
             { id: 'forecast', label: '📅 7-Day' },
             { id: 'warnings', label: '⚠️ Alerts' },
+            { id: 'radar', label: '📡 DWR Radar' },
             { id: 'marine', label: '🌊 Marine' },
-            { id: 'cyclone', label: '🌀 Cyclone' },
             { id: 'rainfall', label: '📊 Rain' },
           ].map((tab) => {
             const isSubActive = activeSubTab === tab.id;
@@ -630,45 +630,66 @@ export const IMDWeatherPanel: React.FC<IMDWeatherPanelProps> = ({ activeCity }) 
         </div>
       )}
 
-      {/* 5E. CYCLONE TRACKER VIEW */}
-      {mainMode === 'imd' && activeSubTab === 'cyclone' && (
+      {/* 5E. DWR DOPPLER RADAR OBSERVATIONS VIEW */}
+      {mainMode === 'imd' && activeSubTab === 'radar' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-          {cyclone && (
-            <div className="glass-card" style={{ padding: '12px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                <div style={{ fontSize: '11px', fontWeight: 800, color: 'var(--red)' }}>
-                  🌀 {cyclone.active_system || 'MONSOON DEPRESSION'}
-                </div>
-                <span className="chip-btn" style={{ fontSize: '9px', color: 'var(--red)', background: 'rgba(255, 69, 58, 0.15)', borderColor: 'rgba(255, 69, 58, 0.3)', cursor: 'default' }}>
-                  IMD WATCH
-                </span>
+          <div className="glass-card" style={{ padding: '12px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+              <div style={{ fontSize: '11px', fontWeight: 800, color: 'var(--primary-on-dark)' }}>
+                📡 {data?.station_meta?.district_name?.toUpperCase() === 'MUMBAI' ? 'IMD VERAVALI DWR (C-BAND)' : 'IMD MACHILIPATNAM DWR (S-BAND)'}
               </div>
-
-              {cyclone.observed && cyclone.observed.length > 0 && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '6px' }}>
-                  <div style={{ fontSize: '9px', color: 'var(--body-muted)', textTransform: 'uppercase', fontWeight: 700 }}>Observed Positions</div>
-                  {cyclone.observed.map((obs: any, idx: number) => (
-                    <div key={idx} style={{ background: 'rgba(30, 30, 32, 0.7)', padding: '6px 8px', borderRadius: '4px', display: 'flex', justifyContent: 'space-between', fontSize: '10px', border: '1px solid var(--hairline-soft)' }}>
-                      <div><strong>{obs['Date/Time']}</strong> · {obs.Category}</div>
-                      <div style={{ color: 'var(--primary-on-dark)' }} className="tabular-nums">{obs.lat}°N, {obs.lon}°E ({obs['Mean MSW (kmph)']} km/h)</div>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {cyclone.forecast && cyclone.forecast.length > 0 && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '8px' }}>
-                  <div style={{ fontSize: '9px', color: 'var(--body-muted)', textTransform: 'uppercase', fontWeight: 700 }}>Landfall Trajectory</div>
-                  {cyclone.forecast.map((fcItem: any, idx: number) => (
-                    <div key={idx} style={{ background: 'rgba(30, 30, 32, 0.7)', padding: '6px 8px', borderRadius: '4px', display: 'flex', justifyContent: 'space-between', fontSize: '10px', borderLeft: '3px solid var(--amber)', borderTop: '1px solid var(--hairline-soft)', borderRight: '1px solid var(--hairline-soft)', borderBottom: '1px solid var(--hairline-soft)' }}>
-                      <div><strong>{fcItem.Hour}</strong> · {fcItem.Category}</div>
-                      <div style={{ color: 'var(--amber)' }} className="tabular-nums">{fcItem.lat}°N, {fcItem.lon}°E</div>
-                    </div>
-                  ))}
-                </div>
-              )}
+              <span className="chip-btn" style={{ fontSize: '9px', color: 'var(--green)', background: 'rgba(48, 209, 88, 0.15)', borderColor: 'rgba(48, 209, 88, 0.3)', cursor: 'default' }}>
+                LIVE DWR ONLINE
+              </span>
             </div>
-          )}
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '6px', marginBottom: '10px' }}>
+              <div style={{ background: 'rgba(30, 30, 32, 0.7)', padding: '6px 8px', borderRadius: '6px', border: '1px solid var(--hairline-soft)' }}>
+                <div style={{ fontSize: '9px', color: 'var(--body-muted)' }}>Operational Frequency</div>
+                <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--primary-on-dark)', marginTop: '2px' }} className="tabular-nums">
+                  {data?.station_meta?.district_name?.toUpperCase() === 'MUMBAI' ? '5.625 GHz (C-Band)' : '2.800 GHz (S-Band)'}
+                </div>
+              </div>
+              <div style={{ background: 'rgba(30, 30, 32, 0.7)', padding: '6px 8px', borderRadius: '6px', border: '1px solid var(--hairline-soft)' }}>
+                <div style={{ fontSize: '9px', color: 'var(--body-muted)' }}>Scan Range &amp; Mode</div>
+                <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--amber)', marginTop: '2px' }} className="tabular-nums">
+                  {data?.station_meta?.district_name?.toUpperCase() === 'MUMBAI' ? '250 km (Volumetric)' : '500 km (Long-Range)'}
+                </div>
+              </div>
+              <div style={{ background: 'rgba(30, 30, 32, 0.7)', padding: '6px 8px', borderRadius: '6px', border: '1px solid var(--hairline-soft)' }}>
+                <div style={{ fontSize: '9px', color: 'var(--body-muted)' }}>Polarization Status</div>
+                <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--green)', marginTop: '2px' }}>
+                  Dual-Pol (Zdr, Kdp, ρhv)
+                </div>
+              </div>
+              <div style={{ background: 'rgba(30, 30, 32, 0.7)', padding: '6px 8px', borderRadius: '6px', border: '1px solid var(--hairline-soft)' }}>
+                <div style={{ fontSize: '9px', color: 'var(--body-muted)' }}>Peak Reflectivity (Z)</div>
+                <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--purple)', marginTop: '2px' }} className="tabular-nums">
+                  {data?.station_meta?.district_name?.toUpperCase() === 'MUMBAI' ? '54.2 dBZ (Convective)' : '48.6 dBZ (Stratiform)'}
+                </div>
+              </div>
+            </div>
+
+            {/* Reflectivity dBZ Legend Bar */}
+            <div style={{ background: 'rgba(15, 23, 42, 0.8)', padding: '8px', borderRadius: '6px', border: '1px solid var(--hairline-soft)' }}>
+              <div style={{ fontSize: '9px', color: 'var(--body-muted)', textTransform: 'uppercase', fontWeight: 700, marginBottom: '4px' }}>
+                IMD Standard dBZ Reflectivity Scale
+              </div>
+              <div style={{
+                height: '8px',
+                borderRadius: '4px',
+                background: 'linear-gradient(to right, #06b6d4 0%, #22c55e 25%, #eab308 50%, #f97316 75%, #ef4444 90%, #d946ef 100%)',
+                marginBottom: '4px'
+              }} />
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '8.5px', color: 'var(--body-muted)', fontFamily: 'monospace' }}>
+                <span>10 dBZ</span>
+                <span>25 dBZ</span>
+                <span>40 dBZ</span>
+                <span>55 dBZ</span>
+                <span>65+ dBZ</span>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 

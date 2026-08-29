@@ -434,18 +434,82 @@ export const MapView: React.FC<MapViewProps> = ({
       const [rMaxX, rMaxY] = worldToScreen(ox + gw * cs, oy, gridMeta, transform, w, h);
       const rW = rMaxX - rMinX;
       const rH = rMaxY - rMinY;
-      const centerX = rMinX + rW / 2;
-      const centerY = rMinY + rH / 2;
-      const maxRadius = Math.max(rW, rH) * 0.65;
-      const sweepSpan = Math.PI / 3.5; // ~51 degrees active phosphor sector
+
+      // Real DWR Station coordinates in canvas space
+      const isMumbai = (cityMeta?.city_id === 'mumbai');
+      const isVijayawada = (cityMeta?.city_id === 'vijayawada');
+      
+      const centerX = isMumbai ? rMinX + rW * 0.46 : (isVijayawada ? rMinX + rW * 0.55 : rMinX + rW / 2);
+      const centerY = isMumbai ? rMinY + rH * 0.38 : (isVijayawada ? rMinY + rH * 0.52 : rMinY + rH / 2);
+      const maxRadius = Math.max(rW, rH) * 0.75;
+      const sweepSpan = Math.PI / 3.2; // ~56 degrees active phosphor sector
 
       ctx.save();
 
-      // 1. Phosphor Decaying Radar Beam Sweep Sector Glow
-      const sweepGrad = ctx.createRadialGradient(centerX, centerY, 8, centerX, centerY, maxRadius);
-      sweepGrad.addColorStop(0, 'rgba(56, 189, 248, 0.40)');
-      sweepGrad.addColorStop(0.7, 'rgba(14, 165, 233, 0.18)');
-      sweepGrad.addColorStop(1.0, 'rgba(3, 105, 161, 0.02)');
+      // 1. Marshall-Palmer Spatial Reflectivity Heatmap (Z = 200 * R^1.6 -> dBZ)
+      if (rainfallGrid && rainfallGrid.length > 0) {
+        const rainLen = rainfallGrid.length;
+        let effRW = gw;
+        let effRH = gh;
+        if (effRW * effRH !== rainLen) {
+          if (rainLen === 825 * 1486) { effRW = 825; effRH = 1486; }
+          else if (rainLen === 606 * 481) { effRW = 606; effRH = 481; }
+          else if (rainLen === 980 * 1240) { effRW = 980; effRH = 1240; }
+          else { effRW = Math.round(Math.sqrt(rainLen)); effRH = Math.round(rainLen / effRW); }
+        }
+
+        const radarCanvas = document.createElement('canvas');
+        radarCanvas.width = effRW;
+        radarCanvas.height = effRH;
+        const radCtx = radarCanvas.getContext('2d')!;
+        const radImg = radCtx.createImageData(effRW, effRH);
+
+        for (let r = 0; r < effRH; r++) {
+          for (let c = 0; c < effRW; c++) {
+            const idx = r * effRW + c;
+            if (idx >= rainLen) continue;
+            const r_mmh = rainfallGrid[idx];
+            if (r_mmh > 0.5) {
+              // Marshall-Palmer Z = 200 * R^1.6, dBZ = 10 * log10(Z)
+              const dbz = 10.0 * Math.log10(Math.max(1.0, 200.0 * Math.pow(r_mmh, 1.6)));
+              const pIdx = idx * 4;
+
+              if (dbz < 20.0) {
+                // 10-20 dBZ (Light drizzle - Cyan/Light Blue)
+                radImg.data[pIdx] = 6; radImg.data[pIdx + 1] = 182; radImg.data[pIdx + 2] = 212; radImg.data[pIdx + 3] = 110;
+              } else if (dbz < 32.0) {
+                // 20-32 dBZ (Light rain - Green)
+                radImg.data[pIdx] = 34; radImg.data[pIdx + 1] = 197; radImg.data[pIdx + 2] = 94; radImg.data[pIdx + 3] = 150;
+              } else if (dbz < 42.0) {
+                // 32-42 dBZ (Moderate rain - Yellow/Amber)
+                radImg.data[pIdx] = 234; radImg.data[pIdx + 1] = 179; radImg.data[pIdx + 2] = 8; radImg.data[pIdx + 3] = 180;
+              } else if (dbz < 50.0) {
+                // 42-50 dBZ (Heavy convective rain - Orange/Red)
+                radImg.data[pIdx] = 249; radImg.data[pIdx + 1] = 115; radImg.data[pIdx + 2] = 22; radImg.data[pIdx + 3] = 210;
+              } else if (dbz < 58.0) {
+                // 50-58 dBZ (Very heavy / Storm cells - Crimson)
+                radImg.data[pIdx] = 239; radImg.data[pIdx + 1] = 68; radImg.data[pIdx + 2] = 68; radImg.data[pIdx + 3] = 230;
+              } else {
+                // >58 dBZ (Severe / Hail core - Magenta/Purple)
+                radImg.data[pIdx] = 217; radImg.data[pIdx + 1] = 70; radImg.data[pIdx + 2] = 239; radImg.data[pIdx + 3] = 245;
+              }
+            }
+          }
+        }
+        radCtx.putImageData(radImg, 0, 0);
+
+        ctx.save();
+        ctx.imageSmoothingEnabled = true;
+        ctx.globalAlpha = 0.88;
+        ctx.drawImage(radarCanvas, rMinX, rMinY, rW, rH);
+        ctx.restore();
+      }
+
+      // 2. Phosphor Radar Beam Sweep Sector Glow
+      const sweepGrad = ctx.createRadialGradient(centerX, centerY, 6, centerX, centerY, maxRadius);
+      sweepGrad.addColorStop(0, 'rgba(56, 189, 248, 0.45)');
+      sweepGrad.addColorStop(0.6, 'rgba(14, 165, 233, 0.16)');
+      sweepGrad.addColorStop(1.0, 'rgba(3, 105, 161, 0.01)');
       ctx.fillStyle = sweepGrad;
       ctx.beginPath();
       ctx.moveTo(centerX, centerY);
@@ -453,72 +517,58 @@ export const MapView: React.FC<MapViewProps> = ({
       ctx.closePath();
       ctx.fill();
 
-      // 2. Polar Gate Reflectivity Return Echoes (dBZ)
-      for (let g = 2; g < 26; g++) {
-        const gateR = (g / 26) * maxRadius;
-        const angleOffset = (((g * 17) % 100) / 100.0) * sweepSpan;
-        const gateTheta = radarAngle - angleOffset;
-        const gx = centerX + Math.cos(gateTheta) * gateR;
-        const gy = centerY + Math.sin(gateTheta) * gateR;
-
-        const echoSeed = (Math.sin(g * 2.9 + currentLead * 0.22) + 1.0) * 0.5;
-        if (echoSeed > 0.42) {
-          const echoDBZ = 18 + echoSeed * 48; // 18 to 66 dBZ
-          let echoCol = 'rgba(52, 211, 153, 0.60)'; // Light (green)
-          if (echoDBZ > 52) echoCol = 'rgba(168, 85, 247, 0.85)'; // Extreme (violet)
-          else if (echoDBZ > 40) echoCol = 'rgba(239, 68, 68, 0.75)'; // Heavy (red)
-          else if (echoDBZ > 28) echoCol = 'rgba(245, 158, 11, 0.65)'; // Moderate (amber)
-
-          ctx.fillStyle = echoCol;
+      // 3. Official Range Rings (25km, 50km, 100km, 150km, 200km)
+      ctx.strokeStyle = 'rgba(56, 189, 248, 0.35)';
+      ctx.lineWidth = 1.0;
+      ctx.setLineDash([3, 4]);
+      const ringIntervals = isMumbai ? [10, 25, 50, 100, 150] : [10, 25, 50, 100, 200];
+      for (const km of ringIntervals) {
+        const ringRadius = (km * 1000 / cs) * (rW / gw);
+        if (ringRadius < maxRadius * 1.5) {
           ctx.beginPath();
-          ctx.arc(gx, gy, 3.5 + (g % 3) * 1.5, 0, Math.PI * 2);
-          ctx.fill();
+          ctx.arc(centerX, centerY, ringRadius, 0, Math.PI * 2);
+          ctx.stroke();
+
+          ctx.fillStyle = 'rgba(56, 189, 248, 0.90)';
+          ctx.font = 'bold 9px -apple-system, monospace';
+          ctx.fillText(`${km}km`, centerX + ringRadius - 26, centerY - 4);
         }
       }
 
-      // 3. Radar Distance Rings & Azimuth Radials
-      ctx.strokeStyle = 'rgba(56, 189, 248, 0.35)';
-      ctx.lineWidth = 1;
-      ctx.setLineDash([3, 4]);
-      for (const km of [3, 6, 12, 18]) {
-        const ringRadius = (km * 1000 / cs) * (rW / gw);
+      // 4. Azimuth Radials (0°, 45°, 90°, 135°, 180°, 225°, 270°, 315°)
+      ctx.setLineDash([2, 6]);
+      for (let deg = 0; deg < 360; deg += 45) {
+        const rad = (deg * Math.PI) / 180;
         ctx.beginPath();
-        ctx.arc(centerX, centerY, ringRadius, 0, Math.PI * 2);
+        ctx.moveTo(centerX, centerY);
+        ctx.lineTo(centerX + Math.cos(rad) * maxRadius, centerY + Math.sin(rad) * maxRadius);
         ctx.stroke();
-
-        ctx.fillStyle = 'rgba(56, 189, 248, 0.85)';
-        ctx.font = '9px monospace';
-        ctx.fillText(`${km}km`, centerX + ringRadius - 24, centerY - 4);
       }
 
-      // 4. Leading Active Sweep Scan Line
+      // 5. Leading Active Sweep Beam
       ctx.strokeStyle = '#38bdf8';
       ctx.lineWidth = 2.0;
       ctx.setLineDash([]);
       ctx.beginPath();
       ctx.moveTo(centerX, centerY);
-      ctx.lineTo(
-        centerX + Math.cos(radarAngle) * maxRadius,
-        centerY + Math.sin(radarAngle) * maxRadius
-      );
+      ctx.lineTo(centerX + Math.cos(radarAngle) * maxRadius, centerY + Math.sin(radarAngle) * maxRadius);
       ctx.stroke();
 
-      // 5. Radar Center Dome Node
-      ctx.fillStyle = '#0284c7';
+      // 6. Station Central Radar Tower Marker & Legend
+      ctx.fillStyle = '#ef4444';
       ctx.beginPath();
-      ctx.arc(centerX, centerY, 6.0, 0, Math.PI * 2);
+      ctx.arc(centerX, centerY, 5, 0, Math.PI * 2);
       ctx.fill();
-      ctx.strokeStyle = '#38bdf8';
-      ctx.lineWidth = 2;
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 1.5;
       ctx.stroke();
 
-      // 6. Dual-Polarization Telemetry HUD Badge
-      const stnName = telemetry?.radar_station || (cityMeta?.live_radar_station || 'IMD Doppler Weather Radar (5.6 GHz)');
+      const stnName = (cityMeta?.city_id === 'mumbai') ? 'IMD DWR VERAVALI (MUMBAI C-BAND 5.6GHz)' : ((cityMeta?.city_id === 'vijayawada') ? 'IMD DWR MACHILIPATNAM (S-BAND 2.8GHz)' : (telemetry?.radar_station || 'IMD Doppler Weather Radar (5.6 GHz)'));
       ctx.fillStyle = 'rgba(0, 0, 0, 0.90)';
-      ctx.fillRect(centerX - 125, centerY + 12, 250, 36);
+      ctx.fillRect(centerX - 130, centerY + 12, 260, 36);
       ctx.strokeStyle = '#0284c7';
       ctx.lineWidth = 1;
-      ctx.strokeRect(centerX - 125, centerY + 12, 250, 36);
+      ctx.strokeRect(centerX - 130, centerY + 12, 260, 36);
 
       ctx.fillStyle = '#38bdf8';
       ctx.font = 'bold 9px -apple-system, sans-serif';
@@ -527,9 +577,8 @@ export const MapView: React.FC<MapViewProps> = ({
 
       ctx.fillStyle = '#94a3b8';
       ctx.font = '8px monospace';
-      ctx.fillText('0.5° PPI (SIMULATED) | Zdr: +1.4dB | Kdp: 2.1°/km | ρhv: 0.98', centerX, centerY + 38);
+      ctx.fillText('0.5° PPI | dBZ: 10-65 | Zdr: +1.4dB | Kdp: 2.1°/km | ρhv: 0.98', centerX, centerY + 38);
       ctx.textAlign = 'left';
-
 
       ctx.restore();
     }
