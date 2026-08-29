@@ -166,6 +166,14 @@ def _load_city_dem_and_mask(city_key: str) -> tuple[np.ndarray, np.ndarray, dict
     return dem, mask, grid_meta
 
 
+import zlib
+
+
+def _deterministic_road_hash(road_id: str) -> int:
+    """Deterministic 0-99 hash index across all Python processes and platforms."""
+    return zlib.crc32(str(road_id).encode("utf-8")) % 100
+
+
 def clear_caches():
     """Execute Clear Caches operation and return result."""
     _load_city_dem_and_mask.cache_clear()
@@ -173,6 +181,8 @@ def clear_caches():
     _impact_index_cached.cache_clear()
     _rainfall_grid_cached.cache_clear()
     _load_city_road_routing_graph.cache_clear()
+    _realtime_frame_cached.cache_clear()
+    _horizon_payload_cached.cache_clear()
 
 
 @lru_cache(maxsize=1024)
@@ -244,8 +254,9 @@ def _impact_index_cached(sid: str, city_key: str) -> dict[int, dict[str, Any]]:
             imp_dict = {}
             for s in rn["segments"]:
                 rid = s["road_id"]
-                r_hash = (hash(rid) % 100)
+                r_hash = _deterministic_road_hash(rid)
                 is_low_lying = (r_hash < 25)
+
                 
                 if sid in ("S3", "S4") and lead >= 30 and is_low_lying:
                     classification = "IMPASSABLE" if lead >= 60 else "HIGH_IMPACT"
@@ -290,15 +301,21 @@ def impact_index(sid: str) -> dict[int, dict[str, Any]]:
 
 def impacts_at(sid: str, lead: int) -> dict[str, Any]:
     """Execute Impacts At operation and return result."""
-    return impact_index(sid).get(lead, {})
+    idx = impact_index(sid)
+    if lead in idx:
+        return idx[lead]
+    nearest_lead = min(LEADS, key=lambda l: abs(l - lead))
+    return idx.get(nearest_lead, {})
 
 
 def road_metrics(sid: str, lead: int) -> dict[str, Any]:
     """Execute Road Metrics operation and return result."""
     active = getattr(city_api, "ACTIVE_CITY", "DEMO")
+    idx = impact_index(sid)
+    nearest_lead = min(LEADS, key=lambda l: abs(l - lead))
+    imp = idx.get(lead) or idx.get(nearest_lead, {})
+
     if active != "DEMO":
-        idx = impact_index(sid)
-        imp = idx.get(lead, {})
         impact_counts = {"DRY": 0, "LOW_IMPACT": 0, "CAUTION": 0, "HIGH_IMPACT": 0, "IMPASSABLE": 0}
         for v in imp.values():
             c = v.get("classification", "DRY")
@@ -312,7 +329,7 @@ def road_metrics(sid: str, lead: int) -> dict[str, Any]:
             "passable_fraction": round(1.0 - (impact_counts.get("IMPASSABLE", 0) / max(1, len(imp))), 3),
         }
 
-    return metrics_at_lead(NETWORK, impact_index(sid)[lead])
+    return metrics_at_lead(NETWORK, imp)
 
 
 def road_impact_timeline(sid: str, road_id: str) -> dict[str, Any]:
@@ -436,15 +453,18 @@ def frame(sid: str, lead: int) -> dict[str, Any]:
     }
 
 
+import time
+
+
 @lru_cache(maxsize=128)
-def realtime_frame(lead: int) -> dict[str, Any]:
+def _realtime_frame_cached(lead: int, city_key: str, bucket_time: int) -> dict[str, Any]:
     """Dynamically computes real-time flood inundation, spatial nowcast, and road impacts from live atmospheric telemetry."""
     active = getattr(city_api, "ACTIVE_CITY", "MUMBAI")
-    city_key = city_api.CITY_METADATA.get(active, {}).get("city_id", "mumbai") if active != "DEMO" else "mumbai"
 
     # 1. Fetch live fused environmental telemetry
     lat = 19.0760 if city_key == "mumbai" else (16.5062 if city_key == "vijayawada" else 22.5726)
     lon = 72.8777 if city_key == "mumbai" else (80.6480 if city_key == "vijayawada" else 88.3639)
+
 
     try:
         from services.nowcast.realtime_engine import GLOBAL_REALTIME_FUSION_ENGINE
@@ -455,9 +475,11 @@ def realtime_frame(lead: int) -> dict[str, Any]:
         live_rate = 32.5
         tide_m = 1.42
 
+    is_synthetic = False
     if live_rate <= 0.1:
         # If currently dry weather, provide active monsoon nowcast demonstration rate
         live_rate = max(18.5, 45.0 * math.exp(-0.5 * ((lead - 30) / 40.0) ** 2))
+        is_synthetic = True
 
     dem, mask, _ = _load_city_dem_and_mask(city_key)
 
@@ -479,7 +501,7 @@ def realtime_frame(lead: int) -> dict[str, Any]:
     multiplier = min(1.0, max(0.1, lead / 60.0))
     for s in rn["segments"]:
         rid = s["road_id"]
-        r_hash = (hash(rid) % 100)
+        r_hash = _deterministic_road_hash(rid)
         is_low = (r_hash < 25)
 
         if live_rate >= 30.0 and lead >= 20 and is_low:
@@ -540,8 +562,8 @@ def realtime_frame(lead: int) -> dict[str, Any]:
         "rainfall": {
             "total_mm": round(live_rate * (lead / 60.0), 1),
             "current_intensity_mmh": round(live_rate, 2),
-            "status": "LIVE_OBSERVED",
-            "d016_status": "AUTHENTICATED",
+            "status": "SYNTHETIC_DEMO" if is_synthetic else "LIVE_OBSERVED",
+            "d016_status": "NOT_APPLICABLE" if is_synthetic else "AUTHENTICATED",
         },
         "road_impacts": road_impacts_list,
         "metrics": {
@@ -556,11 +578,20 @@ def realtime_frame(lead: int) -> dict[str, Any]:
             "storage_volume_m3": round(float(np.sum(depth_arr)) * 900.0, 1),
             "outfall_q_m3s": round(live_rate * 0.42, 2),
             "active_model": "C++20 Well-Balanced Hydrodynamics (SIMD)",
-            "dataset_source": "REAL_OBSERVED",
+            "dataset_source": "SYNTHETIC_DEMONSTRATION" if is_synthetic else "REAL_OBSERVED",
         },
         "policy": POLICY.to_dict(),
-        "labels": ["REAL_OBSERVED", "LIVE_DWR_RADAR", "NASA_GPM", "OPERATIONAL"],
+        "labels": ["SYNTHETIC", "SIMULATED", "DEMONSTRATION"] if is_synthetic else ["REAL_OBSERVED", "LIVE_DWR_RADAR", "NASA_GPM", "OPERATIONAL"],
     }
+
+
+
+def realtime_frame(lead: int) -> dict[str, Any]:
+    """Dynamically computes real-time flood inundation from live atmospheric telemetry."""
+    active = getattr(city_api, "ACTIVE_CITY", "MUMBAI")
+    city_key = city_api.CITY_METADATA.get(active, {}).get("city_id", "mumbai") if active != "DEMO" else "mumbai"
+    bucket_time = int(time.time() // 60)
+    return _realtime_frame_cached(lead, city_key, bucket_time)
 
 
 def rainfall_summary(sid: str, lead: int) -> dict[str, Any]:
@@ -627,8 +658,8 @@ def _rainfall_grid_cached(sid: str, lead: int, city_key: str) -> dict[str, Any]:
 
 
 @lru_cache(maxsize=32)
-def horizon_payload(sid: str, max_lead: int = 180, step: int = 5) -> dict[str, Any]:
-    """Precomputes and batches all nowcast frames across the full 3-hour projection horizon (0..180m)."""
+def _horizon_payload_cached(sid: str, max_lead: int, step: int, city_key: str) -> dict[str, Any]:
+    """Internal cached horizon computation."""
     leads = list(range(0, max_lead + 1, step))
     frames = []
     for l in leads:
@@ -646,6 +677,14 @@ def horizon_payload(sid: str, max_lead: int = 180, step: int = 5) -> dict[str, A
         "leads": leads,
         "frames": frames,
     }
+
+
+def horizon_payload(sid: str, max_lead: int = 180, step: int = 5) -> dict[str, Any]:
+    """Precomputes and batches all nowcast frames across the full 3-hour projection horizon (0..180m)."""
+    active = getattr(city_api, "ACTIVE_CITY", "DEMO")
+    city_key = city_api.CITY_METADATA.get(active, {}).get("city_id", "mumbai") if active != "DEMO" else "DEMO"
+    return _horizon_payload_cached(sid, max_lead, step, city_key)
+
 
 
 def rainfall_grid(sid: str, lead: int) -> dict[str, Any]:

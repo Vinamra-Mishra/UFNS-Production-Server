@@ -121,7 +121,9 @@ def get_station_nowcast(
     city: Optional[str] = Query(None),
 ) -> dict[str, Any]:
     """7. Station-wise Nowcast Alerts."""
-    target_city = _resolve_city_key(station_name or city or city_api.ACTIVE_CITY)
+    if station_name:
+        return GLOBAL_IMD_CLIENT.get_station_nowcast(station_name)
+    target_city = _resolve_city_key(city or city_api.ACTIVE_CITY)
     meta = CITY_STATION_MAP[target_city]
     return GLOBAL_IMD_CLIENT.get_station_nowcast(meta["station_name"])
 
@@ -132,7 +134,9 @@ def get_state_rainfall(
     city: Optional[str] = Query(None),
 ) -> dict[str, Any]:
     """8. State-wise Rainfall Actual vs Normal."""
-    target_city = _resolve_city_key(state or city or city_api.ACTIVE_CITY)
+    if state:
+        return GLOBAL_IMD_CLIENT.get_state_rainfall(state)
+    target_city = _resolve_city_key(city or city_api.ACTIVE_CITY)
     meta = CITY_STATION_MAP[target_city]
     return GLOBAL_IMD_CLIENT.get_state_rainfall(meta["state_name"])
 
@@ -144,8 +148,11 @@ def get_aws_stations(
     city: Optional[str] = Query(None),
 ) -> dict[str, Any]:
     """9. AWS/ARG Automated Weather Station Observations."""
-    target_key = call_sign or state_id or city or city_api.ACTIVE_CITY
-    return GLOBAL_IMD_CLIENT.get_aws_data(call_sign=target_key)
+    if call_sign or state_id:
+        return GLOBAL_IMD_CLIENT.get_aws_data(call_sign=call_sign, state_id=state_id)
+    target_city = _resolve_city_key(city or city_api.ACTIVE_CITY)
+    return GLOBAL_IMD_CLIENT.get_aws_data(call_sign=target_city)
+
 
 
 @router.get("/basin-qpf")

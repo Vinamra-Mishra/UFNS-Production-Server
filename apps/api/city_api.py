@@ -115,16 +115,19 @@ def get_active_city() -> dict[str, Any]:
         grid_spec = json.loads(grid_file.read_text(encoding="utf-8"))
     else:
         from services.ingestion.dem import CELL_SIZE_M, DOMAIN_M, GRID_CELLS, ORIGIN_X, ORIGIN_Y
+        w = meta.get("dem_cells", [GRID_CELLS, GRID_CELLS])[1] if "dem_cells" in meta else GRID_CELLS
+        h = meta.get("dem_cells", [GRID_CELLS, GRID_CELLS])[0] if "dem_cells" in meta else GRID_CELLS
         grid_spec = {
             "grid_id": f"{city_key}_grid",
             "crs_wkt_or_epsg": meta.get("crs", "EPSG:32645"),
-            "width": meta.get("dem_cells", [GRID_CELLS, GRID_CELLS])[1] if "dem_cells" in meta else GRID_CELLS,
-            "height": meta.get("dem_cells", [GRID_CELLS, GRID_CELLS])[0] if "dem_cells" in meta else GRID_CELLS,
+            "width": w,
+            "height": h,
             "cell_size_m": CELL_SIZE_M,
-            "bounds": [ORIGIN_X, ORIGIN_Y, ORIGIN_X + DOMAIN_M, ORIGIN_Y + DOMAIN_M],
+            "bounds": [ORIGIN_X, ORIGIN_Y, ORIGIN_X + (w * CELL_SIZE_M), ORIGIN_Y + (h * CELL_SIZE_M)],
         }
 
     return {
+
         "active_city": ACTIVE_CITY,
         "metadata": meta,
         "grid_spec": grid_spec,
@@ -262,9 +265,11 @@ def get_live_telemetry(city: Optional[str] = Query(None)) -> dict[str, Any]:
         target_city = "MUMBAI"
     meta = CITY_METADATA[target_city]
 
-    # Coordinate lookups
-    lat = 19.0760 if target_city == "MUMBAI" else (16.5062 if target_city == "VIJAYAWADA" else 22.5726)
-    lon = 72.8777 if target_city == "MUMBAI" else (80.6480 if target_city == "VIJAYAWADA" else 88.3639)
+    # Coordinate lookups derived from city bbox
+    bbox = meta.get("bbox", [72.80, 18.90, 73.00, 19.30])
+    lon = float((bbox[0] + bbox[2]) / 2.0)
+    lat = float((bbox[1] + bbox[3]) / 2.0)
+
 
     try:
         from services.nowcast.realtime_engine import GLOBAL_REALTIME_FUSION_ENGINE

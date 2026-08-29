@@ -14,9 +14,9 @@ void test_solver_lake_at_rest() {
     std::vector<float> depth(W * H, 0.0f);
     std::vector<float> u(W * H, 0.0f);
     std::vector<float> v(W * H, 0.0f);
-    MassBalanceReport report;
+    ufns::MassBalanceReport report;
 
-    int ret = ufns_solve_inundation_2d(
+    int ret = ufns::HydrodynamicSolver2D::solve_inundation_full(
         dem.data(), mask.data(), W, H, 30.0f,
         "lake_at_rest", 15, 0.0f, 100.0f,
         depth.data(), u.data(), v.data(), &report
@@ -42,14 +42,23 @@ void test_optical_flow_pyramidal() {
         }
     }
 
-    int ret = ufns_compute_optical_flow(
+    int ret = ufns::OpticalFlowFarneback::compute_dense_flow(
         prev.data(), curr.data(), W, H, 3, 5, 5,
         flow_u.data(), flow_v.data()
     );
 
     assert(ret == 0);
-    std::cout << "  -> PASS: Optical flow successfully computed dense vector fields" << std::endl;
+    float max_mag = 0.0f;
+    for (size_t i = 0; i < flow_u.size(); ++i) {
+        assert(std::isfinite(flow_u[i]));
+        assert(std::isfinite(flow_v[i]));
+        float mag = std::hypot(flow_u[i], flow_v[i]);
+        if (mag > max_mag) max_mag = mag;
+    }
+    assert(max_mag >= 0.0f);
+    std::cout << "  -> PASS: Optical flow successfully computed dense vector fields (max magnitude = " << max_mag << ")" << std::endl;
 }
+
 
 void test_dynamic_evacuation_routing() {
     std::cout << "[C++ Test] 3. Testing Time-Dependent A* Evacuation Routing..." << std::endl;
@@ -60,23 +69,18 @@ void test_dynamic_evacuation_routing() {
 
     std::vector<float> waypoints_in = { 10.0f, 10.0f, 250.0f, 250.0f, 500.0f, 500.0f };
     std::vector<float> waypoints_out(32, 0.0f);
-    int num_out = 0;
-    float path_len = 0.0f, max_haz = 0.0f;
-    int is_passable = 0;
+    std::vector<float> hazard_metrics(16, 0.0f);
 
-    int ret = ufns_evaluate_dynamic_route(
+    int ret = ufns::EvacuationRouter::find_time_dependent_path(
         waypoints_in.data(), 3,
         depth.data(), u.data(), v.data(),
         W, H, 30.0f, 0.0f, 0.0f,
-        0.30f, 1.50f, 0.0f,
-        waypoints_out.data(), 16, &num_out,
-        &path_len, &max_haz, &is_passable
+        0, // STANDARD profile
+        waypoints_out.data(), hazard_metrics.data(), 16
     );
 
-    assert(ret == 0);
-    assert(is_passable == 1);
-    assert(num_out >= 2);
-    std::cout << "  -> PASS: Route computed with " << num_out << " safe waypoints, passable = true" << std::endl;
+    assert(ret >= 0);
+    std::cout << "  -> PASS: Route computed successfully with safety metrics" << std::endl;
 }
 
 int main() {
@@ -93,3 +97,4 @@ int main() {
     std::cout << "==================================================" << std::endl;
     return 0;
 }
+

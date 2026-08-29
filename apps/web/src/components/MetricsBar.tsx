@@ -6,13 +6,19 @@ interface MetricsBarProps {
 }
 
 export const MetricsBar: React.FC<MetricsBarProps> = ({ metrics }) => {
+  const peakDepth = metrics?.peak_depth_m ?? 0;
+  const depthColor = peakDepth > 0.5 ? 'var(--red)' : peakDepth > 0.2 ? 'var(--amber)' : 'var(--green)';
+
   return (
-    <div
+    <section
       id="metrics-strip"
+      aria-label="Real-Time Hydrodynamic Telemetry & Road Network Indicators"
       style={{
-        background: '#000000',
-        borderTop: '1px solid #171717',
-        padding: '6px 14px',
+        background: 'rgba(20, 20, 22, 0.85)',
+        backdropFilter: 'blur(24px) saturate(190%)',
+        WebkitBackdropFilter: 'blur(24px) saturate(190%)',
+        borderTop: '1px solid var(--hairline)',
+        padding: '6px 16px',
         display: 'flex',
         gap: '8px',
         overflowX: 'auto',
@@ -20,89 +26,126 @@ export const MetricsBar: React.FC<MetricsBarProps> = ({ metrics }) => {
         zIndex: 40,
       }}
     >
-      <div className="metric-card" style={{ background: '#050505', border: '1px solid #171717', borderRadius: '5px', padding: '5px 9px', minWidth: '85px' }}>
-        <div style={{ color: '#64748b', fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.3px' }}>Lead Time</div>
-        <div style={{ fontSize: '13px', fontWeight: 700, color: '#38bdf8', fontVariantNumeric: 'tabular-nums' }}>
+      {/* Lead Time Card */}
+      <div className="glass-card" style={{ padding: '4px 10px', minWidth: '85px', textAlign: 'center' }}>
+        <div style={{ color: 'var(--body-muted)', fontSize: '9px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.4px' }}>
+          Lead Time
+        </div>
+        <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--primary-on-dark)' }} className="tabular-nums">
           T+{metrics?.lead_minutes ?? 0}m
         </div>
       </div>
 
-      <div className="metric-card" style={{ background: '#050505', border: '1px solid #171717', borderRadius: '5px', padding: '5px 9px', minWidth: '95px' }}>
-        <div style={{ color: '#64748b', fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.3px' }}>Rainfall Rate</div>
-        <div style={{ fontSize: '13px', fontWeight: 700, color: '#34d399', fontVariantNumeric: 'tabular-nums' }}>
-          {(metrics?.rainfall_rate_mmh ?? 0).toFixed(1)} <span style={{ fontSize: '9px', color: '#64748b' }}>mm/h</span>
+      {/* Rainfall Intensity Card */}
+      <div className="glass-card" style={{ padding: '4px 10px', minWidth: '95px', textAlign: 'center' }}>
+        <div style={{ color: 'var(--body-muted)', fontSize: '9px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.4px' }}>
+          Rainfall Rate
+        </div>
+        <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--green)' }} className="tabular-nums">
+          {(metrics?.rainfall_rate_mmh ?? 0).toFixed(1)}&nbsp;<span style={{ fontSize: '10px', fontWeight: 500, color: 'var(--ink-muted-48)' }}>mm/h</span>
         </div>
       </div>
 
-      <div className="metric-card" style={{ background: '#050505', border: '1px solid #171717', borderRadius: '5px', padding: '5px 9px', minWidth: '90px' }}>
-        <div style={{ color: '#64748b', fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.3px' }}>Peak Depth</div>
-        <div style={{ fontSize: '13px', fontWeight: 700, color: '#f87171', fontVariantNumeric: 'tabular-nums' }}>
-          {(metrics?.peak_depth_m ?? 0).toFixed(2)} <span style={{ fontSize: '9px', color: '#64748b' }}>m</span>
+      {/* Peak Depth Card */}
+      <div className="glass-card" style={{ padding: '4px 10px', minWidth: '90px', textAlign: 'center' }}>
+        <div style={{ color: 'var(--body-muted)', fontSize: '9px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.4px' }}>
+          Peak Depth
+        </div>
+        <div style={{ fontSize: '13px', fontWeight: 700, color: depthColor }} className="tabular-nums">
+          {(metrics?.peak_depth_m ?? 0).toFixed(2)}&nbsp;<span style={{ fontSize: '10px', fontWeight: 500, color: 'var(--ink-muted-48)' }}>m</span>
         </div>
       </div>
 
-      <div className="metric-card" style={{ background: '#050505', border: '1px solid #171717', borderRadius: '5px', padding: '5px 9px', minWidth: '105px' }}>
-        <div style={{ color: '#64748b', fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.3px' }}>Flooded Area</div>
-        <div style={{ fontSize: '13px', fontWeight: 700, color: '#fbbf24', fontVariantNumeric: 'tabular-nums' }}>
-          {((metrics?.flooded_area_m2 ?? 0) / 10000).toFixed(1)} <span style={{ fontSize: '9px', color: '#64748b' }}>ha</span>
+      {/* Flooded Area Card */}
+      <div className="glass-card" style={{ padding: '4px 10px', minWidth: '100px', textAlign: 'center' }}>
+        <div style={{ color: 'var(--body-muted)', fontSize: '9px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.4px' }}>
+          Flooded Area
+        </div>
+        <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--amber)' }} className="tabular-nums">
+          {((metrics?.flooded_area_m2 ?? 0) / 10000).toFixed(1)}&nbsp;<span style={{ fontSize: '10px', fontWeight: 500, color: 'var(--ink-muted-48)' }}>ha</span>
         </div>
       </div>
 
-      <div className="metric-card" style={{ background: '#050505', border: '1px solid #171717', borderRadius: '5px', padding: '5px 9px', minWidth: '85px' }}>
-        <div style={{ color: '#64748b', fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.3px' }}>Dry Roads</div>
-        <div style={{ fontSize: '13px', fontWeight: 700, color: '#94a3b8', fontVariantNumeric: 'tabular-nums' }}>
+      {/* Dry Roads Count */}
+      <div className="glass-card" style={{ padding: '4px 10px', minWidth: '85px', textAlign: 'center' }}>
+        <div style={{ color: 'var(--body-muted)', fontSize: '9px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.4px' }}>
+          Dry Roads
+        </div>
+        <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--ink-muted-80)' }} className="tabular-nums">
           {metrics?.dry_roads_count ?? 0}
         </div>
       </div>
 
-      <div className="metric-card" style={{ background: '#050505', border: '1px solid #171717', borderRadius: '5px', padding: '5px 9px', minWidth: '85px' }}>
-        <div style={{ color: '#64748b', fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.3px' }}>Passable</div>
-        <div style={{ fontSize: '13px', fontWeight: 700, color: '#34d399', fontVariantNumeric: 'tabular-nums' }}>
+      {/* Passable Roads Count */}
+      <div className="glass-card" style={{ padding: '4px 10px', minWidth: '85px', textAlign: 'center' }}>
+        <div style={{ color: 'var(--body-muted)', fontSize: '9px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.4px' }}>
+          Passable
+        </div>
+        <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--green)' }} className="tabular-nums">
           {metrics?.passable_roads_count ?? 0}
         </div>
       </div>
 
-      <div className="metric-card" style={{ background: '#050505', border: '1px solid #171717', borderRadius: '5px', padding: '5px 9px', minWidth: '95px' }}>
-        <div style={{ color: '#64748b', fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.3px' }}>Impassable</div>
-        <div style={{ fontSize: '13px', fontWeight: 700, color: '#f43f5e', fontVariantNumeric: 'tabular-nums' }}>
+      {/* Impassable Roads Count */}
+      <div className="glass-card" style={{ padding: '4px 10px', minWidth: '95px', textAlign: 'center' }}>
+        <div style={{ color: 'var(--body-muted)', fontSize: '9px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.4px' }}>
+          Impassable
+        </div>
+        <div style={{ fontSize: '13px', fontWeight: 700, color: (metrics?.impassable_roads_count ?? 0) > 0 ? 'var(--red)' : 'var(--body-muted)' }} className="tabular-nums">
           {metrics?.impassable_roads_count ?? 0}
         </div>
       </div>
 
-      <div className="metric-card" style={{ background: '#050505', border: '1px solid #171717', borderRadius: '5px', padding: '5px 9px', minWidth: '90px' }}>
-        <div style={{ color: '#64748b', fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.3px' }}>Surcharged</div>
-        <div style={{ fontSize: '13px', fontWeight: 700, color: '#fb923c', fontVariantNumeric: 'tabular-nums' }}>
+      {/* Surcharged Manholes */}
+      <div className="glass-card" style={{ padding: '4px 10px', minWidth: '90px', textAlign: 'center' }}>
+        <div style={{ color: 'var(--body-muted)', fontSize: '9px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.4px' }}>
+          Surcharged
+        </div>
+        <div style={{ fontSize: '13px', fontWeight: 700, color: (metrics?.surcharged_nodes_count ?? 0) > 0 ? 'var(--amber)' : 'var(--body-muted)' }} className="tabular-nums">
           {metrics?.surcharged_nodes_count ?? 0}
         </div>
       </div>
 
-      <div className="metric-card" style={{ background: '#050505', border: '1px solid #171717', borderRadius: '5px', padding: '5px 9px', minWidth: '100px' }}>
-        <div style={{ color: '#64748b', fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.3px' }}>Storage Vol</div>
-        <div style={{ fontSize: '13px', fontWeight: 700, color: '#60a5fa', fontVariantNumeric: 'tabular-nums' }}>
-          {((metrics?.storage_volume_m3 ?? 0) / 1000).toFixed(1)} <span style={{ fontSize: '9px', color: '#64748b' }}>k m³</span>
+      {/* Storage Volume */}
+      <div className="glass-card" style={{ padding: '4px 10px', minWidth: '100px', textAlign: 'center' }}>
+        <div style={{ color: 'var(--body-muted)', fontSize: '9px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.4px' }}>
+          Storage Vol
+        </div>
+        <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--primary-on-dark)' }} className="tabular-nums">
+          {((metrics?.storage_volume_m3 ?? 0) / 1000).toFixed(1)}&nbsp;<span style={{ fontSize: '10px', fontWeight: 500, color: 'var(--ink-muted-48)' }}>k&nbsp;m³</span>
         </div>
       </div>
 
-      <div className="metric-card" style={{ background: '#050505', border: '1px solid #171717', borderRadius: '5px', padding: '5px 9px', minWidth: '95px' }}>
-        <div style={{ color: '#64748b', fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.3px' }}>Outfall Q</div>
-        <div style={{ fontSize: '13px', fontWeight: 700, color: '#38bdf8', fontVariantNumeric: 'tabular-nums' }}>
-          {(metrics?.outfall_q_m3s ?? 0).toFixed(2)} <span style={{ fontSize: '9px', color: '#64748b' }}>m³/s</span>
+      {/* Outfall Discharge */}
+      <div className="glass-card" style={{ padding: '4px 10px', minWidth: '95px', textAlign: 'center' }}>
+        <div style={{ color: 'var(--body-muted)', fontSize: '9px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.4px' }}>
+          Outfall Q
+        </div>
+        <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--cyan)' }} className="tabular-nums">
+          {(metrics?.outfall_q_m3s ?? 0).toFixed(2)}&nbsp;<span style={{ fontSize: '10px', fontWeight: 500, color: 'var(--ink-muted-48)' }}>m³/s</span>
         </div>
       </div>
 
-      <div className="metric-card" style={{ background: '#050505', border: '1px solid #171717', borderRadius: '5px', padding: '5px 9px', minWidth: '125px' }}>
-        <div style={{ color: '#64748b', fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.3px' }}>Active Model</div>
-        <div style={{ fontSize: '11px', fontWeight: 700, color: '#c084fc', whiteSpace: 'nowrap' }}>
+      {/* Active Model */}
+      <div className="glass-card" style={{ padding: '4px 10px', minWidth: '130px', textAlign: 'center' }}>
+        <div style={{ color: 'var(--body-muted)', fontSize: '9px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.4px' }}>
+          Active Model
+        </div>
+        <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--purple)', whiteSpace: 'nowrap' }}>
           {metrics?.active_model || 'Hydrodynamic (2D)'}
         </div>
       </div>
 
-      <div className="metric-card" style={{ background: '#050505', border: '1px solid #171717', borderRadius: '5px', padding: '5px 9px', minWidth: '135px' }}>
-        <div style={{ color: '#64748b', fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.3px' }}>Dataset Source</div>
-        <div style={{ fontSize: '11px', fontWeight: 700, color: '#34d399', whiteSpace: 'nowrap' }}>
+      {/* Dataset Source */}
+      <div className="glass-card" style={{ padding: '4px 10px', minWidth: '135px', textAlign: 'center' }}>
+        <div style={{ color: 'var(--body-muted)', fontSize: '9px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.4px' }}>
+          Dataset Source
+        </div>
+        <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--green)', whiteSpace: 'nowrap' }}>
           {metrics?.dataset_source || 'REAL_OBSERVED'}
         </div>
       </div>
-    </div>
+    </section>
   );
 };
+

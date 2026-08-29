@@ -35,17 +35,19 @@ int OpticalFlowFarneback::compute_dense_flow(
 
             for (int dy = -half_win; dy <= half_win; dy++) {
                 for (int dx = -half_win; dx <= half_win; dx++) {
-                    int idx = (r + dy) * width + (c + dx);
-                    int idx_xp1 = (r + dy) * width + (c + dx + 1);
-                    int idx_xm1 = (r + dy) * width + (c + dx - 1);
-                    int idx_yp1 = (r + dy + 1) * width + (c + dx);
-                    int idx_ym1 = (r + dy - 1) * width + (c + dx);
+                    int x_curr = std::clamp(c + dx, 0, width - 1);
+                    int y_curr = std::clamp(r + dy, 0, height - 1);
+                    int x_p1 = std::clamp(c + dx + 1, 0, width - 1);
+                    int x_m1 = std::clamp(c + dx - 1, 0, width - 1);
+                    int y_p1 = std::clamp(r + dy + 1, 0, height - 1);
+                    int y_m1 = std::clamp(r + dy - 1, 0, height - 1);
 
-                    float ix = 0.5f * (curr_frame[idx_xp1] - curr_frame[idx_xm1]);
-                    float iy = 0.5f * (curr_frame[idx_yp1] - curr_frame[idx_ym1]);
-                    float it = curr_frame[idx] - prev_frame[idx];
+                    float ix = 0.5f * (curr_frame[y_curr * width + x_p1] - curr_frame[y_curr * width + x_m1]);
+                    float iy = 0.5f * (curr_frame[y_p1 * width + x_curr] - curr_frame[y_m1 * width + x_curr]);
+                    float it = curr_frame[y_curr * width + x_curr] - prev_frame[y_curr * width + x_curr];
 
                     float weight = std::exp(-(float)(dx * dx + dy * dy) / (2.0f * (float)(half_win * half_win)));
+
 
                     gxx += ix * ix * weight;
                     gyy += iy * iy * weight;

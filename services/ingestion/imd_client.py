@@ -390,11 +390,27 @@ class IMDClient:
             return {"status": "LIVE_IMD", "data": data}
         c_key = _resolve_city_key(station_id)
         meta = CITY_STATION_MAP[c_key]
-        fc = self.get_city_forecast(station_id)["data"]
-        for row in fc:
+        base = self.get_city_forecast(station_id)
+        rows = [dict(row) for row in base.get("data", [])]
+        for row in rows:
             row["Latitude"] = str(meta["lat"])
             row["Longitude"] = str(meta["lon"])
-        return {"status": "FALLBACK_CALIBRATED", "data": fc}
+        return {"status": base.get("status", "FALLBACK_CALIBRATED"), "data": rows}
+
+
+def _as_float(value: Any, default: float) -> float:
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return default
+
+
+def _as_int(value: Any, default: int) -> int:
+    try:
+        return int(float(value))
+    except (TypeError, ValueError):
+        return default
+
 
     # 3. Current Weather API
     def get_current_weather(self, station_id: str = "43003") -> dict[str, Any]:
@@ -402,25 +418,26 @@ class IMDClient:
         data = self._fetch_json("current_wx", {"id": station_id})
         if data and isinstance(data, list) and len(data) > 0:
             rec = data[0]
-            w_code = int(rec.get("Weather Code", 1))
-            wind_dir_code = int(rec.get("Wind Direction", 0))
+            w_code = _as_int(rec.get("Weather Code"), 1)
+            wind_dir_code = _as_int(rec.get("Wind Direction"), 0)
             return {
                 "status": "LIVE_IMD",
                 "station_id": rec.get("Station Id", station_id),
                 "station_name": rec.get("Station", "IMD Observatory"),
                 "date_obs": rec.get("Date of Observation"),
                 "time_obs_utc": rec.get("Time of Observation"),
-                "mslp_hpa": float(rec.get("M.S.L.P", 1008.2)),
+                "mslp_hpa": _as_float(rec.get("M.S.L.P"), 1008.2),
                 "wind_direction_deg": wind_dir_code,
                 "wind_direction_label": WIND_DIRECTIONS.get(wind_dir_code, f"{wind_dir_code}°"),
-                "wind_speed_kmh": float(rec.get("Wind Speed", 18.0)),
-                "temp_c": float(rec.get("Temperature", 29.4)),
+                "wind_speed_kmh": _as_float(rec.get("Wind Speed"), 18.0),
+                "temp_c": _as_float(rec.get("Temperature"), 29.4),
                 "weather_code": w_code,
                 "weather_desc": WEATHER_CODES.get(w_code, "Cloudy with precipitation"),
-                "nebulosity_oktas": int(rec.get("Nebulosity", 6)),
-                "humidity_pct": float(rec.get("Humidity", 82.0)),
-                "rainfall_24h_mm": float(rec.get("Last 24 hrs Rainfall", 12.4)),
+                "nebulosity_oktas": _as_int(rec.get("Nebulosity"), 6),
+                "humidity_pct": _as_float(rec.get("Humidity"), 82.0),
+                "rainfall_24h_mm": _as_float(rec.get("Last 24 hrs Rainfall"), 12.4),
             }
+
 
         c_key = _resolve_city_key(station_id)
         meta = CITY_STATION_MAP[c_key]

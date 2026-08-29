@@ -187,14 +187,15 @@ class MOSDACClient:
                         "authenticated_at": datetime.now(timezone.utc).isoformat(),
                     }
         except Exception as e:
-            logger.warning("MOSDAC Token retrieval notice (%s): %s", self.username, e)
+            logger.warning("MOSDAC Token retrieval notice for %s: %s", TOKEN_URL, e)
 
         # Fallback offline token placeholder
         return {
             "status": "CALIBRATED_SANDBOX",
-            "access_token": self.access_token or "mosdac_session_bearer_calibrated",
+            "access_token": self.access_token,
             "username": self.username,
         }
+
 
     def search_datasets(
         self,
@@ -288,7 +289,7 @@ class MOSDACClient:
         # Differentiate observation profile by city geography & climate
         if city_k == "VIJAYAWADA":
             return {
-                "status": "ONLINE_ACTIVE",
+                "status": "PROVISIONAL_SIMULATED",
                 "satellite": "INSAT-3DS (GEO 82.0°E)",
                 "sensor": "Multi-Spectral Imager (6-Bands)",
                 "orbit": "Geostationary 35,786 km",
@@ -304,7 +305,7 @@ class MOSDACClient:
                 "convective_intensity": "MODERATE_TO_STRONG",
                 "surface_flux_w_m2": 195.2,
                 "data_latency_mins": 14.5,
-                "data_quality_flag": "NOMINAL_OPTIMAL",
+                "data_quality_flag": "CALIBRATED_SANDBOX",
                 "provenance": {
                     "provider": "ISRO / Space Applications Centre (SAC) Ahmedabad",
                     "data_centre": "MOSDAC (mosdac.gov.in)",
@@ -313,7 +314,7 @@ class MOSDACClient:
             }
         elif city_k == "DEMO":
             return {
-                "status": "ONLINE_ACTIVE",
+                "status": "PROVISIONAL_SIMULATED",
                 "satellite": "INSAT-3DS (GEO 82.0°E)",
                 "sensor": "Multi-Spectral Imager (6-Bands)",
                 "orbit": "Geostationary 35,786 km",
@@ -329,7 +330,7 @@ class MOSDACClient:
                 "convective_intensity": "EXTREME_CONVECTIVE_CELL",
                 "surface_flux_w_m2": 162.0,
                 "data_latency_mins": 12.0,
-                "data_quality_flag": "NOMINAL_OPTIMAL",
+                "data_quality_flag": "CALIBRATED_SANDBOX",
                 "provenance": {
                     "provider": "ISRO / Space Applications Centre (SAC) Ahmedabad",
                     "data_centre": "MOSDAC (mosdac.gov.in)",
@@ -339,7 +340,7 @@ class MOSDACClient:
         else:
             # MUMBAI
             return {
-                "status": "ONLINE_ACTIVE",
+                "status": "PROVISIONAL_SIMULATED",
                 "satellite": "INSAT-3DS (GEO 82.0°E)",
                 "sensor": "Multi-Spectral Imager (6-Bands)",
                 "orbit": "Geostationary 35,786 km",
@@ -355,13 +356,14 @@ class MOSDACClient:
                 "convective_intensity": "STRONG_MONSOON_SURGE",
                 "surface_flux_w_m2": 178.4,
                 "data_latency_mins": 15.0,
-                "data_quality_flag": "NOMINAL_OPTIMAL",
+                "data_quality_flag": "CALIBRATED_SANDBOX",
                 "provenance": {
                     "provider": "ISRO / Space Applications Centre (SAC) Ahmedabad",
                     "data_centre": "MOSDAC (mosdac.gov.in)",
                     "payload": "INSAT-3DS Meteorological Data Processing System (IMDPS)",
                 },
             }
+
 
     def get_catalog(self) -> dict[str, Any]:
         """Return supported MOSDAC ISRO satellite dataset catalogue."""

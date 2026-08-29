@@ -275,17 +275,18 @@ export const App: React.FC = () => {
       if (res.ok) {
         const data = await res.json();
         if (Array.isArray(data.frames)) {
+          const loadedLeads: number[] = [];
           data.frames.forEach((f: any) => {
             const lead = f.lead_minutes ?? 0;
             const parsed = parseFramePayload(f, activeScenarioId, lead);
             frameCacheRef.current.set(`${activeScenarioId}_${lead}`, parsed);
+            loadedLeads.push(lead);
           });
-          const buffered = Array.from(frameCacheRef.current.keys())
-            .filter((k) => k.startsWith(`${activeScenarioId}_`))
-            .map((k) => parseInt(k.split('_')[1], 10))
-            .sort((a, b) => a - b);
-          setBufferedLeads(buffered);
+          setBufferedLeads((prev) =>
+            Array.from(new Set([...prev, ...loadedLeads])).sort((a, b) => a - b)
+          );
         }
+
       }
     } catch (e) {
       console.warn('Batch horizon preload failed:', e);
@@ -308,20 +309,41 @@ export const App: React.FC = () => {
       return;
     }
 
+    if (scenarioId !== 'REALTIME' && lead % 5 !== 0) {
+      const lower = Math.floor(lead / 5) * 5;
+      const upper = Math.min(180, lower + 5);
+      await Promise.all([
+        loadFrame(scenarioId, lower, showBlockingLoader),
+        loadFrame(scenarioId, upper, false),
+      ]);
+      const interpolated = getInterpolatedFrame(scenarioId, lead);
+      if (interpolated) {
+        setDepthGrid(interpolated.depth);
+        setRainfallGrid(interpolated.rainfallGrid || null);
+        setRoadImpacts(interpolated.roadImpacts);
+        setMetrics(interpolated.metrics);
+        if (interpolated.grid) {
+          setGridMeta((prev) => ({ ...prev, ...interpolated.grid }));
+        }
+      }
+      return;
+    }
+
     if (showBlockingLoader) {
       setIsLoading(true);
       setLoadingMessage(`Solving Coupled Hydrodynamic Equations (T+${lead}m)...`);
     }
 
     try {
+      const queryLead = scenarioId === 'REALTIME' ? lead : Math.round(lead / 5) * 5;
       const url = scenarioId === 'REALTIME'
-        ? `/api/v1/nowcast/realtime/frame?lead=${lead}`
-        : `/api/v1/scenarios/${scenarioId}/frame?lead=${lead}`;
+        ? `/api/v1/nowcast/realtime/frame?lead=${queryLead}`
+        : `/api/v1/scenarios/${scenarioId}/frame?lead=${queryLead}`;
       const res = await fetch(url);
       if (res.ok) {
         const data = await res.json();
-        const parsed = parseFramePayload(data, scenarioId, lead);
-        frameCacheRef.current.set(`${scenarioId}_${lead}`, parsed);
+        const parsed = parseFramePayload(data, scenarioId, queryLead);
+        frameCacheRef.current.set(`${scenarioId}_${queryLead}`, parsed);
         setDepthGrid(parsed.depth);
         setRainfallGrid(parsed.rainfallGrid || null);
         setRoadImpacts(parsed.roadImpacts);
@@ -330,7 +352,7 @@ export const App: React.FC = () => {
           setGridMeta((prev) => ({ ...prev, ...parsed.grid }));
         }
 
-        setBufferedLeads((prev) => Array.from(new Set([...prev, lead])).sort((a, b) => a - b));
+        setBufferedLeads((prev) => Array.from(new Set([...prev, queryLead])).sort((a, b) => a - b));
       }
     } catch (e) {
       console.error('Error fetching frame:', e);
@@ -338,6 +360,7 @@ export const App: React.FC = () => {
       if (showBlockingLoader) setIsLoading(false);
     }
   }, [getInterpolatedFrame, parseFramePayload]);
+
 
   // Load City Data
   const loadCityData = useCallback(async (city: CityId) => {

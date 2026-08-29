@@ -16,9 +16,15 @@ pub fn semi_lagrangian_extrapolate_rs(
     decay_tau_minutes: Option<f64>,
 ) -> Array2<f64> {
     let (height, width) = field.dim();
+    if height == 0 || width == 0 {
+        return Array2::<f64>::zeros((height, width));
+    }
+    assert_eq!(field.dim(), u_mps.dim(), "u_mps dimensions must match field dimensions");
+    assert_eq!(field.dim(), v_mps.dim(), "v_mps dimensions must match field dimensions");
     if lead_minutes <= 0.0 {
         return field.to_owned();
     }
+
 
     let dt_s = lead_minutes * 60.0;
     let max_x = (width - 1) as f64;
@@ -84,8 +90,18 @@ pub fn compute_motion_field_rs(
     cell_size_m: f64,
     dt_seconds: f64,
 ) -> (Array2<f64>, Array2<f64>, f64, f64) {
+    assert_eq!(frame_prev.dim(), frame_curr.dim(), "frame_prev and frame_curr dimensions must match");
     let (height, width) = frame_curr.dim();
+    if height == 0 || width == 0 {
+        return (
+            Array2::<f64>::zeros((height, width)),
+            Array2::<f64>::zeros((height, width)),
+            0.0,
+            0.0,
+        );
+    }
     let dt_safe = if dt_seconds > 0.0 { dt_seconds } else { 1.0 };
+
 
     let mut mass_prev = 0.0;
     let mut mass_curr = 0.0;

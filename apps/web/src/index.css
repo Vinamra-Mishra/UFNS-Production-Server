@@ -1,19 +1,42 @@
 :root {
-  --bg: #000000;
-  --glass-bg: rgba(8, 12, 22, 0.82);
-  --glass-bg-hover: rgba(15, 23, 42, 0.92);
-  --glass-border: rgba(255, 255, 255, 0.12);
-  --glass-border-active: rgba(56, 189, 248, 0.5);
-  --glass-shadow: 0 20px 50px rgba(0, 0, 0, 0.85), 0 0 25px rgba(56, 189, 248, 0.08);
-  --ink: #f8fafc;
-  --muted: #94a3b8;
-  --dimmed: #64748b;
-  --blue: #38bdf8;
-  --blue-glow: rgba(56, 189, 248, 0.35);
-  --green: #34d399;
-  --amber: #fbbf24;
-  --red: #ef4444;
-  --purple: #c084fc;
+  /* Apple Design System & Dark Canvas Palette (DESIGN.md) */
+  --canvas: #000000;
+  --surface-ink: #1d1d1f;
+  --surface-tile-1: #272729;
+  --surface-tile-2: #2a2a2c;
+  --surface-tile-3: #252527;
+  --hairline: rgba(255, 255, 255, 0.12);
+  --hairline-soft: rgba(255, 255, 255, 0.08);
+  --hairline-active: rgba(41, 151, 255, 0.55);
+
+  /* Primary Action Colors */
+  --primary: #0066cc;
+  --primary-focus: #0071e3;
+  --primary-on-dark: #2997ff;
+  --primary-glow: rgba(41, 151, 255, 0.28);
+
+  /* Typography & Ink Tokens */
+  --ink: #f5f5f7;
+  --body-on-dark: #ffffff;
+  --body-muted: #86868b;
+  --ink-muted-80: #a1a1a6;
+  --ink-muted-48: #6e6e73;
+
+  /* Semantic Alert Palette */
+  --green: #30d158;
+  --green-glow: rgba(48, 209, 88, 0.25);
+  --amber: #ffd60a;
+  --amber-glow: rgba(255, 214, 10, 0.25);
+  --red: #ff453a;
+  --red-glow: rgba(255, 69, 58, 0.3);
+  --purple: #bf5af2;
+  --cyan: #64d2ff;
+
+  /* Frosted Glass Filters */
+  --glass-bg: rgba(29, 29, 31, 0.78);
+  --glass-bg-hover: rgba(42, 42, 44, 0.88);
+  --glass-pill-bg: rgba(37, 37, 39, 0.82);
+  --glass-shadow: 0 16px 40px rgba(0, 0, 0, 0.65), 0 0 1px rgba(255, 255, 255, 0.15);
 }
 
 * {
@@ -26,117 +49,140 @@ html, body, #root {
   width: 100vw;
   height: 100vh;
   overflow: hidden;
-  background: #000000;
+  background: var(--canvas);
   color: var(--ink);
-  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
   font-size: 13px;
+  line-height: 1.45;
+  letter-spacing: -0.011em;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   user-select: none;
 }
 
-/* Apple Maps / iOS Glassmorphic Containers */
+/* Vercel Web Interface Guidelines: Keyboard Focus States */
+:focus-visible {
+  outline: 2px solid var(--primary-on-dark) !important;
+  outline-offset: 2px !important;
+  border-radius: 6px;
+}
+
+button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible {
+  outline: 2px solid var(--primary-on-dark) !important;
+  outline-offset: 2px !important;
+}
+
+/* Tabular Numerals for Numerical Telemetry & Hydrodynamic Data */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+}
+
+/* Apple Frosted Glass Cards & Panels */
 .glass-panel {
   background: var(--glass-bg);
-  backdrop-filter: blur(24px) saturate(190%);
-  -webkit-backdrop-filter: blur(24px) saturate(190%);
-  border: 1px solid var(--glass-border);
-  border-radius: 18px;
+  backdrop-filter: blur(28px) saturate(190%);
+  -webkit-backdrop-filter: blur(28px) saturate(190%);
+  border: 1px solid var(--hairline);
+  border-radius: 16px;
   box-shadow: var(--glass-shadow);
-  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1), transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .glass-pill {
-  background: rgba(10, 15, 29, 0.85);
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  border: 1px solid var(--glass-border);
+  background: var(--glass-pill-bg);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid var(--hairline);
   border-radius: 9999px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  transition: background 0.15s ease, border-color 0.15s ease, transform 0.15s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .glass-pill:hover {
-  border-color: rgba(255, 255, 255, 0.25);
-  background: rgba(15, 23, 42, 0.95);
+  border-color: rgba(255, 255, 255, 0.24);
+  background: var(--glass-bg-hover);
 }
 
 .glass-card {
-  background: rgba(15, 23, 42, 0.65);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 12px;
-  transition: all 0.2s ease;
+  background: rgba(39, 39, 41, 0.65);
+  border: 1px solid var(--hairline-soft);
+  border-radius: 14px;
+  transition: background 0.15s ease, border-color 0.15s ease;
 }
 
 .glass-card:hover {
-  background: rgba(15, 23, 42, 0.85);
-  border-color: rgba(56, 189, 248, 0.3);
+  background: rgba(42, 42, 44, 0.85);
+  border-color: var(--hairline-active);
 }
 
-/* Interactive Button Micro-Interactions */
+/* Apple Action Buttons & Interactive Controls */
 .glass-btn {
-  background: rgba(15, 23, 42, 0.7);
-  border: 1px solid var(--glass-border);
+  background: rgba(42, 42, 44, 0.7);
+  border: 1px solid var(--hairline);
   border-radius: 10px;
   color: var(--ink);
   cursor: pointer;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+  font-weight: 500;
+  transition: opacity 0.15s ease, transform 0.15s cubic-bezier(0.16, 1, 0.3, 1), background 0.15s ease;
 }
 
 .glass-btn:hover {
-  background: rgba(30, 41, 59, 0.9);
-  border-color: rgba(56, 189, 248, 0.4);
+  background: rgba(58, 58, 60, 0.9);
+  border-color: rgba(255, 255, 255, 0.24);
   transform: translateY(-1px);
 }
 
 .glass-btn:active {
   transform: scale(0.96);
+  background: rgba(28, 28, 30, 0.95);
 }
 
-/* Quick Scenario & Chip Buttons */
+/* Apple Pill Segmented Buttons */
 .chip-btn {
-  background: rgba(15, 23, 42, 0.75);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(42, 42, 44, 0.6);
+  border: 1px solid var(--hairline-soft);
   border-radius: 9999px;
-  padding: 4px 10px;
-  font-size: 10px;
-  font-weight: 700;
-  color: var(--muted);
+  padding: 5px 12px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--body-muted);
   cursor: pointer;
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 5px;
-  transition: all 0.2s ease;
+  gap: 6px;
   white-space: nowrap;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
 }
 
 .chip-btn:hover {
-  background: rgba(30, 41, 59, 0.9);
-  color: #fff;
-  border-color: rgba(56, 189, 248, 0.4);
+  background: rgba(58, 58, 60, 0.85);
+  color: var(--body-on-dark);
+  border-color: rgba(255, 255, 255, 0.2);
 }
 
 .chip-btn.active {
-  background: linear-gradient(135deg, #0284c7, #2563eb);
-  color: #fff;
-  border-color: #38bdf8;
-  box-shadow: 0 0 15px rgba(2, 132, 199, 0.45);
+  background: var(--primary-focus);
+  color: #ffffff;
+  border-color: var(--primary-on-dark);
+  box-shadow: 0 0 16px var(--primary-glow);
 }
 
-/* Custom Smooth Slider */
+/* Apple Slider Styling */
 input[type=range] {
-  accent-color: var(--blue);
+  accent-color: var(--primary-on-dark);
   height: 4px;
-  border-radius: 2px;
+  border-radius: 9999px;
+  cursor: pointer;
 }
 
-/* Custom Scrollbars */
+/* Refined Minimalist Scrollbars */
 ::-webkit-scrollbar {
-  width: 5px;
-  height: 5px;
+  width: 4px;
+  height: 4px;
 }
 
 ::-webkit-scrollbar-track {
@@ -144,22 +190,22 @@ input[type=range] {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.18);
   border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.32);
 }
 
 /* Animations */
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(6px); }
+  from { opacity: 0; transform: translateY(4px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes slideInLeft {
-  from { opacity: 0; transform: translateX(-16px); }
+  from { opacity: 0; transform: translateX(-12px); }
   to { opacity: 1; transform: translateX(0); }
 }
 
@@ -168,10 +214,10 @@ input[type=range] {
 }
 
 .animate-slide-left {
-  animation: slideInLeft 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: slideInLeft 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-/* Pulsing Red Circle Radar Loader */
+/* Radar Pulse Animations */
 @keyframes pulse-red-ring {
   0% { transform: scale(0.6); opacity: 0.9; }
   50% { transform: scale(1.4); opacity: 0.35; }
@@ -179,23 +225,23 @@ input[type=range] {
 }
 
 @keyframes pulse-red-core {
-  0%, 100% { transform: scale(0.85); box-shadow: 0 0 14px rgba(239, 68, 68, 0.8), 0 0 28px rgba(239, 68, 68, 0.4); }
-  50% { transform: scale(1.18); box-shadow: 0 0 22px rgba(239, 68, 68, 1), 0 0 40px rgba(239, 68, 68, 0.7); }
+  0%, 100% { transform: scale(0.88); box-shadow: 0 0 12px rgba(255, 69, 58, 0.8), 0 0 24px rgba(255, 69, 58, 0.35); }
+  50% { transform: scale(1.15); box-shadow: 0 0 20px rgba(255, 69, 58, 1), 0 0 36px rgba(255, 69, 58, 0.6); }
 }
 
 .pulsing-red-circle {
   position: relative;
-  width: 48px;
-  height: 48px;
+  width: 44px;
+  height: 44px;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .pulsing-red-circle .core {
-  width: 20px;
-  height: 20px;
-  background: #ef4444;
+  width: 18px;
+  height: 18px;
+  background: var(--red);
   border-radius: 50%;
   animation: pulse-red-core 1.4s ease-in-out infinite;
   z-index: 2;
@@ -205,7 +251,7 @@ input[type=range] {
   position: absolute;
   width: 100%;
   height: 100%;
-  border: 2px solid #ef4444;
+  border: 2px solid var(--red);
   border-radius: 50%;
   animation: pulse-red-ring 1.8s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
   z-index: 1;
@@ -215,9 +261,24 @@ input[type=range] {
   position: absolute;
   width: 100%;
   height: 100%;
-  border: 1.5px solid #f87171;
+  border: 1.5px solid #ff7b72;
   border-radius: 50%;
   animation: pulse-red-ring 1.8s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
   animation-delay: 0.6s;
   z-index: 1;
+}
+
+/* Prefers Reduced Motion Media Query (Vercel Guidelines Rule 61) */
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .pulsing-red-circle .core,
+  .pulsing-red-circle .ring-1,
+  .pulsing-red-circle .ring-2 {
+    animation: none !important;
+  }
 }

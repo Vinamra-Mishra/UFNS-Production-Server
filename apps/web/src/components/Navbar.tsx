@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { CityId, CityMetadata, LiveTelemetry } from '../types';
-import { Radio, CloudRain, Waves, MapPin, Maximize, Sun, Cloud, Thermometer } from 'lucide-react';
+import { Radio, CloudRain, Waves, MapPin, Maximize2, Minimize2, Thermometer, ShieldCheck } from 'lucide-react';
 import { WeatherWidget } from './WeatherWidget';
 
 interface NavbarProps {
@@ -16,17 +16,40 @@ export const Navbar: React.FC<NavbarProps> = ({
   cityMeta,
   telemetry,
 }) => {
-  const [showWeather, setShowWeather] = useState(false);
+  const [showWeather, setShowWeather] = useState<boolean>(false);
+  const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(Boolean(document.fullscreenElement));
+    };
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+    };
+  }, []);
 
   const w = telemetry?.weather || {};
   const temp = w.temperature_c ?? telemetry?.temp_c ?? 28.0;
 
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().then(() => setIsFullscreen(true)).catch(() => {});
+    } else {
+      document.exitFullscreen().then(() => setIsFullscreen(false)).catch(() => {});
+    }
+  };
+
+
   return (
     <header
+      role="banner"
       style={{
         height: '48px',
-        background: '#000000',
-        borderBottom: '1px solid #171717',
+        background: 'rgba(24, 24, 26, 0.82)',
+        backdropFilter: 'blur(24px) saturate(190%)',
+        WebkitBackdropFilter: 'blur(24px) saturate(190%)',
+        borderBottom: '1px solid var(--hairline)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
@@ -39,53 +62,69 @@ export const Navbar: React.FC<NavbarProps> = ({
       <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
         <div
           style={{
-            background: 'linear-gradient(135deg, #0284c7, #2563eb)',
-            color: '#fff',
-            fontWeight: 900,
+            background: 'var(--primary-focus)',
+            color: '#ffffff',
+            fontWeight: 800,
             fontSize: '13px',
-            padding: '3px 7px',
-            borderRadius: '5px',
-            letterSpacing: '0.5px',
-            boxShadow: '0 0 10px rgba(2, 132, 199, 0.4)',
+            padding: '2px 8px',
+            borderRadius: '6px',
+            letterSpacing: '0.4px',
+            boxShadow: '0 2px 8px var(--primary-glow)',
           }}
+          aria-hidden="true"
         >
-          U
+          UFNS
         </div>
-        <div>
-          <div style={{ fontWeight: 800, fontSize: '13px', color: '#f8fafc', letterSpacing: '0.2px' }}>
-            UFNS — Flood-Aware Decision Support
+        <div style={{ minWidth: 0 }}>
+          <div style={{ fontWeight: 700, fontSize: '13px', color: 'var(--ink)', letterSpacing: '-0.2px', whiteSpace: 'nowrap' }}>
+            Urban Flood Nowcasting System
           </div>
-          <div style={{ fontSize: '9px', color: '#64748b' }}>
-            High-Resolution Urban Flood Nowcasting · SIH26085 · MoES / NCMRWF
+          <div style={{ fontSize: '10px', color: 'var(--body-muted)', letterSpacing: '-0.1px', whiteSpace: 'nowrap' }}>
+            Coupled 1D/2D Hydrodynamics &amp; Radar Nowcasting · SIH26085
           </div>
         </div>
       </div>
 
       {/* Center City Switcher & Live Feeds */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', background: '#050505', border: '1px solid #1f2937', borderRadius: '6px', padding: '2px 8px' }}>
-          <MapPin size={13} color="#38bdf8" style={{ marginRight: '6px' }} />
+        {/* Apple Segmented City Selector Pill */}
+        <div
+          className="glass-pill"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            padding: '2px 10px',
+            gap: '6px',
+          }}
+        >
+          <MapPin size={13} color="var(--primary-on-dark)" aria-hidden="true" />
+          <label htmlFor="city-selector" className="sr-only">
+            Select Urban Catchment
+          </label>
           <select
+            id="city-selector"
+            aria-label="Select Urban Catchment Basin"
             value={activeCity}
             onChange={(e) => onCityChange(e.target.value as CityId)}
             style={{
               background: 'transparent',
-              color: '#38bdf8',
+              color: 'var(--primary-on-dark)',
               border: 'none',
               fontSize: '11px',
-              fontWeight: 700,
+              fontWeight: 600,
               cursor: 'pointer',
               outline: 'none',
+              padding: '2px 0',
             }}
           >
-            <option value="MUMBAI" style={{ background: '#000000', color: '#f8fafc' }}>
-              Mumbai Metropolitan Region (Operational Real Data)
+            <option value="MUMBAI" style={{ background: '#1c1c1e', color: '#ffffff' }}>
+              Mumbai Metropolitan (Operational Real Data)
             </option>
-            <option value="VIJAYAWADA" style={{ background: '#000000', color: '#f8fafc' }}>
-              Vijayawada Urban Area (Krishna Basin Real Data)
+            <option value="VIJAYAWADA" style={{ background: '#1c1c1e', color: '#ffffff' }}>
+              Vijayawada Urban (Krishna Basin Real Data)
             </option>
-            <option value="DEMO" style={{ background: '#000000', color: '#f8fafc' }}>
-              Synthetic Basin Pilot (M5-M11 Baseline Demo)
+            <option value="DEMO" style={{ background: '#1c1c1e', color: '#ffffff' }}>
+              Synthetic Basin Pilot (M5–M11 Calibrated Baseline)
             </option>
           </select>
         </div>
@@ -94,74 +133,100 @@ export const Navbar: React.FC<NavbarProps> = ({
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
           {/* Weather Widget Trigger Button */}
           <button
+            type="button"
             onClick={() => setShowWeather(!showWeather)}
+            aria-expanded={showWeather}
+            aria-label="Toggle live meteorological telemetry panel"
+            className="chip-btn"
             style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '4px',
-              background: showWeather ? '#172554' : '#050505',
-              border: showWeather ? '1px solid #38bdf8' : '1px solid #1f2937',
-              borderRadius: '4px',
-              padding: '3px 8px',
-              fontSize: '10px',
-              color: '#38bdf8',
-              cursor: 'pointer',
-              fontWeight: 700,
+              background: showWeather ? 'rgba(0, 113, 227, 0.25)' : 'rgba(42, 42, 44, 0.65)',
+              borderColor: showWeather ? 'var(--primary-on-dark)' : 'var(--hairline-soft)',
+              color: showWeather ? '#ffffff' : 'var(--ink)',
             }}
-            title="Click to view Real-Time Weather & Satellite Telemetry"
+            title="Real-Time Meteorological & Satellite Telemetry"
           >
-            <Thermometer size={12} color="#38bdf8" />
-            <span>{temp.toFixed(1)}°C {w.condition || 'Clear'}</span>
+            <Thermometer size={12} color="var(--primary-on-dark)" aria-hidden="true" />
+            <span className="tabular-nums">{temp.toFixed(1)}&nbsp;°C {w.condition || 'Clear'}</span>
           </button>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '4px', background: '#050505', border: '1px solid #1f2937', borderRadius: '4px', padding: '2px 6px', fontSize: '10px', color: '#34d399' }}>
-            <Radio size={11} className="pulse" />
-            <span>Radar: ONLINE</span>
+          {/* Doppler Radar Status Pill */}
+          <div
+            className="chip-btn"
+            style={{
+              color: !telemetry ? 'var(--body-muted)' : telemetry.radar_status === 'OFFLINE' ? 'var(--red)' : 'var(--green)',
+              borderColor: !telemetry ? 'var(--hairline-soft)' : telemetry.radar_status === 'OFFLINE' ? 'rgba(255, 69, 58, 0.25)' : 'rgba(48, 209, 88, 0.25)',
+              cursor: 'default',
+            }}
+          >
+            <Radio size={11} aria-hidden="true" />
+            <span>Radar: {telemetry ? telemetry.radar_status || 'ONLINE' : 'UNKNOWN'}</span>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '4px', background: '#050505', border: '1px solid #1f2937', borderRadius: '4px', padding: '2px 6px', fontSize: '10px', color: '#38bdf8' }}>
-            <CloudRain size={11} />
-            <span>Rain: {telemetry?.precip_rate_mmh != null ? `${telemetry.precip_rate_mmh.toFixed(1)} mm/h` : '0.0 mm/h'}</span>
+          {/* Rainfall Intensity Pill */}
+          <div
+            className="chip-btn"
+            style={{
+              color: telemetry?.precip_rate_mmh != null ? 'var(--cyan)' : 'var(--body-muted)',
+              borderColor: telemetry?.precip_rate_mmh != null ? 'rgba(100, 210, 255, 0.2)' : 'var(--hairline-soft)',
+              cursor: 'default',
+            }}
+          >
+            <CloudRain size={11} aria-hidden="true" />
+            <span className="tabular-nums">
+              Rain: {telemetry?.precip_rate_mmh != null ? `${telemetry.precip_rate_mmh.toFixed(1)} mm/h` : '--'}
+            </span>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '4px', background: '#050505', border: '1px solid #1f2937', borderRadius: '4px', padding: '2px 6px', fontSize: '10px', color: '#60a5fa' }}>
-            <Waves size={11} />
-            <span>Tide: {telemetry?.tide_level_m != null ? (telemetry.tide_level_m > 0 ? `+${telemetry.tide_level_m.toFixed(2)}m` : `${telemetry.tide_level_m.toFixed(2)}m`) : '+1.42m'}</span>
+          {/* Tide Level Pill */}
+          <div
+            className="chip-btn"
+            style={{
+              color: telemetry?.tide_level_m != null ? 'var(--primary-on-dark)' : 'var(--body-muted)',
+              borderColor: telemetry?.tide_level_m != null ? 'rgba(41, 151, 255, 0.2)' : 'var(--hairline-soft)',
+              cursor: 'default',
+            }}
+          >
+            <Waves size={11} aria-hidden="true" />
+            <span className="tabular-nums">
+              Tide: {telemetry?.tide_level_m != null ? (telemetry.tide_level_m > 0 ? `+${telemetry.tide_level_m.toFixed(2)}m` : `${telemetry.tide_level_m.toFixed(2)}m`) : '--'}
+            </span>
           </div>
+
         </div>
       </div>
 
       {/* Right Certification Provenance Badges */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-        <span style={{ fontSize: '9px', fontWeight: 700, padding: '2px 6px', borderRadius: '3px', background: '#064e3b', color: '#34d399', border: '1px solid #047857' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+        <span
+          className="chip-btn"
+          style={{
+            fontSize: '10px',
+            fontWeight: 700,
+            background: 'rgba(48, 209, 88, 0.12)',
+            color: 'var(--green)',
+            borderColor: 'rgba(48, 209, 88, 0.3)',
+            cursor: 'default',
+          }}
+        >
+          <ShieldCheck size={11} aria-hidden="true" />
           {cityMeta?.provenance_status || (activeCity === 'DEMO' ? 'SYNTHETIC_BENCHMARK' : 'REAL_OBSERVED')}
-        </span>
-        <span style={{ fontSize: '9px', fontWeight: 700, padding: '2px 6px', borderRadius: '3px', background: '#172554', color: '#60a5fa', border: '1px solid #1d4ed8' }}>
-          CALIBRATED_HYDRODYNAMICS
-        </span>
-        <span style={{ fontSize: '9px', fontWeight: 700, padding: '2px 6px', borderRadius: '3px', background: '#3b0764', color: '#c084fc', border: '1px solid #7e22ce' }}>
-          OPTICAL_FLOW_ADVECTION
         </span>
 
         <button
-          onClick={() => {
-            if (!document.fullscreenElement) {
-              document.documentElement.requestFullscreen();
-            } else {
-              document.exitFullscreen();
-            }
-          }}
+          type="button"
+          onClick={toggleFullscreen}
+          className="glass-btn"
           style={{
-            background: 'transparent',
-            border: 'none',
-            color: '#64748b',
-            cursor: 'pointer',
-            padding: '4px',
-            marginLeft: '6px',
+            width: '30px',
+            height: '30px',
+            borderRadius: '8px',
+            color: 'var(--body-muted)',
+            marginLeft: '4px',
           }}
-          title="Toggle Fullscreen"
+          aria-label={isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'}
+          title={isFullscreen ? 'Exit Fullscreen (Esc)' : 'Enter Fullscreen'}
         >
-          <Maximize size={14} />
+          {isFullscreen ? <Minimize2 size={13} aria-hidden="true" /> : <Maximize2 size={13} aria-hidden="true" />}
         </button>
       </div>
 

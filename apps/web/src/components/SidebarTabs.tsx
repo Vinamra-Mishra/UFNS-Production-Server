@@ -54,6 +54,44 @@ export const SidebarTabs: React.FC<SidebarTabsProps> = ({
   const [originY, setOriginY] = useState<number>(2503405.0);
   const [destX, setDestX] = useState<number>(303405.0);
   const [destY, setDestY] = useState<number>(2500615.0);
+  const [originInput, setOriginInput] = useState<string>('300615.0, 2503405.0');
+  const [destInput, setDestInput] = useState<string>('303405.0, 2500615.0');
+
+  const parseCoords = (val: string): [number, number] | null => {
+    const parts = val.split(',');
+    if (parts.length !== 2) return null;
+    const s0 = parts[0].trim();
+    const s1 = parts[1].trim();
+    if (!s0 || !s1) return null;
+    const n0 = Number(s0);
+    const n1 = Number(s1);
+    if (!Number.isFinite(n0) || !Number.isFinite(n1)) return null;
+    return [n0, n1];
+  };
+
+  const isOriginValid = parseCoords(originInput) !== null;
+  const isDestValid = parseCoords(destInput) !== null;
+  const isRouteFormValid = isOriginValid && isDestValid;
+
+  const handleOriginChange = (val: string) => {
+    setOriginInput(val);
+    const coords = parseCoords(val);
+    if (coords) {
+      setOriginX(coords[0]);
+      setOriginY(coords[1]);
+    }
+  };
+
+  const handleDestChange = (val: string) => {
+    setDestInput(val);
+    const coords = parseCoords(val);
+    if (coords) {
+      setDestX(coords[0]);
+      setDestY(coords[1]);
+    }
+  };
+
+
 
   // Operational feature states
   const [calibResult, setCalibResult] = useState<any>(null);
@@ -218,72 +256,90 @@ export const SidebarTabs: React.FC<SidebarTabsProps> = ({
   };
 
   const tabs = [
-    { id: 'tab-sim', label: 'Hydraulics', icon: <CloudRain size={12} />, subtitle: 'Coupled 1D/2D' },
-    { id: 'tab-imd', label: 'IMD Feeds', icon: <Radio size={12} />, subtitle: '20 Gov APIs' },
-    { id: 'tab-routes', label: 'Routing', icon: <Navigation size={12} />, subtitle: 'Evacuation' },
-    { id: 'tab-calib', label: 'Calibration', icon: <Sliders size={12} />, subtitle: 'Optimization' },
-    { id: 'tab-mitigation', label: 'Mitigation', icon: <Sprout size={12} />, subtitle: 'Sponge Cities' },
-    { id: 'tab-vuln', label: 'Assets & CAP', icon: <Building2 size={12} />, subtitle: 'Alert Protocol' },
-    { id: 'tab-risk-briefing', label: 'Risk & DMA', icon: <BarChart3 size={12} />, subtitle: 'Ensembles' },
+    { id: 'tab-sim', label: 'Hydraulics', icon: <CloudRain size={12} aria-hidden="true" />, subtitle: 'Coupled 1D/2D' },
+    { id: 'tab-imd', label: 'IMD Feeds', icon: <Radio size={12} aria-hidden="true" />, subtitle: '20 Gov APIs' },
+    { id: 'tab-routes', label: 'Routing', icon: <Navigation size={12} aria-hidden="true" />, subtitle: 'Evacuation' },
+    { id: 'tab-calib', label: 'Calibration', icon: <Sliders size={12} aria-hidden="true" />, subtitle: 'Optimization' },
+    { id: 'tab-mitigation', label: 'Mitigation', icon: <Sprout size={12} aria-hidden="true" />, subtitle: 'Sponge Cities' },
+    { id: 'tab-vuln', label: 'Assets & CAP', icon: <Building2 size={12} aria-hidden="true" />, subtitle: 'Alert Protocol' },
+    { id: 'tab-risk-briefing', label: 'Risk & DMA', icon: <BarChart3 size={12} aria-hidden="true" />, subtitle: 'Ensembles' },
   ];
 
   return (
-    <aside style={{
-      width: '440px',
-      background: '#000000',
-      borderRight: '1px solid #171717',
-      display: 'flex',
-      flexDirection: 'column',
-      height: '100%',
-      overflow: 'hidden',
-    }}>
-      {/* Unified Multi-Module Navigation Strip (Balanced 2-Row Layout) */}
-      <div style={{
+    <aside
+      aria-label="Simulation Parameters and Decision Support Sidebar"
+      style={{
+        width: '440px',
+        background: 'rgba(24, 24, 26, 0.88)',
+        backdropFilter: 'blur(28px) saturate(190%)',
+        WebkitBackdropFilter: 'blur(28px) saturate(190%)',
+        borderRight: '1px solid var(--hairline)',
         display: 'flex',
-        flexWrap: 'wrap',
-        gap: '4px',
-        background: '#000000',
-        padding: '6px',
-        borderBottom: '1px solid #171717',
-        width: '100%',
-        boxSizing: 'border-box'
-      }}>
-        {tabs.map((t, idx) => (
-          <button
-            key={t.id}
-            onClick={() => {
-              setActiveTab(t.id);
-              if (t.id === 'tab-risk-briefing' && !briefingData) handleLoadBriefing();
-            }}
-            style={{
-              flex: idx < 4 ? '1 1 calc(25% - 4px)' : '1 1 calc(33.33% - 4px)',
-              background: activeTab === t.id ? 'linear-gradient(135deg, #0c2340, #13283d)' : '#070c14',
-              color: activeTab === t.id ? '#38bdf8' : '#94a3b8',
-              border: activeTab === t.id ? '1px solid #0284c7' : '1px solid #1e293b',
-              borderRadius: '5px',
-              padding: '6px 3px',
-              cursor: 'pointer',
-              fontSize: '10.5px',
-              fontWeight: 700,
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '2px',
-              transition: 'all 0.15s ease',
-              textAlign: 'center',
-              boxSizing: 'border-box',
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
-              {t.icon}
-              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.label}</span>
-            </div>
-            <span style={{ fontSize: '7.5px', color: activeTab === t.id ? '#7dd3fc' : '#64748b', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-              {t.subtitle}
-            </span>
-          </button>
-        ))}
+        flexDirection: 'column',
+        height: '100%',
+        overflow: 'hidden',
+      }}
+    >
+      {/* Unified Multi-Module Navigation Strip (Balanced 2-Row Layout) */}
+      <div
+        role="tablist"
+        aria-label="Sidebar Module Navigation"
+        style={{
+          display: 'flex',
+          flexWrap: 'wrap',
+          gap: '4px',
+          background: 'rgba(18, 18, 20, 0.95)',
+          padding: '6px',
+          borderBottom: '1px solid var(--hairline)',
+          width: '100%',
+          boxSizing: 'border-box',
+        }}
+      >
+        {tabs.map((t, idx) => {
+          const isActive = activeTab === t.id;
+          return (
+            <button
+              key={t.id}
+              role="tab"
+              aria-selected={isActive}
+              aria-controls={`${t.id}-panel`}
+              id={`${t.id}-btn`}
+              type="button"
+              onClick={() => {
+                setActiveTab(t.id);
+                if (t.id === 'tab-risk-briefing' && !briefingData) handleLoadBriefing();
+              }}
+              style={{
+                flex: idx < 4 ? '1 1 calc(25% - 4px)' : '1 1 calc(33.33% - 4px)',
+                background: isActive ? 'var(--primary-focus)' : 'rgba(38, 38, 40, 0.55)',
+                color: isActive ? '#ffffff' : 'var(--body-muted)',
+                border: isActive ? '1px solid var(--primary-on-dark)' : '1px solid var(--hairline-soft)',
+                borderRadius: '8px',
+                padding: '6px 3px',
+                cursor: 'pointer',
+                fontSize: '11px',
+                fontWeight: 600,
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '2px',
+                transition: 'all 0.15s ease',
+                textAlign: 'center',
+                boxSizing: 'border-box',
+                boxShadow: isActive ? '0 2px 8px var(--primary-glow)' : 'none',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
+                {t.icon}
+                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.label}</span>
+              </div>
+              <span style={{ fontSize: '8px', color: isActive ? 'rgba(255,255,255,0.8)' : 'var(--ink-muted-48)', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {t.subtitle}
+              </span>
+            </button>
+          );
+        })}
       </div>
 
       {/* Tab Panels Content */}
@@ -291,22 +347,33 @@ export const SidebarTabs: React.FC<SidebarTabsProps> = ({
         
         {/* MODULE 1: STORM SCENARIOS & HYDRAULICS */}
         {activeTab === 'tab-sim' && (
-          <>
-            <div style={{ background: '#050505', border: '1px solid #171717', borderRadius: '8px', padding: '12px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                <h2 style={{ margin: 0, fontSize: '11px', textTransform: 'uppercase', color: '#94a3b8', letterSpacing: '0.5px' }}>Hydrologic Storm Scenario</h2>
-                <span style={{ fontSize: '9px', background: '#0c4a6e', color: '#38bdf8', padding: '2px 6px', borderRadius: '4px', fontWeight: 700 }}>
+          <div role="tabpanel" id="tab-sim-panel" aria-labelledby="tab-sim-btn" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div className="glass-card" style={{ padding: '14px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                <h2 style={{ margin: 0, fontSize: '11px', textTransform: 'uppercase', color: 'var(--body-muted)', letterSpacing: '0.4px', fontWeight: 700 }}>
+                  Hydrologic Storm Scenario
+                </h2>
+                <span className="chip-btn" style={{ fontSize: '9px', background: 'rgba(0, 113, 227, 0.2)', color: 'var(--primary-on-dark)', borderColor: 'rgba(0, 113, 227, 0.4)', cursor: 'default' }}>
                   Coupled 1D/2D
                 </span>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                 {/* Real-Time Live Radar Nowcast Scenario */}
                 <div
+                  role="button"
+                  tabIndex={0}
                   onClick={() => onScenarioChange('REALTIME')}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      if (e.key === ' ') e.preventDefault();
+                      onScenarioChange('REALTIME');
+                    }
+                  }}
+                  aria-pressed={activeScenarioId === 'REALTIME'}
                   style={{
-                    background: activeScenarioId === 'REALTIME' ? 'linear-gradient(135deg, #1e1b4b, #172554)' : '#090e17',
-                    border: activeScenarioId === 'REALTIME' ? '1px solid #818cf8' : '1px solid #1e293b',
-                    borderRadius: '6px',
+                    background: activeScenarioId === 'REALTIME' ? 'rgba(191, 90, 242, 0.15)' : 'rgba(38, 38, 40, 0.5)',
+                    border: activeScenarioId === 'REALTIME' ? '1px solid var(--purple)' : '1px solid var(--hairline-soft)',
+                    borderRadius: '8px',
                     padding: '8px 10px',
                     cursor: 'pointer',
                     transition: 'all 0.15s ease',
@@ -314,87 +381,109 @@ export const SidebarTabs: React.FC<SidebarTabsProps> = ({
                 >
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <span className="pulse" style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#ef4444', display: 'inline-block' }} />
-                      <strong style={{ color: activeScenarioId === 'REALTIME' ? '#a5b4fc' : '#f8fafc', fontSize: '12px' }}>
+                      <span className="pulse" style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--red)', display: 'inline-block' }} aria-hidden="true" />
+                      <strong style={{ color: activeScenarioId === 'REALTIME' ? 'var(--purple)' : 'var(--ink)', fontSize: '12px' }}>
                         LIVE: Real-Time Radar Nowcast
                       </strong>
                     </div>
-                    <span style={{ fontSize: '9px', background: '#311042', color: '#e879f9', padding: '1px 6px', borderRadius: '3px', fontWeight: 700, border: '1px solid #701a75' }}>
+                    <span style={{ fontSize: '9px', background: 'rgba(191, 90, 242, 0.2)', color: 'var(--purple)', padding: '1px 6px', borderRadius: '4px', fontWeight: 700, border: '1px solid rgba(191, 90, 242, 0.4)' }} className="tabular-nums">
                       {telemetry?.precip_rate_mmh != null ? `${telemetry.precip_rate_mmh.toFixed(1)} mm/h` : 'LIVE DWR'}
                     </span>
                   </div>
-                  <div style={{ fontSize: '10px', color: '#94a3b8', marginTop: '4px', display: 'flex', justifyContent: 'space-between' }}>
+                  <div style={{ fontSize: '10px', color: 'var(--body-muted)', marginTop: '4px', display: 'flex', justifyContent: 'space-between' }}>
                     <span>Station: {telemetry?.radar_station || 'IMD Doppler Radar'}</span>
-                    <span style={{ color: '#34d399', fontWeight: 600 }}>Optical Flow 0-60m</span>
+                    <span style={{ color: 'var(--green)', fontWeight: 600 }}>Optical Flow 0–60m</span>
                   </div>
                 </div>
 
-                {scenarios.map((s) => (
-                  <div
-                    key={s.scenario_id}
-                    onClick={() => onScenarioChange(s.scenario_id)}
-                    style={{
-                      background: s.scenario_id === activeScenarioId ? '#13283d' : '#090e17',
-                      border: s.scenario_id === activeScenarioId ? '1px solid #0284c7' : '1px solid #1e293b',
-                      borderRadius: '6px',
-                      padding: '8px 10px',
-                      cursor: 'pointer',
-                      transition: 'all 0.15s ease',
-                    }}
-                  >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <strong style={{ color: s.scenario_id === activeScenarioId ? '#38bdf8' : '#f8fafc', fontSize: '12px' }}>
-                        {s.scenario_id}: {s.display_name}
-                      </strong>
-                      <span style={{ fontSize: '10px', background: '#064e3b', color: '#34d399', padding: '1px 5px', borderRadius: '3px', fontWeight: 700 }}>
-                        {s.rainfall_total_mm} mm
-                      </span>
+                {scenarios.map((s) => {
+                  const isSel = s.scenario_id === activeScenarioId;
+                  return (
+                    <div
+                      key={s.scenario_id}
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => onScenarioChange(s.scenario_id)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          if (e.key === ' ') e.preventDefault();
+                          onScenarioChange(s.scenario_id);
+                        }
+                      }}
+                      aria-pressed={isSel}
+                      style={{
+                        background: isSel ? 'rgba(0, 113, 227, 0.2)' : 'rgba(38, 38, 40, 0.4)',
+                        border: isSel ? '1px solid var(--primary-on-dark)' : '1px solid var(--hairline-soft)',
+                        borderRadius: '8px',
+                        padding: '8px 10px',
+                        cursor: 'pointer',
+                        transition: 'all 0.15s ease',
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <strong style={{ color: isSel ? 'var(--primary-on-dark)' : 'var(--ink)', fontSize: '12px' }}>
+                          {s.scenario_id}: {s.display_name}
+                        </strong>
+                        <span style={{ fontSize: '10px', background: 'rgba(48, 209, 88, 0.15)', color: 'var(--green)', padding: '1px 6px', borderRadius: '4px', fontWeight: 700 }} className="tabular-nums">
+                          {s.rainfall_total_mm}&nbsp;mm
+                        </span>
+                      </div>
+                      <div style={{ fontSize: '10px', color: 'var(--body-muted)', marginTop: '4px' }}>
+                        Drainage: <span style={{ color: s.drainage_condition === 'BLOCKED' ? 'var(--red)' : 'var(--green)' }}>{s.drainage_condition}</span> · Peak Depth: <span className="tabular-nums">{s.peak_depth_m != null ? s.peak_depth_m.toFixed(2) : '0.00'}m</span>
+                      </div>
                     </div>
-                    <div style={{ fontSize: '10px', color: '#64748b', marginTop: '4px' }}>
-                      Drainage: <span style={{ color: s.drainage_condition === 'BLOCKED' ? '#f87171' : '#34d399' }}>{s.drainage_condition}</span> · Peak Depth: {s.peak_depth_m != null ? s.peak_depth_m.toFixed(2) : '0.00'}m
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
+
               </div>
             </div>
 
-            <div style={{ background: '#050505', border: '1px solid #171717', borderRadius: '8px', padding: '12px' }}>
-              <h2 style={{ margin: '0 0 10px', fontSize: '11px', textTransform: 'uppercase', color: '#94a3b8', letterSpacing: '0.5px' }}>Conservation &amp; Acceptance Gate</h2>
+            <div className="glass-card" style={{ padding: '14px' }}>
+              <h2 style={{ margin: '0 0 10px', fontSize: '11px', textTransform: 'uppercase', color: 'var(--body-muted)', letterSpacing: '0.4px', fontWeight: 700 }}>
+                Conservation &amp; Acceptance Gate
+              </h2>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-                <div style={{ background: '#090e17', padding: '8px', borderRadius: '6px', border: '1px solid #1e293b' }}>
-                  <div style={{ fontSize: '10px', color: '#64748b' }}>Mass Gate Status</div>
-                  <div style={{ fontSize: '13px', fontWeight: 700, color: '#34d399', display: 'flex', alignItems: 'center', gap: '4px', marginTop: '2px' }}>
-                    <CheckCircle2 size={13} /> {activeScenario?.mass_gate || 'PASS'}
+                <div style={{ background: 'rgba(30, 30, 32, 0.7)', padding: '8px 10px', borderRadius: '8px', border: '1px solid var(--hairline-soft)' }}>
+                  <div style={{ fontSize: '10px', color: 'var(--body-muted)' }}>Mass Gate Status</div>
+                  <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--green)', display: 'flex', alignItems: 'center', gap: '4px', marginTop: '2px' }}>
+                    <CheckCircle2 size={13} aria-hidden="true" /> {activeScenario?.mass_gate || 'PASS'}
                   </div>
                 </div>
-                <div style={{ background: '#090e17', padding: '8px', borderRadius: '6px', border: '1px solid #1e293b' }}>
-                  <div style={{ fontSize: '10px', color: '#64748b' }}>Peak Water Depth</div>
-                  <div style={{ fontSize: '13px', fontWeight: 700, color: '#38bdf8', marginTop: '2px' }}>
-                    {activeScenario?.peak_depth_m != null ? activeScenario.peak_depth_m.toFixed(2) : '0.00'} m
+                <div style={{ background: 'rgba(30, 30, 32, 0.7)', padding: '8px 10px', borderRadius: '8px', border: '1px solid var(--hairline-soft)' }}>
+                  <div style={{ fontSize: '10px', color: 'var(--body-muted)' }}>Peak Water Depth</div>
+                  <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--primary-on-dark)', marginTop: '2px' }} className="tabular-nums">
+                    {activeScenario?.peak_depth_m != null ? activeScenario.peak_depth_m.toFixed(2) : '0.00'}&nbsp;m
                   </div>
                 </div>
               </div>
             </div>
-          </>
+          </div>
         )}
 
         {/* MODULE 1.5: IMD OFFICIAL METEOROLOGICAL OBSERVATORY */}
         {activeTab === 'tab-imd' && (
-          <IMDWeatherPanel activeCity={activeCity || 'MUMBAI'} />
+          <div role="tabpanel" id="tab-imd-panel" aria-labelledby="tab-imd-btn">
+            <IMDWeatherPanel activeCity={activeCity || 'MUMBAI'} />
+          </div>
         )}
 
         {/* MODULE 2: EVACUATION & ROAD ROUTING */}
         {activeTab === 'tab-routes' && (
-          <>
-            <div style={{ background: '#050505', border: '1px solid #171717', borderRadius: '8px', padding: '12px' }}>
-              <h2 style={{ margin: '0 0 10px', fontSize: '11px', textTransform: 'uppercase', color: '#94a3b8', letterSpacing: '0.5px' }}>Find Flood-Aware Evacuation Path</h2>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          <div role="tabpanel" id="tab-routes-panel" aria-labelledby="tab-routes-btn" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div className="glass-card" style={{ padding: '14px' }}>
+              <h2 style={{ margin: '0 0 10px', fontSize: '11px', textTransform: 'uppercase', color: 'var(--body-muted)', letterSpacing: '0.4px', fontWeight: 700 }}>
+                Find Flood-Aware Evacuation Path
+              </h2>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                 <div>
-                  <label style={{ fontSize: '10px', color: '#94a3b8', display: 'block', marginBottom: '3px' }}>Routing Engine Policy</label>
+                  <label htmlFor="routing-policy-select" style={{ fontSize: '10px', color: 'var(--body-muted)', display: 'block', marginBottom: '4px', fontWeight: 600 }}>
+                    Routing Engine Policy
+                  </label>
                   <select
+                    id="routing-policy-select"
                     value={routeMode}
                     onChange={(e) => setRouteMode(e.target.value)}
-                    style={{ width: '100%', background: '#131e2e', color: '#38bdf8', border: '1px solid #1e293b', padding: '6px', borderRadius: '5px', fontSize: '11px' }}
+                    style={{ width: '100%', background: '#1c1c1e', color: 'var(--primary-on-dark)', border: '1px solid var(--hairline)', padding: '6px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: 600 }}
                   >
                     <option value="flood_aware">Dynamic Flood-Aware Routing (Depth × Velocity Hazard)</option>
                     <option value="avoid_impassable">Strict Avoid Impassable Corridors (&gt; 0.20m)</option>
@@ -402,129 +491,173 @@ export const SidebarTabs: React.FC<SidebarTabsProps> = ({
                   </select>
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
                   <div>
-                    <label style={{ fontSize: '10px', color: '#94a3b8' }}>Origin (X, Y)</label>
+                    <label htmlFor="origin-coords-input" style={{ fontSize: '10px', color: 'var(--body-muted)', fontWeight: 600, display: 'block', marginBottom: '2px' }}>Origin (X, Y)</label>
                     <input
+                      id="origin-coords-input"
                       type="text"
-                      value={`${originX}, ${originY}`}
-                      onChange={() => {}}
-                      style={{ width: '100%', background: '#090e17', color: '#f8fafc', border: '1px solid #1e293b', padding: '5px 6px', borderRadius: '4px', fontSize: '10px' }}
+                      autoComplete="off"
+                      value={originInput}
+                      onChange={(e) => handleOriginChange(e.target.value)}
+                      placeholder="300615.0, 2503405.0"
+                      style={{ width: '100%', background: 'rgba(20, 20, 22, 0.9)', color: 'var(--ink)', border: '1px solid var(--hairline-soft)', padding: '5px 8px', borderRadius: '6px', fontSize: '10px', fontWeight: 500 }}
                     />
                   </div>
                   <div>
-                    <label style={{ fontSize: '10px', color: '#94a3b8' }}>Destination (X, Y)</label>
+                    <label htmlFor="dest-coords-input" style={{ fontSize: '10px', color: 'var(--body-muted)', fontWeight: 600, display: 'block', marginBottom: '2px' }}>Destination (X, Y)</label>
                     <input
+                      id="dest-coords-input"
                       type="text"
-                      value={`${destX}, ${destY}`}
-                      onChange={() => {}}
-                      style={{ width: '100%', background: '#090e17', color: '#f8fafc', border: '1px solid #1e293b', padding: '5px 6px', borderRadius: '4px', fontSize: '10px' }}
+                      autoComplete="off"
+                      value={destInput}
+                      onChange={(e) => handleDestChange(e.target.value)}
+                      placeholder="303405.0, 2500615.0"
+                      style={{ width: '100%', background: 'rgba(20, 20, 22, 0.9)', color: 'var(--ink)', border: '1px solid var(--hairline-soft)', padding: '5px 8px', borderRadius: '6px', fontSize: '10px', fontWeight: 500 }}
                     />
                   </div>
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', marginTop: '4px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginTop: '4px' }}>
                   <button
-                    onClick={() => onCalculateRoute([originX, originY], [destX, destY], routeMode)}
-                    style={{ background: '#0284c7', color: '#fff', border: 'none', borderRadius: '5px', padding: '7px', fontWeight: 700, cursor: 'pointer', fontSize: '11px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px' }}
+                    type="button"
+                    disabled={!isRouteFormValid}
+                    onClick={() => isRouteFormValid && onCalculateRoute([originX, originY], [destX, destY], routeMode)}
+                    className="action-btn"
+                    title={isRouteFormValid ? 'Compute Path' : 'Enter valid numeric X, Y coordinates'}
+                    style={{
+                      padding: '8px',
+                      fontSize: '11px',
+                      gap: '5px',
+                      opacity: isRouteFormValid ? 1.0 : 0.45,
+                      cursor: isRouteFormValid ? 'pointer' : 'not-allowed',
+                    }}
                   >
-                    <Navigation size={12} />
+                    <Navigation size={12} aria-hidden="true" />
                     <span>Compute Path</span>
                   </button>
                   <button
-                    onClick={() => onCalculateRoute([300615.0, 2503405.0], [300615.0, 2500615.0], 'avoid_impassable')}
-                    style={{ background: '#059669', color: '#fff', border: 'none', borderRadius: '5px', padding: '7px', fontWeight: 700, cursor: 'pointer', fontSize: '11px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px' }}
+                    type="button"
+                    onClick={() => {
+                      const shelters = (criticalAssets || []).filter(
+                        (a: any) =>
+                          a.asset_type === 'RELIEF_SHELTER' ||
+                          a.type === 'RELIEF_SHELTER' ||
+                          a.asset_type === 'EMERGENCY_SHELTER' ||
+                          (a.name && /shelter|hospital|relief/i.test(a.name))
+                      );
+                      let targetDest: [number, number] = [300615.0, 2500615.0];
+                      if (shelters.length > 0) {
+                        let minDist = Infinity;
+                        for (const s of shelters) {
+                          const [sx, sy] = s.coordinates_utm;
+                          const d = Math.hypot(sx - originX, sy - originY);
+                          if (d < minDist) {
+                            minDist = d;
+                            targetDest = [sx, sy];
+                          }
+                        }
+                      }
+                      setDestX(targetDest[0]);
+                      setDestY(targetDest[1]);
+                      setDestInput(`${targetDest[0].toFixed(1)}, ${targetDest[1].toFixed(1)}`);
+                      onCalculateRoute([originX, originY], targetDest, 'avoid_impassable');
+                    }}
+                    className="action-btn"
+                    style={{ background: 'var(--green)', color: '#000000', padding: '8px', fontSize: '11px', gap: '5px' }}
                   >
-                    <ShieldCheck size={12} />
+                    <ShieldCheck size={12} aria-hidden="true" />
                     <span>Nearest Shelter</span>
                   </button>
+
                 </div>
+
               </div>
             </div>
 
             {activeRoute && (
-              <div style={{ background: '#050505', border: '1px solid #171717', borderRadius: '8px', padding: '12px' }}>
+              <div className="glass-card" style={{ padding: '14px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-                  <span style={{ fontSize: '11px', fontWeight: 700, color: '#38bdf8' }}>Route Evaluation Metrics</span>
-                  <span style={{ fontSize: '10px', color: activeRoute.safety_status === 'SAFE' ? '#34d399' : '#f87171', fontWeight: 700 }}>
+                  <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--primary-on-dark)' }}>Route Evaluation Metrics</span>
+                  <span style={{ fontSize: '10px', color: activeRoute.safety_status === 'SAFE' ? 'var(--green)' : 'var(--red)', fontWeight: 700 }}>
                     {activeRoute.safety_status}
                   </span>
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', marginTop: '8px' }}>
-                  <div style={{ background: '#090e17', padding: '6px', borderRadius: '4px' }}>
-                    <div style={{ fontSize: '9px', color: '#64748b' }}>Total Distance</div>
-                    <div style={{ fontSize: '12px', fontWeight: 700, color: '#f8fafc' }}>
-                      {((activeRoute.total_distance_m ?? 0) / 1000).toFixed(2)} km
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginTop: '10px' }}>
+                  <div style={{ background: 'rgba(30, 30, 32, 0.7)', padding: '8px 10px', borderRadius: '8px', border: '1px solid var(--hairline-soft)' }}>
+                    <div style={{ fontSize: '10px', color: 'var(--body-muted)' }}>Total Distance</div>
+                    <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--ink)' }} className="tabular-nums">
+                      {((activeRoute.total_distance_m ?? 0) / 1000).toFixed(2)}&nbsp;km
                     </div>
                   </div>
-                  <div style={{ background: '#090e17', padding: '6px', borderRadius: '4px' }}>
-                    <div style={{ fontSize: '9px', color: '#64748b' }}>Max Depth On Path</div>
-                    <div style={{ fontSize: '12px', fontWeight: 700, color: (activeRoute.max_encountered_depth_m ?? 0) > 0.20 ? '#f87171' : '#34d399' }}>
-                      {(activeRoute.max_encountered_depth_m ?? 0).toFixed(2)} m
+                  <div style={{ background: 'rgba(30, 30, 32, 0.7)', padding: '8px 10px', borderRadius: '8px', border: '1px solid var(--hairline-soft)' }}>
+                    <div style={{ fontSize: '10px', color: 'var(--body-muted)' }}>Max Depth On Path</div>
+                    <div style={{ fontSize: '13px', fontWeight: 700, color: (activeRoute.max_encountered_depth_m ?? 0) > 0.20 ? 'var(--red)' : 'var(--green)' }} className="tabular-nums">
+                      {(activeRoute.max_encountered_depth_m ?? 0).toFixed(2)}&nbsp;m
                     </div>
                   </div>
                 </div>
               </div>
             )}
-          </>
+          </div>
         )}
 
         {/* MODULE 3: MODEL CALIBRATION & BENCHMARK (UNIFIED) */}
         {activeTab === 'tab-calib' && (
-          <div style={{ background: '#050505', border: '1px solid #171717', borderRadius: '8px', padding: '12px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-              <h2 style={{ margin: 0, fontSize: '11px', textTransform: 'uppercase', color: '#94a3b8', letterSpacing: '0.5px' }}>Hydraulic Engine Calibration</h2>
-              <span style={{ fontSize: '9px', background: '#172554', color: '#60a5fa', padding: '2px 6px', borderRadius: '4px', fontWeight: 700 }}>
+          <div role="tabpanel" id="tab-calib-panel" aria-labelledby="tab-calib-btn" className="glass-card" style={{ padding: '14px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+              <h2 style={{ margin: 0, fontSize: '11px', textTransform: 'uppercase', color: 'var(--body-muted)', letterSpacing: '0.4px', fontWeight: 700 }}>
+                Hydraulic Engine Calibration
+              </h2>
+              <span className="chip-btn" style={{ fontSize: '9px', background: 'rgba(0, 113, 227, 0.2)', color: 'var(--primary-on-dark)', borderColor: 'rgba(0, 113, 227, 0.4)', cursor: 'default' }}>
                 Inverse Optimization
               </span>
             </div>
             
-            <p style={{ fontSize: '11px', color: '#94a3b8', lineHeight: 1.4, margin: '0 0 10px' }}>
+            <p style={{ fontSize: '11px', color: 'var(--body-muted)', lineHeight: 1.4, margin: '0 0 12px' }}>
               Calibrate 1D SWMM conduit Manning's roughness, 2D overland friction, and conduit blockage factors against benchmark hydrographs.
             </p>
 
             <button
+              type="button"
               onClick={handleRunCalibration}
               disabled={isCalibrating}
+              className="action-btn"
               style={{
                 width: '100%',
-                background: isCalibrating ? '#334155' : '#0284c7',
-                color: '#fff',
-                border: 'none',
-                borderRadius: '5px',
-                padding: '8px',
-                fontWeight: 700,
-                cursor: isCalibrating ? 'wait' : 'pointer',
+                padding: '9px',
                 fontSize: '11px',
-                marginBottom: '10px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
+                marginBottom: '12px',
                 gap: '6px',
+                cursor: isCalibrating ? 'wait' : 'pointer',
               }}
             >
-              <Sliders size={13} />
-              <span>{isCalibrating ? 'Solving Multi-Param Nelder-Mead...' : 'Run Unified Inverse Calibration'}</span>
+              <Sliders size={13} aria-hidden="true" />
+              <span>{isCalibrating ? 'Solving Multi-Param Nelder-Mead…' : 'Run Unified Inverse Calibration'}</span>
             </button>
 
             {calibResult && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <div style={{ background: '#090e17', padding: '8px', borderRadius: '6px', border: '1px solid #1e293b' }}>
-                  <div style={{ fontSize: '10px', color: '#64748b', textTransform: 'uppercase', marginBottom: '6px', fontWeight: 700 }}>Validation Skill Scores</div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', fontSize: '11px' }}>
-                    <div>NSE: <strong style={{ color: '#34d399' }}>{calibResult.nash_sutcliffe_efficiency?.toFixed(3) || '0.942'}</strong></div>
-                    <div>KGE: <strong style={{ color: '#34d399' }}>{calibResult.kling_gupta_efficiency?.toFixed(3) || '0.915'}</strong></div>
-                    <div>CSI: <strong style={{ color: '#38bdf8' }}>{calibResult.critical_success_index?.toFixed(3) || '0.887'}</strong></div>
-                    <div>RMSE: <strong style={{ color: '#fbbf24' }}>{calibResult.root_mean_square_error_m?.toFixed(3) || '0.038'} m</strong></div>
+                <div style={{ background: 'rgba(30, 30, 32, 0.7)', padding: '10px', borderRadius: '8px', border: '1px solid var(--hairline-soft)' }}>
+                  <div style={{ fontSize: '10px', color: 'var(--body-muted)', textTransform: 'uppercase', marginBottom: '6px', fontWeight: 700 }}>
+                    Validation Skill Scores
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', fontSize: '11px' }} className="tabular-nums">
+                    <div>NSE: <strong style={{ color: 'var(--green)' }}>{calibResult.nash_sutcliffe_efficiency?.toFixed(3) || '0.942'}</strong></div>
+                    <div>KGE: <strong style={{ color: 'var(--green)' }}>{calibResult.kling_gupta_efficiency?.toFixed(3) || '0.915'}</strong></div>
+                    <div>CSI: <strong style={{ color: 'var(--primary-on-dark)' }}>{calibResult.critical_success_index?.toFixed(3) || '0.887'}</strong></div>
+                    <div>RMSE: <strong style={{ color: 'var(--amber)' }}>{calibResult.root_mean_square_error_m?.toFixed(3) || '0.038'}&nbsp;m</strong></div>
                   </div>
                 </div>
 
-                <div style={{ background: '#090e17', padding: '8px', borderRadius: '6px', border: '1px solid #1e293b' }}>
-                  <div style={{ fontSize: '10px', color: '#64748b', textTransform: 'uppercase', marginBottom: '6px', fontWeight: 700 }}>Optimal Calibrated Parameters</div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '11px', color: '#cbd5e1' }}>
-                    <div>Pipe Manning's n: <strong style={{ color: '#38bdf8' }}>{calibResult.pipe_manning_n?.toFixed(4) || '0.0142'}</strong></div>
-                    <div>Conduit Blockage Ratio: <strong style={{ color: '#f87171' }}>{((calibResult.blockage_ratio || 0.08) * 100).toFixed(0)}%</strong></div>
-                    <div>Benchmark Divergence: <strong style={{ color: '#34d399' }}>VERIFIED CONVERGED</strong></div>
+                <div style={{ background: 'rgba(30, 30, 32, 0.7)', padding: '10px', borderRadius: '8px', border: '1px solid var(--hairline-soft)' }}>
+                  <div style={{ fontSize: '10px', color: 'var(--body-muted)', textTransform: 'uppercase', marginBottom: '6px', fontWeight: 700 }}>
+                    Optimal Calibrated Parameters
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '11px', color: 'var(--ink)' }}>
+                    <div>Pipe Manning's n: <strong style={{ color: 'var(--primary-on-dark)' }} className="tabular-nums">{calibResult.pipe_manning_n?.toFixed(4) || '0.0142'}</strong></div>
+                    <div>Conduit Blockage Ratio: <strong style={{ color: 'var(--red)' }} className="tabular-nums">{(((calibResult.blockage_ratio ?? 0.08)) * 100).toFixed(0)}%</strong></div>
+                    <div>Benchmark Divergence: <strong style={{ color: 'var(--green)' }}>VERIFIED CONVERGED</strong></div>
                   </div>
                 </div>
               </div>
@@ -534,63 +667,78 @@ export const SidebarTabs: React.FC<SidebarTabsProps> = ({
 
         {/* MODULE 4: MITIGATION & SPONGE INFRASTRUCTURE */}
         {activeTab === 'tab-mitigation' && (
-          <div style={{ background: '#050505', border: '1px solid #171717', borderRadius: '8px', padding: '12px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-              <h2 style={{ margin: 0, fontSize: '11px', textTransform: 'uppercase', color: '#94a3b8', letterSpacing: '0.5px' }}>Sponge Infrastructure &amp; Pareto Capex</h2>
-              <span style={{ fontSize: '9px', background: '#064e3b', color: '#34d399', padding: '2px 6px', borderRadius: '4px', fontWeight: 700 }}>
+          <div role="tabpanel" id="tab-mitigation-panel" aria-labelledby="tab-mitigation-btn" className="glass-card" style={{ padding: '14px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+              <h2 style={{ margin: 0, fontSize: '11px', textTransform: 'uppercase', color: 'var(--body-muted)', letterSpacing: '0.4px', fontWeight: 700 }}>
+                Sponge Infrastructure &amp; Pareto Capex
+              </h2>
+              <span className="chip-btn" style={{ fontSize: '9px', background: 'rgba(48, 209, 88, 0.15)', color: 'var(--green)', borderColor: 'rgba(48, 209, 88, 0.3)', cursor: 'default' }}>
                 NbS Solutions
               </span>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               <button
+                type="button"
                 onClick={() => handleRunMitigation('STRAT_BALANCED')}
-                style={{ background: '#059669', color: '#fff', border: 'none', borderRadius: '5px', padding: '7px', fontWeight: 700, cursor: 'pointer', fontSize: '11px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
+                className="action-btn"
+                style={{ background: 'var(--green)', color: '#000000', padding: '8px', fontSize: '11px', gap: '6px' }}
               >
-                <Sprout size={13} />
+                <Sprout size={13} aria-hidden="true" />
                 <span>Simulate Sponge City Mitigation Suite</span>
               </button>
 
               {mitigationResult && (
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
-                  <div style={{ background: '#090e17', padding: '6px', borderRadius: '4px' }}>
-                    <div style={{ fontSize: '9px', color: '#64748b' }}>Peak Depth Reduction</div>
-                    <div style={{ fontSize: '12px', fontWeight: 700, color: '#34d399' }}>-{mitigationResult.peak_depth_reduction_pct?.toFixed(1)}%</div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                  <div style={{ background: 'rgba(30, 30, 32, 0.7)', padding: '8px 10px', borderRadius: '8px', border: '1px solid var(--hairline-soft)' }}>
+                    <div style={{ fontSize: '10px', color: 'var(--body-muted)' }}>Peak Depth Reduction</div>
+                    <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--green)' }} className="tabular-nums">
+                      -{mitigationResult.peak_depth_reduction_pct?.toFixed(1)}%
+                    </div>
                   </div>
-                  <div style={{ background: '#090e17', padding: '6px', borderRadius: '4px' }}>
-                    <div style={{ fontSize: '9px', color: '#64748b' }}>Benefit / Cost Ratio</div>
-                    <div style={{ fontSize: '12px', fontWeight: 700, color: '#38bdf8' }}>{mitigationResult.benefit_cost_ratio?.toFixed(2)}x</div>
+                  <div style={{ background: 'rgba(30, 30, 32, 0.7)', padding: '8px 10px', borderRadius: '8px', border: '1px solid var(--hairline-soft)' }}>
+                    <div style={{ fontSize: '10px', color: 'var(--body-muted)' }}>Benefit / Cost Ratio</div>
+                    <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--primary-on-dark)' }} className="tabular-nums">
+                      {mitigationResult.benefit_cost_ratio?.toFixed(2)}x
+                    </div>
                   </div>
                 </div>
               )}
 
-              <div style={{ marginTop: '8px', borderTop: '1px solid #1e293b', paddingTop: '8px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: '#94a3b8', marginBottom: '4px' }}>
+              <div style={{ marginTop: '8px', borderTop: '1px solid var(--hairline-soft)', paddingTop: '10px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: 'var(--body-muted)', marginBottom: '4px' }}>
                   <span>Capex Budget Allocation:</span>
-                  <strong style={{ color: '#38bdf8' }}>₹{selectedBudget} Crores</strong>
+                  <strong style={{ color: 'var(--primary-on-dark)' }} className="tabular-nums">₹{selectedBudget}&nbsp;Crores</strong>
                 </div>
+                <label htmlFor="budget-range-input" className="sr-only">
+                  Capex Budget Range
+                </label>
                 <input
+                  id="budget-range-input"
                   type="range"
                   min="1"
                   max="20"
                   value={selectedBudget}
                   onChange={(e) => setSelectedBudget(parseInt(e.target.value, 10))}
-                  style={{ width: '100%', accentColor: '#38bdf8' }}
+                  style={{ width: '100%' }}
                 />
+
                 <button
+                  type="button"
                   onClick={handleRunPareto}
-                  style={{ width: '100%', background: '#7c3aed', color: '#fff', border: 'none', borderRadius: '5px', padding: '7px', fontWeight: 700, cursor: 'pointer', fontSize: '11px', marginTop: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
+                  className="action-btn"
+                  style={{ width: '100%', background: 'var(--purple)', color: '#ffffff', padding: '8px', fontSize: '11px', marginTop: '8px', gap: '6px' }}
                 >
-                  <Sparkles size={13} />
+                  <Sparkles size={13} aria-hidden="true" />
                   <span>Solve Pareto Optimization Curve</span>
                 </button>
               </div>
 
               {paretoResult && (
-                <div style={{ background: '#090e17', padding: '8px', borderRadius: '6px', border: '1px solid #1e293b', fontSize: '10px', color: '#cbd5e1' }}>
-                  <div>Recommended Tier: <strong style={{ color: '#c084fc' }}>{paretoResult.optimal_recommended_tier}</strong></div>
-                  <div>Avoided Flooding: <strong style={{ color: '#34d399' }}>{paretoResult.depth_reduction_pct}% depth reduction</strong></div>
-                  <div>Reopened Corridors: <strong style={{ color: '#38bdf8' }}>{paretoResult.reopened_roads} primary links</strong></div>
+                <div style={{ background: 'rgba(30, 30, 32, 0.7)', padding: '10px', borderRadius: '8px', border: '1px solid var(--hairline-soft)', fontSize: '11px', color: 'var(--ink)' }}>
+                  <div>Recommended Tier: <strong style={{ color: 'var(--purple)' }}>{paretoResult.optimal_recommended_tier}</strong></div>
+                  <div>Avoided Flooding: <strong style={{ color: 'var(--green)' }} className="tabular-nums">{paretoResult.depth_reduction_pct}% depth reduction</strong></div>
+                  <div>Reopened Corridors: <strong style={{ color: 'var(--primary-on-dark)' }} className="tabular-nums">{paretoResult.reopened_roads} primary links</strong></div>
                 </div>
               )}
             </div>
@@ -599,44 +747,48 @@ export const SidebarTabs: React.FC<SidebarTabsProps> = ({
 
         {/* MODULE 5: CRITICAL ASSETS & CAP ALERTS */}
         {activeTab === 'tab-vuln' && (
-          <div style={{ background: '#050505', border: '1px solid #171717', borderRadius: '8px', padding: '12px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-              <h2 style={{ margin: 0, fontSize: '11px', textTransform: 'uppercase', color: '#94a3b8', letterSpacing: '0.5px' }}>Civic Assets &amp; Emergency Alerts</h2>
-              <span style={{ fontSize: '9px', background: '#78350f', color: '#fde68a', padding: '2px 6px', borderRadius: '4px', fontWeight: 700 }}>
+          <div role="tabpanel" id="tab-vuln-panel" aria-labelledby="tab-vuln-btn" className="glass-card" style={{ padding: '14px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+              <h2 style={{ margin: 0, fontSize: '11px', textTransform: 'uppercase', color: 'var(--body-muted)', letterSpacing: '0.4px', fontWeight: 700 }}>
+                Civic Assets &amp; Emergency Alerts
+              </h2>
+              <span className="chip-btn" style={{ fontSize: '9px', background: 'rgba(255, 149, 0, 0.15)', color: 'var(--amber)', borderColor: 'rgba(255, 149, 0, 0.3)', cursor: 'default' }}>
                 CAP v1.2 Protocol
               </span>
             </div>
 
             <button
+              type="button"
               onClick={handleGenerateAlert}
-              style={{ width: '100%', background: '#ea580c', color: '#fff', border: 'none', borderRadius: '5px', padding: '7px', fontWeight: 700, cursor: 'pointer', fontSize: '11px', marginBottom: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
+              className="action-btn"
+              style={{ width: '100%', background: 'var(--amber)', color: '#000000', padding: '8px', fontSize: '11px', marginBottom: '12px', gap: '6px' }}
             >
-              <ShieldAlert size={13} />
+              <ShieldAlert size={13} aria-hidden="true" />
               <span>Generate Standardized CAP v1.2 Alert</span>
             </button>
 
             {alertResult && (
-              <div style={{ background: '#1c1917', border: '1px solid #78350f', padding: '8px', borderRadius: '6px', fontSize: '10px', color: '#fde68a', marginBottom: '10px' }}>
-                <div style={{ fontWeight: 700, fontSize: '11px' }}>{alertResult.headline}</div>
-                <div style={{ marginTop: '4px', color: '#cbd5e1' }}>{alertResult.description}</div>
-                <div style={{ marginTop: '4px', color: '#34d399', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                  <CheckCircle2 size={12} />
+              <div style={{ background: 'rgba(255, 149, 0, 0.12)', border: '1px solid rgba(255, 149, 0, 0.3)', padding: '10px', borderRadius: '8px', fontSize: '11px', color: 'var(--amber)', marginBottom: '12px' }}>
+                <div style={{ fontWeight: 700, fontSize: '12px' }}>{alertResult.headline}</div>
+                <div style={{ marginTop: '4px', color: 'var(--ink)' }}>{alertResult.description}</div>
+                <div style={{ marginTop: '6px', color: 'var(--green)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <CheckCircle2 size={12} aria-hidden="true" />
                   <span>Directive: {alertResult.instruction}</span>
                 </div>
               </div>
             )}
 
-            <div style={{ fontSize: '10px', color: '#64748b', textTransform: 'uppercase', fontWeight: 700, marginBottom: '6px' }}>
+            <div style={{ fontSize: '10px', color: 'var(--body-muted)', textTransform: 'uppercase', fontWeight: 700, marginBottom: '6px' }}>
               Monitored Critical Facilities ({criticalAssets.length})
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', maxHeight: '220px', overflowY: 'auto' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '220px', overflowY: 'auto' }}>
               {criticalAssets.map((a) => (
-                <div key={a.asset_id} style={{ background: '#090e17', padding: '6px 8px', borderRadius: '4px', border: '1px solid #1e293b' }}>
+                <div key={a.asset_id} style={{ background: 'rgba(30, 30, 32, 0.7)', padding: '8px 10px', borderRadius: '8px', border: '1px solid var(--hairline-soft)' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px' }}>
-                    <strong style={{ color: '#f8fafc' }}>{a.name}</strong>
-                    <span style={{ fontSize: '9px', color: '#38bdf8' }}>{a.category}</span>
+                    <strong style={{ color: 'var(--ink)' }}>{a.name}</strong>
+                    <span style={{ fontSize: '9px', color: 'var(--primary-on-dark)' }}>{a.category}</span>
                   </div>
-                  <div style={{ fontSize: '9px', color: '#64748b', marginTop: '2px' }}>
+                  <div style={{ fontSize: '10px', color: 'var(--body-muted)', marginTop: '2px' }} className="tabular-nums">
                     Criticality: {a.criticality_weight} · Service Pop: {a.service_population.toLocaleString()}
                   </div>
                 </div>
@@ -647,79 +799,91 @@ export const SidebarTabs: React.FC<SidebarTabsProps> = ({
 
         {/* MODULE 6: ENSEMBLE RISK & DMA BRIEFING */}
         {activeTab === 'tab-risk-briefing' && (
-          <>
-            <div style={{ background: '#050505', border: '1px solid #171717', borderRadius: '8px', padding: '12px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                <h2 style={{ margin: 0, fontSize: '11px', textTransform: 'uppercase', color: '#94a3b8', letterSpacing: '0.5px' }}>Probabilistic Monte Carlo Ensembles</h2>
-                <span style={{ fontSize: '9px', background: '#3b0764', color: '#c084fc', padding: '2px 6px', borderRadius: '4px', fontWeight: 700 }}>
+          <div role="tabpanel" id="tab-risk-briefing-panel" aria-labelledby="tab-risk-briefing-btn" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div className="glass-card" style={{ padding: '14px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                <h2 style={{ margin: 0, fontSize: '11px', textTransform: 'uppercase', color: 'var(--body-muted)', letterSpacing: '0.4px', fontWeight: 700 }}>
+                  Probabilistic Monte Carlo Ensembles
+                </h2>
+                <span className="chip-btn" style={{ fontSize: '9px', background: 'rgba(191, 90, 242, 0.15)', color: 'var(--purple)', borderColor: 'rgba(191, 90, 242, 0.3)', cursor: 'default' }}>
                   20 Realizations
                 </span>
               </div>
 
               <button
+                type="button"
                 onClick={handleRunMonteCarlo}
-                style={{ width: '100%', background: '#7c3aed', color: '#fff', border: 'none', borderRadius: '5px', padding: '7px', fontWeight: 700, cursor: 'pointer', fontSize: '11px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
+                className="action-btn"
+                style={{ width: '100%', background: 'var(--purple)', color: '#ffffff', padding: '8px', fontSize: '11px', gap: '6px' }}
               >
-                <Activity size={13} />
+                <Activity size={13} aria-hidden="true" />
                 <span>Propagate Stochastic Storm Ensemble</span>
               </button>
 
               {mcResult && (
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '6px', marginTop: '8px' }}>
-                  <div style={{ background: '#090e17', padding: '6px', borderRadius: '4px', textAlign: 'center' }}>
-                    <div style={{ fontSize: '9px', color: '#64748b' }}>P10 Depth</div>
-                    <div style={{ fontSize: '12px', fontWeight: 700, color: '#38bdf8' }}>{mcResult.p10_max_depth_m?.toFixed(2)}m</div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px', marginTop: '10px' }}>
+                  <div style={{ background: 'rgba(30, 30, 32, 0.7)', padding: '8px', borderRadius: '8px', textAlign: 'center', border: '1px solid var(--hairline-soft)' }}>
+                    <div style={{ fontSize: '10px', color: 'var(--body-muted)' }}>P10 Depth</div>
+                    <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--primary-on-dark)' }} className="tabular-nums">{mcResult.p10_max_depth_m?.toFixed(2)}m</div>
                   </div>
-                  <div style={{ background: '#090e17', padding: '6px', borderRadius: '4px', textAlign: 'center' }}>
-                    <div style={{ fontSize: '9px', color: '#64748b' }}>P50 Depth</div>
-                    <div style={{ fontSize: '12px', fontWeight: 700, color: '#34d399' }}>{mcResult.p50_max_depth_m?.toFixed(2)}m</div>
+                  <div style={{ background: 'rgba(30, 30, 32, 0.7)', padding: '8px', borderRadius: '8px', textAlign: 'center', border: '1px solid var(--hairline-soft)' }}>
+                    <div style={{ fontSize: '10px', color: 'var(--body-muted)' }}>P50 Depth</div>
+                    <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--green)' }} className="tabular-nums">{mcResult.p50_max_depth_m?.toFixed(2)}m</div>
                   </div>
-                  <div style={{ background: '#090e17', padding: '6px', borderRadius: '4px', textAlign: 'center' }}>
-                    <div style={{ fontSize: '9px', color: '#64748b' }}>P90 Depth</div>
-                    <div style={{ fontSize: '12px', fontWeight: 700, color: '#f87171' }}>{mcResult.p90_max_depth_m?.toFixed(2)}m</div>
+                  <div style={{ background: 'rgba(30, 30, 32, 0.7)', padding: '8px', borderRadius: '8px', textAlign: 'center', border: '1px solid var(--hairline-soft)' }}>
+                    <div style={{ fontSize: '10px', color: 'var(--body-muted)' }}>P90 Depth</div>
+                    <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--red)' }} className="tabular-nums">{mcResult.p90_max_depth_m?.toFixed(2)}m</div>
                   </div>
                 </div>
               )}
             </div>
 
-            <div style={{ background: '#050505', border: '1px solid #171717', borderRadius: '8px', padding: '12px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                <h2 style={{ margin: 0, fontSize: '11px', textTransform: 'uppercase', color: '#94a3b8', letterSpacing: '0.5px' }}>DMA Executive Briefing</h2>
-                <div style={{ display: 'flex', gap: '4px' }}>
+            <div className="glass-card" style={{ padding: '14px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                <h2 style={{ margin: 0, fontSize: '11px', textTransform: 'uppercase', color: 'var(--body-muted)', letterSpacing: '0.4px', fontWeight: 700 }}>
+                  DMA Executive Briefing
+                </h2>
+                <div style={{ display: 'flex', gap: '6px' }}>
                   <button
+                    type="button"
                     onClick={() => window.open(`/api/v1/reports/pdf?scenario_id=${activeScenarioId}&lead_minutes=${currentLead}`, '_blank')}
-                    style={{ background: '#0284c7', color: '#fff', border: 'none', borderRadius: '4px', padding: '3px 6px', fontSize: '9px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '3px' }}
+                    className="chip-btn"
+                    style={{ background: 'var(--primary-focus)', color: '#ffffff', padding: '3px 8px', fontSize: '10px', gap: '4px' }}
                     title="Download Official PDF Dossier"
                   >
-                    <Download size={10} /> PDF
+                    <Download size={10} aria-hidden="true" /> PDF
                   </button>
                   <button
+                    type="button"
                     onClick={() => window.print()}
-                    style={{ background: '#1e293b', color: '#f8fafc', border: 'none', borderRadius: '4px', padding: '3px 6px', fontSize: '9px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '3px' }}
+                    className="chip-btn"
+                    style={{ padding: '3px 8px', fontSize: '10px', gap: '4px' }}
                   >
-                    <Printer size={10} /> Print
+                    <Printer size={10} aria-hidden="true" /> Print
                   </button>
                 </div>
               </div>
 
               {briefingData && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '10px', color: '#cbd5e1' }}>
-                  <div style={{ color: '#38bdf8', fontWeight: 700 }}>{briefingData.title}</div>
-                  <div style={{ color: '#64748b', fontSize: '9px' }}>{briefingData.authority} · {briefingData.generated_at}</div>
-                  <div style={{ background: '#090e17', padding: '6px', borderRadius: '4px', lineHeight: 1.4 }}>{briefingData.executive_summary}</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '11px', color: 'var(--ink)' }}>
+                  <div style={{ color: 'var(--primary-on-dark)', fontWeight: 700 }}>{briefingData.title}</div>
+                  <div style={{ color: 'var(--body-muted)', fontSize: '10px' }}>{briefingData.authority} · {briefingData.generated_at}</div>
+                  <div style={{ background: 'rgba(30, 30, 32, 0.7)', padding: '8px 10px', borderRadius: '8px', lineHeight: 1.4, border: '1px solid var(--hairline-soft)' }}>
+                    {briefingData.executive_summary}
+                  </div>
                   {briefingData.hotspot_vulnerability_matrix?.map((h: any, i: number) => (
-                    <div key={i} style={{ background: '#1c1917', border: '1px solid #78350f', padding: '5px', borderRadius: '4px' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', color: '#fde68a', fontWeight: 700 }}>
+                    <div key={i} style={{ background: 'rgba(255, 149, 0, 0.12)', border: '1px solid rgba(255, 149, 0, 0.3)', padding: '6px 8px', borderRadius: '6px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--amber)', fontWeight: 700 }}>
                         <span>{h.zone}</span>
-                        <span>{h.risk_level} ({h.depth_cm || h.inundation_depth_forecast_cm || 0}cm)</span>
+                        <span className="tabular-nums">{h.risk_level} ({h.depth_cm || h.inundation_depth_forecast_cm || 0}cm)</span>
                       </div>
-                      <div style={{ color: '#94a3b8', marginTop: '2px' }}>{h.action || h.mitigation_action}</div>
+                      <div style={{ color: 'var(--body-muted)', marginTop: '2px', fontSize: '10px' }}>{h.action || h.mitigation_action}</div>
                     </div>
                   ))}
                 </div>
               )}
             </div>
-          </>
+          </div>
         )}
 
       </div>

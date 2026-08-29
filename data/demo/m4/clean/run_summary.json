@@ -1,36 +1,36 @@
 {
-  "fingerprint": "a1397dd8a6790cfef7b3de9ad337fd5f71ef23407469fb669878db5aff54c1e9",
+  "fingerprint": "26199de8e390d03fb2df220f8c52539db292638a6ba900d1080dbc6be13ead5a",
   "labels": [
     "SYNTHETIC",
     "SIMULATED",
     "PROVISIONAL"
   ],
   "mass_balance": {
-    "drainage_outfall_m3": 488.2922306701439,
+    "drainage_outfall_m3": 593.2146310238313,
     "external_inflow_m3": 0.0,
-    "final_drain_storage_m3": 7.389635911847815,
-    "final_surface_storage_m3": 310521.7965527649,
-    "infiltration_loss_m3": 188553.71294847253,
+    "final_drain_storage_m3": 6.693600951817009,
+    "final_surface_storage_m3": 352373.9728065608,
+    "infiltration_loss_m3": 136729.6893571611,
     "initial_drain_storage_m3": 0.0,
     "initial_surface_storage_m3": 15.681600000000001,
     "interval_end": "2026-08-21T03:00:00Z",
     "interval_start": "2026-08-21T00:00:00Z",
-    "rainfall_input_m3": 535459.3237638474,
-    "relative_error": 0.0001597884284720119,
-    "residual_m3": -85.56020385491138,
+    "rainfall_input_m3": 535606.9644838572,
+    "relative_error": 0.00020896546347455184,
+    "residual_m3": -111.92335757356705,
     "status": "pass",
-    "surface_boundary_outflow_m3": 4626.174199882817
+    "surface_boundary_outflow_m3": 14667.799045733176
   },
   "metrics": {
-    "max_flooded_area_m2": 1791900.0,
-    "max_st1_head_m": 20.465862665383515,
-    "peak_depth_m": 0.4714951073923619,
-    "peak_rss_mb": 290.01171875,
-    "time_to_peak_min": 135.0,
+    "max_flooded_area_m2": 2178900.0,
+    "max_st1_head_m": 20.467520943075517,
+    "peak_depth_m": 0.4977478196262769,
+    "peak_rss_mb": 0.0,
+    "time_to_peak_min": 125.0,
     "total_D2S_m3": 0.0,
-    "total_S2D_m3": 495.68186658199187,
-    "total_outfall_m3": 488.2922306701439,
-    "wall_seconds": 19.54185621200031
+    "total_S2D_m3": 599.9082319756484,
+    "total_outfall_m3": 593.2146310238313,
+    "wall_seconds": 20.79654219999793
   },
   "run_id": "m4_heavy_20260821T000000Z",
   "scenario_id": "heavy"

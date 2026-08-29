@@ -222,16 +222,14 @@ class RadarRainfallProvider(RainfallProvider):
                 message="No radar frames ingested yet",
             )
 
-        status = ProviderStatus.HEALTHY
-        msg = f"Radar operational: {len(self._observations)} frames cached"
-
         return ProviderHealth(
             provider_id=self._provider_id,
-            status=status,
+            status=ProviderStatus.HEALTHY,
             source_type=self._source_type,
             last_observation_time=latest.observation_time,
-            message=msg,
+            message=f"Radar operational: {len(self._observations)} frames cached",
         )
+
 
     def metadata(self) -> dict[str, Any]:
         """Execute Metadata operation and return result."""

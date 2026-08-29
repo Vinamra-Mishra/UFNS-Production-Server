@@ -5,10 +5,7 @@ import {
   RotateCcw,
   SkipBack,
   SkipForward,
-  CloudRain,
-  Activity,
   Zap,
-  FastForward,
 } from 'lucide-react';
 
 interface TimelineControllerProps {
@@ -43,7 +40,6 @@ export const TimelineController: React.FC<TimelineControllerProps> = ({
 }) => {
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [playbackSpeed, setPlaybackSpeed] = useState<number>(1);
-  const [nowcastMode, setNowcastMode] = useState<'scenario' | 'radar_flow'>('radar_flow');
   
   // Custom Step & Lead Direct Editing State
   const [currentStep, setCurrentStep] = useState<number>(step);
@@ -95,109 +91,101 @@ export const TimelineController: React.FC<TimelineControllerProps> = ({
   const bufferPct = Math.min(100, Math.round((bufferedCount / Math.max(1, totalPossibleFrames)) * 100));
 
   return (
-    <div
+    <nav
+      aria-label="Nowcast Forecast Horizon Timeline Scrubber"
       style={{
-        background: '#000000',
-        borderTop: '1px solid #171717',
-        padding: '6px 14px',
+        background: 'rgba(24, 24, 26, 0.88)',
+        backdropFilter: 'blur(28px) saturate(190%)',
+        WebkitBackdropFilter: 'blur(28px) saturate(190%)',
+        borderTop: '1px solid var(--hairline)',
+        padding: '8px 16px',
         display: 'flex',
         flexDirection: 'column',
         gap: '6px',
         zIndex: 45,
       }}
     >
-      {/* Top Row: Playback Controls, Step Selector, Lead Scrubber, Milestone Jumps, Mode */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', width: '100%' }}>
+      {/* Top Row: Playback Controls, Step Selector, Lead Scrubber, Milestone Jumps */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', width: '100%' }}>
         
         {/* Play / Pause / Reset / Step Jump Controls */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
           <button
-            onClick={() => {
-              setIsPlaying(!isPlaying);
-            }}
+            type="button"
+            onClick={() => setIsPlaying(!isPlaying)}
+            aria-label={isPlaying ? 'Pause simulation playback' : 'Play simulation timeline'}
+            className="glass-btn"
             style={{
-              background: isPlaying ? '#0284c7' : '#050505',
-              color: '#fff',
-              border: '1px solid #1f2937',
-              borderRadius: '5px',
-              width: '30px',
-              height: '30px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
+              background: isPlaying ? 'var(--primary-focus)' : 'rgba(42, 42, 44, 0.85)',
+              borderColor: isPlaying ? 'var(--primary-on-dark)' : 'var(--hairline)',
+              color: '#ffffff',
+              borderRadius: '9999px',
+              width: '32px',
+              height: '32px',
+              boxShadow: isPlaying ? '0 0 12px var(--primary-glow)' : 'none',
             }}
-            title={isPlaying ? 'Pause' : 'Play Smooth Buffered Timeline'}
+            title={isPlaying ? 'Pause' : 'Play Continuous Hydrodynamic Timeline'}
           >
-            {isPlaying ? <Pause size={13} /> : <Play size={13} style={{ marginLeft: '1px' }} />}
+            {isPlaying ? <Pause size={13} aria-hidden="true" /> : <Play size={13} style={{ marginLeft: '1px' }} aria-hidden="true" />}
           </button>
 
           <button
+            type="button"
             onClick={() => {
               setIsPlaying(false);
               onLeadChange(0);
             }}
+            aria-label="Reset timeline to T+0m baseline"
+            className="glass-btn"
             style={{
-              background: '#050505',
-              color: '#94a3b8',
-              border: '1px solid #1f2937',
-              borderRadius: '5px',
               width: '30px',
               height: '30px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
+              borderRadius: '8px',
+              color: 'var(--body-muted)',
             }}
             title="Reset to T+0m"
           >
-            <RotateCcw size={12} />
+            <RotateCcw size={12} aria-hidden="true" />
           </button>
 
           <button
+            type="button"
             onClick={() => onLeadChange(Math.max(0, currentLead - currentStep))}
+            aria-label={`Step back ${currentStep} minutes`}
+            className="glass-btn"
             style={{
-              background: '#050505',
-              color: '#94a3b8',
-              border: '1px solid #1f2937',
-              borderRadius: '5px',
-              width: '28px',
+              width: '30px',
               height: '30px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
+              borderRadius: '8px',
+              color: 'var(--body-muted)',
             }}
             title={`Step Back -${currentStep}m`}
           >
-            <SkipBack size={12} />
+            <SkipBack size={12} aria-hidden="true" />
           </button>
 
           <button
+            type="button"
             onClick={() => onLeadChange(Math.min(maxLead, currentLead + currentStep))}
+            aria-label={`Step forward ${currentStep} minutes`}
+            className="glass-btn"
             style={{
-              background: '#050505',
-              color: '#94a3b8',
-              border: '1px solid #1f2937',
-              borderRadius: '5px',
-              width: '28px',
+              width: '30px',
               height: '30px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
+              borderRadius: '8px',
+              color: 'var(--body-muted)',
             }}
             title={`Step Forward +${currentStep}m`}
           >
-            <SkipForward size={12} />
+            <SkipForward size={12} aria-hidden="true" />
           </button>
         </div>
 
         {/* Lead Direct Input / Badge */}
-        <div style={{ minWidth: '70px', textAlign: 'center' }}>
+        <div style={{ minWidth: '76px', textAlign: 'center' }}>
           {isEditingLead ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
-              <span style={{ fontSize: '11px', color: '#38bdf8', fontWeight: 800 }}>T+</span>
+              <span style={{ fontSize: '11px', color: 'var(--primary-on-dark)', fontWeight: 700 }}>T+</span>
               <input
                 type="number"
                 min="0"
@@ -207,92 +195,98 @@ export const TimelineController: React.FC<TimelineControllerProps> = ({
                 onBlur={handleLeadSubmit}
                 onKeyDown={(e) => e.key === 'Enter' && handleLeadSubmit()}
                 autoFocus
+                aria-label="Direct lead minute entry"
                 style={{
-                  width: '38px',
-                  background: '#0a0a0a',
-                  border: '1px solid #0284c7',
-                  borderRadius: '3px',
-                  color: '#38bdf8',
-                  fontWeight: 800,
+                  width: '42px',
+                  background: 'rgba(20, 20, 22, 0.95)',
+                  border: '1px solid var(--primary-on-dark)',
+                  borderRadius: '4px',
+                  color: 'var(--primary-on-dark)',
+                  fontWeight: 700,
                   fontSize: '11px',
                   textAlign: 'center',
                   padding: '2px',
                   outline: 'none',
                 }}
               />
-              <span style={{ fontSize: '11px', color: '#38bdf8', fontWeight: 800 }}>m</span>
+              <span style={{ fontSize: '11px', color: 'var(--primary-on-dark)', fontWeight: 700 }}>m</span>
             </div>
           ) : (
-            <div
+            <button
+              type="button"
               onClick={() => setIsEditingLead(true)}
+              aria-label={`Current lead time T+${currentLead} minutes. Click to edit.`}
+              className="chip-btn"
               style={{
-                cursor: 'pointer',
-                padding: '2px 4px',
-                borderRadius: '4px',
-                border: '1px dashed transparent',
-                transition: 'all 0.15s',
+                background: 'rgba(41, 151, 255, 0.12)',
+                borderColor: 'rgba(41, 151, 255, 0.28)',
+                color: 'var(--primary-on-dark)',
+                padding: '3px 8px',
               }}
               title="Click to jump to any custom minute"
-              onMouseEnter={(e) => (e.currentTarget.style.borderColor = '#0284c7')}
-              onMouseLeave={(e) => (e.currentTarget.style.borderColor = 'transparent')}
             >
-              <div style={{ fontSize: '13px', fontWeight: 800, color: '#38bdf8', fontVariantNumeric: 'tabular-nums' }}>
+              <div style={{ fontSize: '13px', fontWeight: 700 }} className="tabular-nums">
                 T+{currentLead}m
               </div>
-              <div style={{ fontSize: '9px', color: '#64748b' }}>Forecast Lead</div>
-            </div>
+            </button>
           )}
         </div>
 
         {/* Timeline Slider with Multi-Horizon Sub-Segments & Buffer Visualizer */}
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '3px' }}>
           <div style={{ position: 'relative', width: '100%', display: 'flex', alignItems: 'center' }}>
+            <label htmlFor="timeline-range-slider" className="sr-only">
+              Forecast Horizon Lead Slider
+            </label>
             <input
+              id="timeline-range-slider"
               type="range"
               min="0"
               max={maxLead}
               step={currentStep}
               value={currentLead}
+              aria-label={`Timeline slider at ${currentLead} minutes of ${maxLead}`}
               onChange={(e) => onLeadChange(parseInt(e.target.value, 10))}
               style={{
                 width: '100%',
-                accentColor: '#38bdf8',
                 cursor: 'pointer',
                 zIndex: 2,
               }}
             />
           </div>
 
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '9px', color: '#64748b' }}>
-            <span style={{ color: currentLead === 0 ? '#38bdf8' : '#64748b' }}>T+0m (Analysis)</span>
-            <span style={{ color: currentLead > 0 && currentLead <= 30 ? '#34d399' : '#64748b' }}>
-              0-30m Optical Flow
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '9px', color: 'var(--ink-muted-48)', letterSpacing: '-0.1px' }}>
+            <span style={{ color: currentLead === 0 ? 'var(--primary-on-dark)' : 'inherit', fontWeight: currentLead === 0 ? 600 : 400 }}>T+0m (Analysis)</span>
+            <span style={{ color: currentLead > 0 && currentLead <= 30 ? 'var(--green)' : 'inherit', fontWeight: currentLead > 0 && currentLead <= 30 ? 600 : 400 }}>
+              0–30m Optical Flow
             </span>
-            <span style={{ color: currentLead > 30 && currentLead <= 120 ? '#38bdf8' : '#64748b' }}>
-              30-120m Coupled SWMM/2D
+            <span style={{ color: currentLead > 30 && currentLead <= 120 ? 'var(--primary-on-dark)' : 'inherit', fontWeight: currentLead > 30 && currentLead <= 120 ? 600 : 400 }}>
+              30–120m Coupled SWMM/2D
             </span>
-            <span style={{ color: currentLead > 120 ? '#c084fc' : '#64748b' }}>
-              120-180m NWP
+            <span style={{ color: currentLead > 120 ? 'var(--purple)' : 'inherit', fontWeight: currentLead > 120 ? 600 : 400 }}>
+              120–180m NWP
             </span>
             <span>T+180m</span>
           </div>
         </div>
 
         {/* Time Step Jump Options: +1m, +5m, +15m, Custom */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', background: '#050505', padding: '2px 5px', borderRadius: '5px', border: '1px solid #1f2937' }}>
-          <span style={{ fontSize: '9px', color: '#64748b', fontWeight: 700 }}>Step:</span>
+        <div className="glass-pill" style={{ display: 'flex', alignItems: 'center', gap: '3px', padding: '2px 6px' }}>
+          <span style={{ fontSize: '10px', color: 'var(--body-muted)', fontWeight: 600, paddingLeft: '2px' }}>Step:</span>
           {[1, 5, 15].map((s) => (
             <button
               key={s}
+              type="button"
               onClick={() => handleStepSelect(s)}
+              aria-label={`Set step increment to ${s} minutes`}
               style={{
-                background: (!isCustomStep && currentStep === s) ? '#0284c7' : 'transparent',
-                color: (!isCustomStep && currentStep === s) ? '#fff' : '#94a3b8',
+                background: (!isCustomStep && currentStep === s) ? 'var(--primary-focus)' : 'transparent',
+                color: (!isCustomStep && currentStep === s) ? '#ffffff' : 'var(--body-muted)',
                 border: 'none',
-                borderRadius: '3px',
-                padding: '2px 5px',
-                fontSize: '9px',
-                fontWeight: 700,
+                borderRadius: '4px',
+                padding: '2px 6px',
+                fontSize: '10px',
+                fontWeight: 600,
                 cursor: 'pointer',
               }}
               title={`Step by ${s} minute(s)`}
@@ -313,38 +307,41 @@ export const TimelineController: React.FC<TimelineControllerProps> = ({
                 onBlur={handleCustomStepSubmit}
                 onKeyDown={(e) => e.key === 'Enter' && handleCustomStepSubmit()}
                 autoFocus
+                aria-label="Custom step minute entry"
                 style={{
                   width: '28px',
-                  background: '#0a0a0a',
-                  border: '1px solid #0284c7',
+                  background: 'rgba(20, 20, 22, 0.95)',
+                  border: '1px solid var(--primary-on-dark)',
                   borderRadius: '3px',
-                  color: '#38bdf8',
-                  fontSize: '9px',
+                  color: 'var(--primary-on-dark)',
+                  fontSize: '10px',
                   fontWeight: 700,
                   textAlign: 'center',
                   padding: '1px',
                   outline: 'none',
                 }}
               />
-              <span style={{ fontSize: '9px', color: '#38bdf8' }}>m</span>
+              <span style={{ fontSize: '10px', color: 'var(--primary-on-dark)' }}>m</span>
             </div>
           ) : (
             <button
+              type="button"
               onClick={() => {
                 setIsCustomStep(true);
                 setCustomStepInput(currentStep.toString());
               }}
+              aria-label="Enter custom step interval"
               style={{
                 background: 'transparent',
-                color: '#64748b',
+                color: 'var(--ink-muted-48)',
                 border: 'none',
                 borderRadius: '3px',
                 padding: '2px 4px',
-                fontSize: '9px',
-                fontWeight: 700,
+                fontSize: '10px',
+                fontWeight: 600,
                 cursor: 'pointer',
               }}
-              title="Enter custom time step (1-60m)"
+              title="Enter custom time step (1–60m)"
             >
               Custom
             </button>
@@ -352,19 +349,21 @@ export const TimelineController: React.FC<TimelineControllerProps> = ({
         </div>
 
         {/* Speed Multipliers */}
-        <div style={{ display: 'flex', gap: '2px', background: '#050505', padding: '2px', borderRadius: '5px', border: '1px solid #1f2937' }}>
+        <div className="glass-pill" style={{ display: 'flex', gap: '2px', padding: '2px 4px' }}>
           {[1, 2, 5, 10].map((s) => (
             <button
               key={s}
+              type="button"
               onClick={() => setPlaybackSpeed(s)}
+              aria-label={`Set playback speed to ${s}x`}
               style={{
-                background: playbackSpeed === s ? '#0284c7' : 'transparent',
-                color: playbackSpeed === s ? '#fff' : '#64748b',
+                background: playbackSpeed === s ? 'var(--primary-focus)' : 'transparent',
+                color: playbackSpeed === s ? '#ffffff' : 'var(--body-muted)',
                 border: 'none',
-                borderRadius: '3px',
-                padding: '2px 5px',
-                fontSize: '9px',
-                fontWeight: 700,
+                borderRadius: '4px',
+                padding: '2px 6px',
+                fontSize: '10px',
+                fontWeight: 600,
                 cursor: 'pointer',
               }}
             >
@@ -375,24 +374,24 @@ export const TimelineController: React.FC<TimelineControllerProps> = ({
       </div>
 
       {/* Bottom Sub-Row: Milestone Jump Pills & Pre-Buffer Status */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #111827', paddingTop: '4px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--hairline-soft)', paddingTop: '4px' }}>
         
         {/* Quick Milestone Time Jump Buttons */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-          <span style={{ fontSize: '9px', color: '#64748b', fontWeight: 700 }}>Quick Jump:</span>
+          <span style={{ fontSize: '10px', color: 'var(--body-muted)', fontWeight: 600 }}>Quick Jump:</span>
           {MILESTONE_JUMPS.map((m) => (
             <button
               key={m.lead}
+              type="button"
               onClick={() => onLeadChange(m.lead)}
+              aria-label={`Jump to milestone ${m.label}: ${m.desc}`}
+              className="chip-btn"
               style={{
-                background: currentLead === m.lead ? '#1e293b' : '#050505',
-                color: currentLead === m.lead ? '#38bdf8' : '#94a3b8',
-                border: currentLead === m.lead ? '1px solid #0284c7' : '1px solid #171717',
-                borderRadius: '3px',
-                padding: '1px 6px',
-                fontSize: '9px',
-                fontWeight: 600,
-                cursor: 'pointer',
+                background: currentLead === m.lead ? 'rgba(0, 113, 227, 0.25)' : 'rgba(42, 42, 44, 0.5)',
+                color: currentLead === m.lead ? 'var(--primary-on-dark)' : 'var(--body-muted)',
+                borderColor: currentLead === m.lead ? 'var(--primary-on-dark)' : 'var(--hairline-soft)',
+                padding: '1px 7px',
+                fontSize: '10px',
               }}
               title={m.desc}
             >
@@ -405,36 +404,34 @@ export const TimelineController: React.FC<TimelineControllerProps> = ({
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           {onPreloadHorizon && (
             <button
+              type="button"
               onClick={() => onPreloadHorizon(60)}
               disabled={isBuffering}
+              aria-label="Pre-buffer 1 hour forecast horizon into memory"
+              className="chip-btn"
               style={{
-                background: isBuffering ? '#1e1b4b' : '#050505',
-                color: isBuffering ? '#c084fc' : '#38bdf8',
-                border: '1px solid #1f2937',
-                borderRadius: '3px',
-                padding: '2px 7px',
-                fontSize: '9px',
-                fontWeight: 700,
+                background: isBuffering ? 'rgba(191, 90, 242, 0.15)' : 'rgba(42, 42, 44, 0.6)',
+                color: isBuffering ? 'var(--purple)' : 'var(--primary-on-dark)',
+                borderColor: isBuffering ? 'var(--purple)' : 'var(--hairline-soft)',
                 cursor: isBuffering ? 'wait' : 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '4px',
+                padding: '2px 8px',
+                fontSize: '10px',
               }}
               title="Pre-fetch and buffer the next 1 hour (60 min) of hydrodynamics into browser RAM"
             >
-              <Zap size={10} color={isBuffering ? '#c084fc' : '#38bdf8'} />
-              <span>{isBuffering ? 'Buffering 1h Ahead...' : 'Pre-Buffer 1h'}</span>
+              <Zap size={10} color={isBuffering ? 'var(--purple)' : 'var(--primary-on-dark)'} aria-hidden="true" />
+              <span>{isBuffering ? 'Buffering 1h Ahead…' : 'Pre-Buffer 1h'}</span>
             </button>
           )}
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '9px', color: '#64748b' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '10px', color: 'var(--body-muted)' }}>
             <span>RAM Cache:</span>
-            <strong style={{ color: bufferedCount > 0 ? '#34d399' : '#64748b' }}>
-              {bufferedCount} frames ({bufferPct}%)
+            <strong style={{ color: bufferedCount > 0 ? 'var(--green)' : 'var(--body-muted)' }} className="tabular-nums">
+              {bufferedCount}&nbsp;frames ({bufferPct}%)
             </strong>
           </div>
         </div>
       </div>
-    </div>
+    </nav>
   );
 };

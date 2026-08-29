@@ -9,18 +9,15 @@ import {
   Droplets,
   CloudRain,
   Radio,
-  Navigation,
   ShieldAlert,
-  Filter,
   Pipette,
   Building2,
   Mountain,
   Sprout,
   Activity,
   X,
-  Check,
 } from 'lucide-react';
-import { LayerState, CriticalAssetItem, RoadSegment } from '../types';
+import { LayerState, CriticalAssetItem } from '../types';
 
 interface MapControlsProps {
   layers: LayerState;
@@ -54,11 +51,12 @@ export const MapControls: React.FC<MapControlsProps> = ({
   const activeLayerCount = Object.values(layers).filter(Boolean).length;
 
   return (
-    <div
+    <aside
+      aria-label="Map Navigation & Layer Overlay Palette"
       style={{
         position: 'absolute',
-        top: '68px',
-        right: '14px',
+        top: '64px',
+        right: '16px',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'flex-end',
@@ -81,81 +79,93 @@ export const MapControls: React.FC<MapControlsProps> = ({
       >
         {/* Layers Sheet Toggle */}
         <button
+          type="button"
           onClick={() => setShowLayersSheet(!showLayersSheet)}
+          aria-expanded={showLayersSheet}
+          aria-label="Toggle GIS map layers and basemap overlay drawer"
           className="glass-btn"
           style={{
             width: '36px',
             height: '36px',
             borderRadius: '10px',
-            background: showLayersSheet ? 'rgba(2, 132, 199, 0.4)' : 'transparent',
-            borderColor: showLayersSheet ? '#38bdf8' : 'transparent',
+            background: showLayersSheet ? 'rgba(0, 113, 227, 0.35)' : 'transparent',
+            borderColor: showLayersSheet ? 'var(--primary-on-dark)' : 'transparent',
             position: 'relative',
           }}
           title="Map Layers & GIS Overlay Sheet"
         >
-          <Layers size={16} color={showLayersSheet ? '#38bdf8' : '#e2e8f0'} />
+          <Layers size={16} color={showLayersSheet ? 'var(--primary-on-dark)' : 'var(--ink)'} aria-hidden="true" />
           <span
             style={{
               position: 'absolute',
               top: '2px',
               right: '2px',
-              background: '#0284c7',
-              color: '#fff',
+              background: 'var(--primary-focus)',
+              color: '#ffffff',
               fontSize: '8px',
               fontWeight: 800,
-              width: '13px',
-              height: '13px',
+              width: '14px',
+              height: '14px',
               borderRadius: '50%',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
             }}
+            className="tabular-nums"
           >
             {activeLayerCount}
           </span>
         </button>
 
-        <div style={{ width: '20px', height: '1px', background: 'rgba(255, 255, 255, 0.1)' }} />
+        <div style={{ width: '20px', height: '1px', background: 'var(--hairline-soft)' }} />
 
         {/* Center / Fit Catchment */}
         <button
+          type="button"
           onClick={onResetView}
+          aria-label="Recenter camera on active catchment domain"
           className="glass-btn"
           style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'transparent', border: 'none' }}
           title="Center / Fit Catchment"
         >
-          <Crosshair size={16} color="#34d399" />
+          <Crosshair size={16} color="var(--green)" aria-hidden="true" />
         </button>
 
         {/* Compass / North Align */}
         <button
+          type="button"
           onClick={onResetView}
+          aria-label="Reset map bearing and align to true north"
           className="glass-btn"
           style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'transparent', border: 'none' }}
           title="Align North"
         >
-          <Compass size={16} color="#38bdf8" />
+          <Compass size={16} color="var(--primary-on-dark)" aria-hidden="true" />
         </button>
 
-        <div style={{ width: '20px', height: '1px', background: 'rgba(255, 255, 255, 0.1)' }} />
+        <div style={{ width: '20px', height: '1px', background: 'var(--hairline-soft)' }} />
 
         {/* Zoom Controls */}
         <button
+          type="button"
           onClick={onZoomIn}
+          aria-label="Zoom in map view"
           className="glass-btn"
           style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'transparent', border: 'none' }}
           title="Zoom In"
         >
-          <ZoomIn size={16} color="#f8fafc" />
+          <ZoomIn size={16} color="var(--ink)" aria-hidden="true" />
         </button>
 
         <button
+          type="button"
           onClick={onZoomOut}
+          aria-label="Zoom out map view"
           className="glass-btn"
           style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'transparent', border: 'none' }}
           title="Zoom Out"
         >
-          <ZoomOut size={16} color="#f8fafc" />
+          <ZoomOut size={16} color="var(--ink)" aria-hidden="true" />
         </button>
       </div>
 
@@ -174,37 +184,41 @@ export const MapControls: React.FC<MapControlsProps> = ({
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', fontWeight: 800, color: '#f8fafc' }}>
-              <Layers size={14} color="#38bdf8" />
-              <span>MAP LAYERS &amp; BASEMAP</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', fontWeight: 700, color: 'var(--ink)' }}>
+              <Layers size={14} color="var(--primary-on-dark)" aria-hidden="true" />
+              <span>Map Layers &amp; Basemap</span>
             </div>
             <button
+              type="button"
               onClick={() => setShowLayersSheet(false)}
-              style={{ background: 'transparent', border: 'none', color: '#94a3b8', cursor: 'pointer' }}
+              aria-label="Close layers overlay sheet"
+              style={{ background: 'transparent', border: 'none', color: 'var(--body-muted)', cursor: 'pointer' }}
             >
-              <X size={14} />
+              <X size={14} aria-hidden="true" />
             </button>
           </div>
 
           {/* Basemap Segmented Pill Selector */}
           <div style={{ marginBottom: '12px' }}>
-            <div style={{ fontSize: '9px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', marginBottom: '5px' }}>
-              Basemap Engine
+            <div style={{ fontSize: '10px', fontWeight: 600, color: 'var(--body-muted)', textTransform: 'uppercase', letterSpacing: '0.4px', marginBottom: '6px' }}>
+              Basemap Style
             </div>
-            <div style={{ display: 'flex', gap: '2px', background: 'rgba(10, 15, 29, 0.8)', padding: '2px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.08)' }}>
+            <div style={{ display: 'flex', gap: '2px', background: 'rgba(30, 30, 32, 0.85)', padding: '2px', borderRadius: '8px', border: '1px solid var(--hairline-soft)' }}>
               {(['vector', 'dark', 'voyager', 'satellite', 'cad'] as const).map((b) => (
                 <button
                   key={b}
+                  type="button"
                   onClick={() => onBasemapChange(b)}
+                  aria-pressed={basemapStyle === b}
                   style={{
                     flex: 1,
-                    background: basemapStyle === b ? '#0284c7' : 'transparent',
-                    color: basemapStyle === b ? '#fff' : '#94a3b8',
+                    background: basemapStyle === b ? 'var(--primary-focus)' : 'transparent',
+                    color: basemapStyle === b ? '#ffffff' : 'var(--body-muted)',
                     border: 'none',
                     borderRadius: '6px',
                     padding: '4px 0',
-                    fontSize: '9px',
-                    fontWeight: 700,
+                    fontSize: '10px',
+                    fontWeight: 600,
                     cursor: 'pointer',
                     textTransform: 'capitalize',
                   }}
@@ -216,113 +230,107 @@ export const MapControls: React.FC<MapControlsProps> = ({
           </div>
 
           {/* Layer Toggles */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '11px', color: '#cbd5e1' }}>
-            <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', padding: '4px 6px', borderRadius: '6px', background: layers.flood_2d ? 'rgba(56, 189, 248, 0.12)' : 'transparent' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '11px', color: 'var(--ink)' }}>
+            <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', padding: '4px 8px', borderRadius: '8px', background: layers.flood_2d ? 'rgba(41, 151, 255, 0.12)' : 'transparent' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <Waves size={13} color="#38bdf8" />
+                <Waves size={13} color="var(--primary-on-dark)" aria-hidden="true" />
                 <span>2D Overland Inundation</span>
               </div>
               <input
                 type="checkbox"
                 checked={layers.flood_2d}
                 onChange={(e) => onLayersChange({ ...layers, flood_2d: e.target.checked })}
-                style={{ accentColor: '#38bdf8' }}
               />
             </label>
 
-            <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', padding: '4px 6px', borderRadius: '6px', background: layers.flood_1d ? 'rgba(244, 63, 94, 0.12)' : 'transparent' }}>
+            <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', padding: '4px 8px', borderRadius: '8px', background: layers.flood_1d ? 'rgba(255, 69, 58, 0.12)' : 'transparent' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <Droplets size={13} color="#f43f5e" />
+                <Droplets size={13} color="var(--red)" aria-hidden="true" />
                 <span>1D Pipe Surcharging</span>
               </div>
               <input
                 type="checkbox"
                 checked={layers.flood_1d}
                 onChange={(e) => onLayersChange({ ...layers, flood_1d: e.target.checked })}
-                style={{ accentColor: '#f43f5e' }}
               />
             </label>
 
-            <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', padding: '4px 6px', borderRadius: '6px', background: layers.rainfall ? 'rgba(56, 189, 248, 0.12)' : 'transparent' }}>
+            <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', padding: '4px 8px', borderRadius: '8px', background: layers.rainfall ? 'rgba(41, 151, 255, 0.12)' : 'transparent' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <CloudRain size={13} color="#38bdf8" />
+                <CloudRain size={13} color="var(--primary-on-dark)" aria-hidden="true" />
                 <span>Rainfall Intensity Heatmap</span>
               </div>
               <input
                 type="checkbox"
                 checked={layers.rainfall}
                 onChange={(e) => onLayersChange({ ...layers, rainfall: e.target.checked })}
-                style={{ accentColor: '#38bdf8' }}
               />
             </label>
 
-            <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', padding: '4px 6px', borderRadius: '6px', background: layers.radar ? 'rgba(52, 211, 153, 0.12)' : 'transparent' }}>
+            <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', padding: '4px 8px', borderRadius: '8px', background: layers.radar ? 'rgba(48, 209, 88, 0.12)' : 'transparent' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <Radio size={13} color="#34d399" />
+                <Radio size={13} color="var(--green)" aria-hidden="true" />
                 <span>Doppler Weather Radar (DWR)</span>
               </div>
               <input
                 type="checkbox"
                 checked={layers.radar}
                 onChange={(e) => onLayersChange({ ...layers, radar: e.target.checked })}
-                style={{ accentColor: '#34d399' }}
               />
             </label>
 
-            <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', padding: '4px 6px', borderRadius: '6px', background: layers.passability ? 'rgba(251, 191, 36, 0.12)' : 'transparent' }}>
+            <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', padding: '4px 8px', borderRadius: '8px', background: layers.passability ? 'rgba(255, 214, 10, 0.12)' : 'transparent' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <ShieldAlert size={13} color="#fbbf24" />
-                <span>Road Passability Status</span>
+                <ShieldAlert size={13} color="var(--amber)" aria-hidden="true" />
+                <span>Road Passability Status ({roadsCount})</span>
               </div>
               <input
                 type="checkbox"
                 checked={layers.passability}
                 onChange={(e) => onLayersChange({ ...layers, passability: e.target.checked })}
-                style={{ accentColor: '#fbbf24' }}
               />
             </label>
 
-            <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', padding: '4px 6px', borderRadius: '6px', background: layers.drainage ? 'rgba(96, 165, 250, 0.12)' : 'transparent' }}>
+            <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', padding: '4px 8px', borderRadius: '8px', background: layers.drainage ? 'rgba(100, 210, 255, 0.12)' : 'transparent' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <Pipette size={13} color="#60a5fa" />
+                <Pipette size={13} color="var(--cyan)" aria-hidden="true" />
                 <span>Drainage &amp; Outfalls</span>
               </div>
               <input
                 type="checkbox"
                 checked={layers.drainage}
                 onChange={(e) => onLayersChange({ ...layers, drainage: e.target.checked })}
-                style={{ accentColor: '#60a5fa' }}
               />
             </label>
 
             {/* Critical Assets Filter */}
-            <div style={{ background: 'rgba(10, 15, 29, 0.6)', padding: '6px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.06)' }}>
+            <div style={{ background: 'rgba(30, 30, 32, 0.7)', padding: '6px 8px', borderRadius: '8px', border: '1px solid var(--hairline-soft)' }}>
               <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', marginBottom: '4px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <Building2 size={13} color="#34d399" />
-                  <span style={{ fontWeight: 700 }}>Civic Assets ({criticalAssets.length})</span>
+                  <Building2 size={13} color="var(--green)" aria-hidden="true" />
+                  <span style={{ fontWeight: 600 }}>Civic Assets ({criticalAssets.length})</span>
                 </div>
                 <input
                   type="checkbox"
                   checked={layers.assets}
                   onChange={(e) => onLayersChange({ ...layers, assets: e.target.checked })}
-                  style={{ accentColor: '#34d399' }}
                 />
               </label>
 
               {layers.assets && (
                 <select
+                  aria-label="Filter civic assets by category"
                   value={selectedAssetCategory}
                   onChange={(e) => onSelectAssetCategory(e.target.value)}
                   style={{
                     width: '100%',
-                    background: '#080d1a',
-                    color: '#38bdf8',
-                    border: '1px solid rgba(255,255,255,0.1)',
+                    background: '#1c1c1e',
+                    color: 'var(--primary-on-dark)',
+                    border: '1px solid var(--hairline)',
                     borderRadius: '4px',
                     padding: '3px 6px',
-                    fontSize: '9px',
-                    fontWeight: 700,
+                    fontSize: '10px',
+                    fontWeight: 600,
                     outline: 'none',
                     cursor: 'pointer',
                   }}
@@ -338,47 +346,45 @@ export const MapControls: React.FC<MapControlsProps> = ({
               )}
             </div>
 
-            <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', padding: '4px 6px', borderRadius: '6px' }}>
+            <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', padding: '4px 8px', borderRadius: '8px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <Mountain size={13} color="#fbbf24" />
+                <Mountain size={13} color="var(--amber)" aria-hidden="true" />
                 <span>DEM Elevation Contours</span>
               </div>
               <input
                 type="checkbox"
                 checked={layers.elevation}
                 onChange={(e) => onLayersChange({ ...layers, elevation: e.target.checked })}
-                style={{ accentColor: '#fbbf24' }}
               />
             </label>
 
-            <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', padding: '4px 6px', borderRadius: '6px' }}>
+            <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', padding: '4px 8px', borderRadius: '8px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <Sprout size={13} color="#10b981" />
+                <Sprout size={13} color="var(--green)" aria-hidden="true" />
                 <span>Sponge NbS Assets</span>
               </div>
               <input
                 type="checkbox"
                 checked={layers.sponge}
                 onChange={(e) => onLayersChange({ ...layers, sponge: e.target.checked })}
-                style={{ accentColor: '#10b981' }}
               />
             </label>
 
-            <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', padding: '4px 6px', borderRadius: '6px' }}>
+            <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', padding: '4px 8px', borderRadius: '8px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <Activity size={13} color="#c084fc" />
+                <Activity size={13} color="var(--purple)" aria-hidden="true" />
                 <span>Spatial Risk (P90)</span>
               </div>
               <input
                 type="checkbox"
                 checked={layers.risk}
                 onChange={(e) => onLayersChange({ ...layers, risk: e.target.checked })}
-                style={{ accentColor: '#c084fc' }}
               />
             </label>
           </div>
         </div>
       )}
-    </div>
+    </aside>
   );
 };
+

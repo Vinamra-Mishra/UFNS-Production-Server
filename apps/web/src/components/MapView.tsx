@@ -527,8 +527,9 @@ export const MapView: React.FC<MapViewProps> = ({
 
       ctx.fillStyle = '#94a3b8';
       ctx.font = '8px monospace';
-      ctx.fillText('0.5° PPI | Zdr: +1.4dB | Kdp: 2.1°/km | ρhv: 0.98', centerX, centerY + 38);
+      ctx.fillText('0.5° PPI (SIMULATED) | Zdr: +1.4dB | Kdp: 2.1°/km | ρhv: 0.98', centerX, centerY + 38);
       ctx.textAlign = 'left';
+
 
       ctx.restore();
     }
@@ -1033,15 +1034,26 @@ export const MapView: React.FC<MapViewProps> = ({
           if (dist <= 16) {
             let waterD = 0.0;
             if (depthGrid && depthGrid.length > 0) {
+              const depthLen = depthGrid.length;
+              let effectiveGW = gw;
+              let effectiveGH = gh;
+              if (depthLen !== gw * gh) {
+                const sq = Math.round(Math.sqrt(depthLen));
+                if (sq * sq === depthLen) {
+                  effectiveGW = sq;
+                  effectiveGH = sq;
+                }
+              }
               const col = Math.floor((wx - ox) / cs);
-              const row = Math.floor((wy - oy) / cs);
-              if (col >= 0 && col < gw && row >= 0 && row < gh) {
-                waterD = depthGrid[row * gw + col] || 0.0;
+              const row = Math.floor((effectiveGH - 1) - ((wy - oy) / cs));
+              if (col >= 0 && col < effectiveGW && row >= 0 && row < effectiveGH) {
+                waterD = depthGrid[row * effectiveGW + col] || 0.0;
               }
             }
             foundAsset = { asset: a, x: sx, y: sy, waterDepthM: waterD };
             break;
           }
+
         }
         if (
           (!foundAsset && hoveredAsset) ||
@@ -1448,64 +1460,56 @@ export const MapView: React.FC<MapViewProps> = ({
         }}
       >
         <button
+          type="button"
           onClick={() => setTransform((prev) => ({ ...prev, zoom: Math.min(25.0, prev.zoom * 1.25) }))}
+          className="glass-btn"
           style={{
-            background: 'rgba(0, 0, 0, 0.9)',
-            border: '1px solid #1f2937',
-            color: '#38bdf8',
-            borderRadius: '6px',
-            padding: '7px',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
+            width: '32px',
+            height: '32px',
+            borderRadius: '8px',
+            color: 'var(--primary-on-dark)',
           }}
+          aria-label="Zoom in map viewport"
           title="Zoom In"
         >
-          <ZoomIn size={15} />
+          <ZoomIn size={15} aria-hidden="true" />
         </button>
         <button
+          type="button"
           onClick={() => setTransform((prev) => ({ ...prev, zoom: Math.max(0.1, prev.zoom * 0.8) }))}
+          className="glass-btn"
           style={{
-            background: 'rgba(0, 0, 0, 0.9)',
-            border: '1px solid #1f2937',
-            color: '#38bdf8',
-            borderRadius: '6px',
-            padding: '7px',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
+            width: '32px',
+            height: '32px',
+            borderRadius: '8px',
+            color: 'var(--primary-on-dark)',
           }}
+          aria-label="Zoom out map viewport"
           title="Zoom Out"
         >
-          <ZoomOut size={15} />
+          <ZoomOut size={15} aria-hidden="true" />
         </button>
         <button
+          type="button"
           onClick={resetView}
+          className="glass-btn"
           style={{
-            background: 'rgba(0, 0, 0, 0.9)',
-            border: '1px solid #1f2937',
-            color: '#34d399',
-            borderRadius: '6px',
-            padding: '7px',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
+            width: '32px',
+            height: '32px',
+            borderRadius: '8px',
+            color: 'var(--green)',
           }}
-          title="Center / Fit Active City"
+          aria-label="Recenter viewport on active catchment domain"
+          title="Center / Fit Active Catchment"
         >
-          <Crosshair size={15} />
+          <Crosshair size={15} aria-hidden="true" />
         </button>
       </div>
 
       {/* Floating Inundation Depth Color Legend */}
       {layers.flood_2d && (
-        <div
+        <aside
+          aria-label="Inundation Depth Scale Legend"
           className="glass-panel animate-fade-in"
           style={{
             position: 'absolute',
@@ -1513,29 +1517,31 @@ export const MapView: React.FC<MapViewProps> = ({
             left: '14px',
             padding: '8px 12px',
             fontSize: '10px',
-            color: '#94a3b8',
+            color: 'var(--body-muted)',
             zIndex: 30,
             minWidth: '210px',
+            borderRadius: '12px',
           }}
         >
-          <div style={{ fontWeight: 800, color: '#f8fafc', marginBottom: '4px', fontSize: '10px', display: 'flex', alignItems: 'center', gap: '5px' }}>
-            <Waves size={12} color="#38bdf8" />
+          <div style={{ fontWeight: 700, color: 'var(--ink)', marginBottom: '5px', fontSize: '10px', display: 'flex', alignItems: 'center', gap: '5px' }}>
+            <Waves size={12} color="var(--primary-on-dark)" aria-hidden="true" />
             <span>Inundation Depth Scale</span>
           </div>
-          <div style={{ height: '6px', width: '100%', borderRadius: '3px', background: 'linear-gradient(to right, rgba(56,189,248,0.7), rgba(14,165,233,0.9), #f59e0b, #ef4444, #a855f7)', marginBottom: '3px' }} />
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '8px', color: '#cbd5e1' }}>
+          <div style={{ height: '6px', width: '100%', borderRadius: '3px', background: 'linear-gradient(to right, rgba(41,151,255,0.7), rgba(0,113,227,0.9), #ff9500, #ff453a, #bf5af2)', marginBottom: '4px' }} />
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '9px', color: 'var(--body-muted)' }} className="tabular-nums">
             <span>0.05m</span>
             <span>0.15m</span>
             <span>0.30m</span>
             <span>0.60m</span>
             <span>&gt;1.0m</span>
           </div>
-        </div>
+        </aside>
       )}
 
       {/* Floating Rainfall Intensity Heatmap Legend */}
       {layers.rainfall && (
-        <div
+        <aside
+          aria-label="Rainfall Intensity Scale Legend"
           className="glass-panel animate-fade-in"
           style={{
             position: 'absolute',
@@ -1543,36 +1549,41 @@ export const MapView: React.FC<MapViewProps> = ({
             left: '14px',
             padding: '8px 12px',
             fontSize: '10px',
-            color: '#94a3b8',
+            color: 'var(--body-muted)',
             zIndex: 30,
             minWidth: '210px',
+            borderRadius: '12px',
           }}
         >
-          <div style={{ fontWeight: 800, color: '#f8fafc', marginBottom: '4px', fontSize: '10px', display: 'flex', alignItems: 'center', gap: '5px' }}>
-            <CloudRain size={12} color="#38bdf8" />
+          <div style={{ fontWeight: 700, color: 'var(--ink)', marginBottom: '5px', fontSize: '10px', display: 'flex', alignItems: 'center', gap: '5px' }}>
+            <CloudRain size={12} color="var(--primary-on-dark)" aria-hidden="true" />
             <span>Rainfall Intensity Scale</span>
           </div>
-          <div style={{ height: '6px', width: '100%', borderRadius: '3px', background: 'linear-gradient(to right, rgba(52,211,153,0.6), #fbbf24, #ef4444, #a855f7)', marginBottom: '3px' }} />
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '8px', color: '#cbd5e1' }}>
-            <span>5 mm/h</span>
-            <span>20 mm/h</span>
-            <span>45 mm/h</span>
-            <span>&gt;70 mm/h</span>
+          <div style={{ height: '6px', width: '100%', borderRadius: '3px', background: 'linear-gradient(to right, rgba(48,209,88,0.6), #ffd60a, #ff453a, #bf5af2)', marginBottom: '4px' }} />
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '9px', color: 'var(--body-muted)' }} className="tabular-nums">
+            <span>5&nbsp;mm/h</span>
+            <span>20&nbsp;mm/h</span>
+            <span>45&nbsp;mm/h</span>
+            <span>&gt;70&nbsp;mm/h</span>
           </div>
-        </div>
+        </aside>
       )}
 
       {/* Pulsing Red Circle Radar Loader Overlay */}
       {isLoading && (
         <div
+          role="status"
+          aria-live="polite"
+          aria-label="Hydrodynamic calculation in progress"
           style={{
             position: 'absolute',
             top: 0,
             left: 0,
             right: 0,
             bottom: 0,
-            background: 'rgba(0, 0, 0, 0.72)',
-            backdropFilter: 'blur(8px)',
+            background: 'rgba(0, 0, 0, 0.75)',
+            backdropFilter: 'blur(12px)',
+            WebkitBackdropFilter: 'blur(12px)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -1582,37 +1593,36 @@ export const MapView: React.FC<MapViewProps> = ({
           }}
         >
           <div
+            className="glass-panel"
             style={{
-              background: '#050505',
-              border: '1px solid #1f2937',
-              borderRadius: '12px',
+              borderRadius: '16px',
               padding: '24px 32px',
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
               gap: '14px',
-              boxShadow: '0 24px 60px rgba(0, 0, 0, 0.95), 0 0 35px rgba(239, 68, 68, 0.25)',
               maxWidth: '440px',
               textAlign: 'center',
+              boxShadow: '0 24px 60px rgba(0, 0, 0, 0.95), 0 0 35px rgba(255, 69, 58, 0.25)',
             }}
           >
-            <div className="pulsing-red-circle">
+            <div className="pulsing-red-circle" aria-hidden="true">
               <div className="ring-1" />
               <div className="ring-2" />
               <div className="core" />
             </div>
 
             <div>
-              <div style={{ fontSize: '13px', fontWeight: 800, color: '#f8fafc', letterSpacing: '0.2px', marginBottom: '5px' }}>
-                {loadingMessage || 'Processing Hydrodynamic Raster & Spatial GIS Layers...'}
+              <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--ink)', letterSpacing: '-0.2px', marginBottom: '5px' }}>
+                {loadingMessage || 'Processing Hydrodynamic Raster & Spatial GIS Layers…'}
               </div>
-              <div style={{ fontSize: '10px', color: '#94a3b8', lineHeight: 1.4 }}>
+              <div style={{ fontSize: '10px', color: 'var(--body-muted)', lineHeight: 1.4 }}>
                 Coupled 1D/2D Hydrodynamic Engine · Doppler Weather Radar Nowcast · High-Resolution Inundation Mesh
               </div>
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '9px', color: '#ef4444', fontWeight: 700, background: '#1c1917', border: '1px solid #78350f', padding: '3px 8px', borderRadius: '4px' }}>
-              <span className="pulse" style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#ef4444', display: 'inline-block' }} />
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '9px', color: 'var(--red)', fontWeight: 700, background: 'rgba(255, 69, 58, 0.12)', border: '1px solid rgba(255, 69, 58, 0.3)', padding: '3px 8px', borderRadius: '6px' }}>
+              <span className="pulse" style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--red)', display: 'inline-block' }} aria-hidden="true" />
               <span>LIVE COMPUTATION IN PROGRESS</span>
             </div>
           </div>

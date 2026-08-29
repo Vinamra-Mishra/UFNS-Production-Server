@@ -76,14 +76,15 @@ def _error(status_code: int, code: str, message: str, **details: Any) -> HTTPExc
 
 
 def _require_scenario(scenario_id: str) -> None:
-    """Execute  Require Scenario operation and return result."""
-    valid = list(store.VALID_SCENARIO_IDS) + ["REALTIME"]
+    """Execute Require Scenario operation and return result."""
+    valid = list(store.VALID_SCENARIO_IDS)
     if scenario_id not in valid:
         raise _error(
             404, "SCENARIO_NOT_FOUND",
             f"unknown scenario id {scenario_id!r}",
             valid_scenario_ids=valid,
         )
+
 
 
 def _store_not_ready() -> HTTPException:
@@ -110,6 +111,8 @@ def _require_lead(lead: int) -> None:
             f"lead {lead} is not a valid 5-minute snapshot lead",
             valid_leads=list(VALID_LEADS),
         )
+
+
 
 
 def _require_projection_config(config_id: str) -> None:
@@ -445,10 +448,10 @@ def policies() -> dict[str, Any]:
 @app.get("/api/v1/scenarios/{scenario_id}/frame")
 def scenario_frame(scenario_id: str, lead: int = Query(..., ge=0, le=180)) -> dict[str, Any]:
     """One efficient timeline payload: depth grid + road impacts + metrics."""
-    _require_scenario(scenario_id)
-    _require_lead(lead)
     if scenario_id.upper() == "REALTIME":
         return impacts.realtime_frame(lead)
+    _require_scenario(scenario_id)
+    _require_lead(lead)
     try:
         return impacts.frame(scenario_id, lead)
     except store.StoreError as exc:
@@ -462,11 +465,16 @@ def scenario_horizon(
     step: int = Query(5, ge=1, le=60)
 ) -> dict[str, Any]:
     """Precomputed/parallel batch of all nowcast frames across the entire 3-hour projection horizon."""
+    if scenario_id.upper() == "REALTIME":
+        return impacts.horizon_payload("REALTIME", max_lead, step)
     _require_scenario(scenario_id)
+    if max_lead % 5 != 0 or step % 5 != 0:
+        raise _error(400, "INVALID_HORIZON_STEP", "Stored scenario horizon requires 5-minute snapshot intervals")
     try:
         return impacts.horizon_payload(scenario_id, max_lead, step)
     except store.StoreError as exc:
         raise _store_not_ready() from exc
+
 
 
 @app.get("/api/v1/nowcast/realtime/horizon")

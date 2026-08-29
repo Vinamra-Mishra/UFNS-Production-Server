@@ -37,11 +37,11 @@ def get_mosdac_status() -> dict[str, Any]:
     return {
         "service": "ISRO / MOSDAC Data Download API",
         "auth_status": token_info.get("status"),
-        "user": token_info.get("username"),
         "quota_daily": 5000,
         "token_valid": token_info.get("status") in ("AUTHENTICATED", "CACHED_VALID", "CALIBRATED_SANDBOX"),
         "timestamp": token_info.get("authenticated_at"),
     }
+
 
 
 @router.get("/catalog")

@@ -24,143 +24,156 @@ export const WeatherWidget: React.FC<WeatherWidgetProps> = ({ telemetry, onClose
 
   return (
     <div
+      role="dialog"
+      aria-label="Real-Time Meteorological &amp; Satellite Telemetry"
+      className="glass-panel animate-fade-in"
       style={{
-        background: '#000000',
-        border: '1px solid #1f2937',
-        borderRadius: '10px',
         padding: '16px',
-        color: '#f8fafc',
-        boxShadow: '0 12px 36px rgba(0, 0, 0, 0.9), 0 0 20px rgba(56, 189, 248, 0.08)',
-        backdropFilter: 'blur(16px)',
+        color: 'var(--ink)',
+        borderRadius: '16px',
         minWidth: '320px',
         maxWidth: '380px',
+        zIndex: 100,
       }}
     >
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', borderBottom: '1px solid #111827', paddingBottom: '8px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', borderBottom: '1px solid var(--hairline)', paddingBottom: '8px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <div style={{ background: '#0284c7', color: '#fff', borderRadius: '6px', padding: '4px 6px', fontSize: '11px', fontWeight: 800 }}>
+          <span
+            className="chip-btn"
+            style={{
+              background: 'var(--primary-focus)',
+              color: '#ffffff',
+              borderColor: 'transparent',
+              fontSize: '10px',
+              padding: '2px 6px',
+              fontWeight: 800,
+            }}
+          >
             LIVE
-          </div>
+          </span>
           <div>
-            <div style={{ fontSize: '12px', fontWeight: 800, color: '#f8fafc' }}>
-              Real-Time Atmospheric &amp; Satellite Feeds
+            <div style={{ fontSize: '12px', fontWeight: 700, color: 'var(--ink)' }}>
+              Atmospheric &amp; Satellite Feeds
             </div>
-            <div style={{ fontSize: '9px', color: '#64748b' }}>
+            <div style={{ fontSize: '9px', color: 'var(--body-muted)' }}>
               OpenWeather · NASA GPM/SMAP · IMD DWR
             </div>
           </div>
         </div>
         {onClose && (
           <button
+            type="button"
             onClick={onClose}
-            style={{ background: 'transparent', border: 'none', color: '#64748b', cursor: 'pointer', padding: '2px' }}
+            aria-label="Close weather telemetry popover"
+            style={{ background: 'transparent', border: 'none', color: 'var(--body-muted)', cursor: 'pointer', padding: '2px' }}
           >
-            <X size={16} />
+            <X size={16} aria-hidden="true" />
           </button>
         )}
       </div>
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#050505', border: '1px solid #171717', borderRadius: '8px', padding: '12px', marginBottom: '12px' }}>
+      <div className="glass-card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px', marginBottom: '12px' }}>
         <div>
-          <div style={{ fontSize: '28px', fontWeight: 900, color: '#38bdf8', letterSpacing: '-0.5px' }}>
-            {temp.toFixed(1)}°C
+          <div style={{ fontSize: '28px', fontWeight: 800, color: 'var(--primary-on-dark)', letterSpacing: '-0.5px' }} className="tabular-nums">
+            {temp.toFixed(1)}&nbsp;°C
           </div>
-          <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '2px' }}>
-            Feels like <strong style={{ color: '#f8fafc' }}>{feelsLike.toFixed(1)}°C</strong>
+          <div style={{ fontSize: '11px', color: 'var(--body-muted)', marginTop: '2px' }}>
+            Feels like <strong style={{ color: 'var(--ink)' }} className="tabular-nums">{feelsLike.toFixed(1)}&nbsp;°C</strong>
           </div>
         </div>
         <div style={{ textAlign: 'right' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', justifyContent: 'flex-end' }}>
-            {rain > 0 ? <CloudRain size={22} color="#38bdf8" /> : (clouds > 50 ? <Cloud size={22} color="#94a3b8" /> : <Sun size={22} color="#fbbf24" />)}
-            <span style={{ fontSize: '13px', fontWeight: 700, color: '#f8fafc' }}>{condition}</span>
+            {rain > 0 ? <CloudRain size={22} color="var(--primary-on-dark)" aria-hidden="true" /> : (clouds > 50 ? <Cloud size={22} color="var(--body-muted)" aria-hidden="true" /> : <Sun size={22} color="var(--amber)" aria-hidden="true" />)}
+            <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--ink)' }}>{condition}</span>
           </div>
-          <div style={{ fontSize: '10px', color: '#64748b', marginTop: '2px' }}>{desc}</div>
+          <div style={{ fontSize: '10px', color: 'var(--body-muted)', marginTop: '2px' }}>{desc}</div>
         </div>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', marginBottom: '12px' }}>
-        <div style={{ background: '#050505', border: '1px solid #171717', borderRadius: '6px', padding: '8px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '9px', color: '#64748b' }}>
-            <Droplets size={11} color="#38bdf8" />
+        <div className="glass-card" style={{ padding: '8px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '9px', color: 'var(--body-muted)' }}>
+            <Droplets size={11} color="var(--primary-on-dark)" aria-hidden="true" />
             <span>Relative Humidity</span>
           </div>
-          <div style={{ fontSize: '13px', fontWeight: 800, color: '#f8fafc', marginTop: '3px' }}>
+          <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--ink)', marginTop: '3px' }} className="tabular-nums">
             {humidity}%
           </div>
         </div>
 
-        <div style={{ background: '#050505', border: '1px solid #171717', borderRadius: '6px', padding: '8px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '9px', color: '#64748b' }}>
-            <Wind size={11} color="#34d399" />
+        <div className="glass-card" style={{ padding: '8px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '9px', color: 'var(--body-muted)' }}>
+            <Wind size={11} color="var(--green)" aria-hidden="true" />
             <span>Wind Speed</span>
           </div>
-          <div style={{ fontSize: '13px', fontWeight: 800, color: '#f8fafc', marginTop: '3px' }}>
-            {windSpeed.toFixed(1)} km/h <span style={{ fontSize: '9px', color: '#94a3b8' }}>({windDeg}°)</span>
+          <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--ink)', marginTop: '3px' }} className="tabular-nums">
+            {windSpeed.toFixed(1)}&nbsp;km/h <span style={{ fontSize: '9px', color: 'var(--body-muted)' }}>({windDeg}°)</span>
           </div>
         </div>
 
-        <div style={{ background: '#050505', border: '1px solid #171717', borderRadius: '6px', padding: '8px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '9px', color: '#64748b' }}>
-            <CloudRain size={11} color="#60a5fa" />
+        <div className="glass-card" style={{ padding: '8px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '9px', color: 'var(--body-muted)' }}>
+            <CloudRain size={11} color="var(--cyan)" aria-hidden="true" />
             <span>Rainfall Rate</span>
           </div>
-          <div style={{ fontSize: '13px', fontWeight: 800, color: rain > 0 ? '#38bdf8' : '#64748b', marginTop: '3px' }}>
-            {rain.toFixed(2)} mm/h
+          <div style={{ fontSize: '13px', fontWeight: 700, color: rain > 0 ? 'var(--primary-on-dark)' : 'var(--body-muted)', marginTop: '3px' }} className="tabular-nums">
+            {rain.toFixed(2)}&nbsp;mm/h
           </div>
         </div>
 
-        <div style={{ background: '#050505', border: '1px solid #171717', borderRadius: '6px', padding: '8px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '9px', color: '#64748b' }}>
-            <Gauge size={11} color="#fbbf24" />
+        <div className="glass-card" style={{ padding: '8px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '9px', color: 'var(--body-muted)' }}>
+            <Gauge size={11} color="var(--amber)" aria-hidden="true" />
             <span>Surface Pressure</span>
           </div>
-          <div style={{ fontSize: '13px', fontWeight: 800, color: '#f8fafc', marginTop: '3px' }}>
-            {pressure} hPa
+          <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--ink)', marginTop: '3px' }} className="tabular-nums">
+            {pressure}&nbsp;hPa
           </div>
         </div>
 
-        <div style={{ background: '#050505', border: '1px solid #171717', borderRadius: '6px', padding: '8px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '9px', color: '#64748b' }}>
-            <Cloud size={11} color="#94a3b8" />
+        <div className="glass-card" style={{ padding: '8px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '9px', color: 'var(--body-muted)' }}>
+            <Cloud size={11} color="var(--body-muted)" aria-hidden="true" />
             <span>Cloud Cover</span>
           </div>
-          <div style={{ fontSize: '13px', fontWeight: 800, color: '#f8fafc', marginTop: '3px' }}>
+          <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--ink)', marginTop: '3px' }} className="tabular-nums">
             {clouds}%
           </div>
         </div>
 
-        <div style={{ background: '#050505', border: '1px solid #171717', borderRadius: '6px', padding: '8px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '9px', color: '#64748b' }}>
-            <Eye size={11} color="#c084fc" />
+        <div className="glass-card" style={{ padding: '8px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '9px', color: 'var(--body-muted)' }}>
+            <Eye size={11} color="var(--purple)" aria-hidden="true" />
             <span>Visibility</span>
           </div>
-          <div style={{ fontSize: '13px', fontWeight: 800, color: '#f8fafc', marginTop: '3px' }}>
-            {visibility.toFixed(1)} km
+          <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--ink)', marginTop: '3px' }} className="tabular-nums">
+            {visibility.toFixed(1)}&nbsp;km
           </div>
         </div>
       </div>
 
-      <div style={{ background: '#030712', border: '1px solid #111827', borderRadius: '8px', padding: '10px', fontSize: '10px' }}>
+      <div className="glass-card" style={{ padding: '10px', fontSize: '10px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-          <span style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#38bdf8', fontWeight: 700 }}>
-            <Globe size={12} /> NASA Earthdata Satellite Feed
+          <span style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--primary-on-dark)', fontWeight: 700 }}>
+            <Globe size={12} aria-hidden="true" /> NASA Earthdata Satellite Feed
           </span>
-          <span style={{ fontSize: '9px', background: '#064e3b', color: '#34d399', padding: '1px 5px', borderRadius: '3px', fontWeight: 700 }}>
+          <span className="chip-btn" style={{ fontSize: '9px', background: 'rgba(48, 209, 88, 0.15)', color: 'var(--green)', borderColor: 'rgba(48, 209, 88, 0.3)', padding: '1px 6px', cursor: 'default' }}>
             {nasa.status || 'AUTHENTICATED'}
           </span>
         </div>
-        <div style={{ color: '#94a3b8', fontSize: '9px', lineHeight: 1.4 }}>
+        <div style={{ color: 'var(--body-muted)', fontSize: '9px', lineHeight: 1.4 }}>
           <div>• <strong>GPM IMERG:</strong> 30-min calibrated precipitation stream</div>
-          <div>• <strong>SMAP Soil Moisture:</strong> {(nasa.smap_soil_moisture_m3m3 ?? 0.32).toFixed(2)} m³/m³ ({(nasa.smap_saturation_pct ?? 64).toFixed(0)}% saturation)</div>
+          <div>• <strong>SMAP Soil Moisture:</strong> <span className="tabular-nums">{(nasa.smap_soil_moisture_m3m3 ?? 0.32).toFixed(2)}&nbsp;m³/m³ ({(nasa.smap_saturation_pct ?? 64).toFixed(0)}% saturation)</span></div>
         </div>
 
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '8px', paddingTop: '6px', borderTop: '1px solid #111827' }}>
-          <span style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#34d399', fontWeight: 700 }}>
-            <Radio size={12} /> {telemetry?.radar_station || 'IMD Doppler Radar'}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '8px', paddingTop: '6px', borderTop: '1px solid var(--hairline-soft)' }}>
+          <span style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--green)', fontWeight: 700 }}>
+            <Radio size={12} aria-hidden="true" /> {telemetry?.radar_station || 'IMD Doppler Radar'}
           </span>
-          <span style={{ color: '#38bdf8', fontWeight: 700 }}>5-min Scans</span>
+          <span style={{ color: 'var(--primary-on-dark)', fontWeight: 700 }}>5-min Scans</span>
         </div>
       </div>
     </div>
   );
 };
+

@@ -64,3 +64,14 @@ rust_core/target/
 rust_api/target/
 **/*.rs.bk
 
+# C++ build artifacts
+*.obj
+*.exp
+*.lib
+*.exe
+cpp_core/*.obj
+cpp_core/*.exp
+cpp_core/*.lib
+cpp_core/*.exe
+
+
