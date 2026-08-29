@@ -254,7 +254,9 @@ def get_rainfall_status() -> dict[str, Any]:
             "opensensemap": {"status": "CONNECTED", "label": "OpenSenseMap IoT", "sensor_count": 14},
             "radar_derived": {"status": "CONNECTED", "label": "Live Doppler Weather Radar Composite (RainViewer / IMD)"}
         },
-        "labels": ["REAL_TIME_DWR_RADAR", "MARSHALL_PALMER_ZR", "OPERATIONAL_NOWCAST"],
+        "labels": ["SYNTHETIC", "PERSISTENCE_BASELINE", "DEMONSTRATION"]
+        if provider.source_type.value != "REAL"
+        else ["REAL_TIME_DWR_RADAR", "MARSHALL_PALMER_ZR", "OPERATIONAL_NOWCAST"],
     }
 
 

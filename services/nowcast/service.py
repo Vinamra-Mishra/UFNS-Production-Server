@@ -172,8 +172,14 @@ def fetch_latest_observation(
 
     obs = prov.fetch_latest()
     if obs is None:
-        from services.nowcast.quality import QualityFlag
-        qual = QualityResult(valid=False, freshness=DataFreshness.UNAVAILABLE, flags=(QualityFlag.UNAVAILABLE,), errors=("no observation available",))
+        qual = QualityResult(
+            observation=None,
+            freshness=DataFreshness.MISSING,
+            valid=False,
+            errors=["no observation available"],
+            warnings=[],
+            checked_at=datetime.now(timezone.utc),
+        )
         return prov, None, qual
     qual = validate_observation(obs, _quality_config)
     return prov, obs, qual
