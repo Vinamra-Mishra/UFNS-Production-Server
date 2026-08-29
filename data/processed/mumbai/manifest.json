@@ -1,0 +1,42 @@
+{
+  "city": "mumbai",
+  "status": "VALIDATED_PROCESSED_DATASET",
+  "crs": "EPSG:32643",
+  "files": {
+    "dem_normalized.tif": {
+      "size_bytes": 4908636,
+      "sha256": "14ae5093818e727df016d15f22320cbb02ca70ee5f3b4442692ef071795f324f",
+      "created_at": "2026-08-27T04:21:23.543327+00:00"
+    },
+    "drainage_graph.json": {
+      "size_bytes": 15153,
+      "sha256": "c821fbcc3d571c30d8d1353655917f368eccb0872a5c02c265207a934dfdb4bd",
+      "created_at": "2026-08-27T04:21:23.543327+00:00"
+    },
+    "drainage_network.inp": {
+      "size_bytes": 293761,
+      "sha256": "d511698c5ebb27164cf12c20e478cae39c81063e756973b641460430851f8577",
+      "created_at": "2026-08-27T04:21:23.544834+00:00"
+    },
+    "drainage_network.rpt": {
+      "size_bytes": 273,
+      "sha256": "5308b8cdd91e259417d20cd483482c7f11d3a2132fe94e5350c91fd21888a71d",
+      "created_at": "2026-08-27T04:21:23.544834+00:00"
+    },
+    "grid_spec.json": {
+      "size_bytes": 421,
+      "sha256": "4f49555f69799840025eaea90edb52a882065eb0e06fbd2529f013693ff82117",
+      "created_at": "2026-08-27T04:21:23.544834+00:00"
+    },
+    "road_graph.json": {
+      "size_bytes": 1153428,
+      "sha256": "d50f59b2b3bbca726fa0e2328b57ce32ab519de36b9ddd0bfeff34cc0d23167a",
+      "created_at": "2026-08-27T04:21:23.545841+00:00"
+    },
+    "scenarios.json": {
+      "size_bytes": 2343,
+      "sha256": "bb68890cdbd9546a1b564fb9c05be0226527c24e20617401f4a18f8e25d56489",
+      "created_at": "2026-08-27T04:21:23.545841+00:00"
+    }
+  }
+}

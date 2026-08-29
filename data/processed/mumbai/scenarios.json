@@ -1,0 +1,105 @@
+{
+  "city": "mumbai",
+  "scenarios": {
+    "S1_Normal": {
+      "scenario_id": "S1_Normal",
+      "city": "mumbai",
+      "return_period_years": 2,
+      "total_depth_mm": 76.2,
+      "peak_intensity_mm_per_h": 148.27,
+      "duration_minutes": 180,
+      "interval_minutes": 15,
+      "hyetograph_mm_per_h": [
+        0.0,
+        8.1,
+        9.42,
+        11.4,
+        14.82,
+        22.62,
+        148.27,
+        33.01,
+        17.74,
+        12.84,
+        10.29,
+        8.7
+      ],
+      "drainage_condition": "NORMAL",
+      "provenance": "APPROVED_LOCAL_IDF"
+    },
+    "S2_Heavy": {
+      "scenario_id": "S2_Heavy",
+      "city": "mumbai",
+      "return_period_years": 10,
+      "total_depth_mm": 105.9,
+      "peak_intensity_mm_per_h": 206.06,
+      "duration_minutes": 180,
+      "interval_minutes": 15,
+      "hyetograph_mm_per_h": [
+        0.0,
+        11.26,
+        13.09,
+        15.84,
+        20.59,
+        31.44,
+        206.06,
+        45.88,
+        24.66,
+        17.84,
+        14.31,
+        12.09
+      ],
+      "drainage_condition": "NORMAL",
+      "provenance": "APPROVED_LOCAL_IDF"
+    },
+    "S3_Extreme": {
+      "scenario_id": "S3_Extreme",
+      "city": "mumbai",
+      "return_period_years": 50,
+      "total_depth_mm": 140.4,
+      "peak_intensity_mm_per_h": 273.19,
+      "duration_minutes": 180,
+      "interval_minutes": 15,
+      "hyetograph_mm_per_h": [
+        0.0,
+        14.93,
+        17.35,
+        21.0,
+        27.3,
+        41.68,
+        273.19,
+        60.82,
+        32.69,
+        23.66,
+        18.97,
+        16.03
+      ],
+      "drainage_condition": "NORMAL",
+      "provenance": "APPROVED_LOCAL_IDF"
+    },
+    "S4_Extreme_Blocked": {
+      "scenario_id": "S4_Extreme_Blocked",
+      "city": "mumbai",
+      "return_period_years": 100,
+      "total_depth_mm": 156.9,
+      "peak_intensity_mm_per_h": 305.3,
+      "duration_minutes": 180,
+      "interval_minutes": 15,
+      "hyetograph_mm_per_h": [
+        0.0,
+        16.68,
+        19.39,
+        23.47,
+        30.51,
+        46.58,
+        305.3,
+        67.97,
+        36.53,
+        26.44,
+        21.19,
+        17.91
+      ],
+      "drainage_condition": "BLOCKED",
+      "provenance": "APPROVED_LOCAL_IDF"
+    }
+  }
+}

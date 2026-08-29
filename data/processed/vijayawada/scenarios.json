@@ -1,0 +1,105 @@
+{
+  "city": "vijayawada",
+  "scenarios": {
+    "S1_Normal": {
+      "scenario_id": "S1_Normal",
+      "city": "vijayawada",
+      "return_period_years": 2,
+      "total_depth_mm": 58.2,
+      "peak_intensity_mm_per_h": 113.25,
+      "duration_minutes": 180,
+      "interval_minutes": 15,
+      "hyetograph_mm_per_h": [
+        0.0,
+        6.19,
+        7.19,
+        8.71,
+        11.32,
+        17.28,
+        113.25,
+        25.21,
+        13.55,
+        9.81,
+        7.86,
+        6.64
+      ],
+      "drainage_condition": "NORMAL",
+      "provenance": "APPROVED_LOCAL_IDF"
+    },
+    "S2_Heavy": {
+      "scenario_id": "S2_Heavy",
+      "city": "vijayawada",
+      "return_period_years": 10,
+      "total_depth_mm": 81.0,
+      "peak_intensity_mm_per_h": 157.61,
+      "duration_minutes": 180,
+      "interval_minutes": 15,
+      "hyetograph_mm_per_h": [
+        0.0,
+        8.61,
+        10.01,
+        12.12,
+        15.75,
+        24.04,
+        157.61,
+        35.09,
+        18.86,
+        13.65,
+        10.94,
+        9.25
+      ],
+      "drainage_condition": "NORMAL",
+      "provenance": "APPROVED_LOCAL_IDF"
+    },
+    "S3_Extreme": {
+      "scenario_id": "S3_Extreme",
+      "city": "vijayawada",
+      "return_period_years": 50,
+      "total_depth_mm": 107.4,
+      "peak_intensity_mm_per_h": 208.98,
+      "duration_minutes": 180,
+      "interval_minutes": 15,
+      "hyetograph_mm_per_h": [
+        0.0,
+        11.42,
+        13.27,
+        16.06,
+        20.88,
+        31.88,
+        208.98,
+        46.53,
+        25.0,
+        18.1,
+        14.51,
+        12.26
+      ],
+      "drainage_condition": "NORMAL",
+      "provenance": "APPROVED_LOCAL_IDF"
+    },
+    "S4_Extreme_Blocked": {
+      "scenario_id": "S4_Extreme_Blocked",
+      "city": "vijayawada",
+      "return_period_years": 100,
+      "total_depth_mm": 120.0,
+      "peak_intensity_mm_per_h": 233.5,
+      "duration_minutes": 180,
+      "interval_minutes": 15,
+      "hyetograph_mm_per_h": [
+        0.0,
+        12.76,
+        14.83,
+        17.95,
+        23.33,
+        35.62,
+        233.5,
+        51.99,
+        27.94,
+        20.22,
+        16.21,
+        13.7
+      ],
+      "drainage_condition": "BLOCKED",
+      "provenance": "APPROVED_LOCAL_IDF"
+    }
+  }
+}

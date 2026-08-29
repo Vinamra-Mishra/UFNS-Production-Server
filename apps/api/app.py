@@ -247,7 +247,7 @@ def health() -> dict[str, Any]:
         "model_version": MODEL_VERSION,
         "nowcast_version": NOWCAST_VERSION,
         "projection_version": PROJECTION_VERSION,
-        "road_routing_version": impacts.road_network().get("source", ""),
+        "road_routing_version": f"REAL_ROADS_{city_api.ACTIVE_CITY}" if city_api.ACTIVE_CITY != "DEMO" else "NETWORK_SYNTHETIC",
         "b13_policy": POLICY.policy_id,
         "b13_policy_status": POLICY.status,
         "engine_version": engine_version,

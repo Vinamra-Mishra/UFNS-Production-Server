@@ -83,60 +83,71 @@ def grid_metadata() -> dict[str, Any]:
 # Road network / policy
 # ---------------------------------------------------------------------------
 
+@lru_cache(maxsize=4)
+def _cached_city_road_network(city_key: str, active: str) -> dict[str, Any]:
+    """Load and cache road network for real cities to conserve RAM."""
+    road_file = PROCESSED_DIR / city_key / "road_graph_filtered.json"
+    if not road_file.exists():
+        road_file = PROCESSED_DIR / city_key / "road_graph.json"
+    grid_meta = grid_metadata()
+    if road_file.exists():
+        rg = json.loads(road_file.read_text(encoding="utf-8"))
+        nodes = rg.get("nodes", {})
+        edges = rg.get("edges", [])
+
+        # Filter to major arterial, trunk, primary, secondary, tertiary corridors
+        major_classes = {"motorway", "trunk", "primary", "secondary", "tertiary", "motorway_link", "trunk_link", "primary_link", "secondary_link", "tertiary_link"}
+        filtered_edges = [e for e in edges if e.get("highway") in major_classes]
+        if not filtered_edges:
+            filtered_edges = edges[:2000]
+        elif len(filtered_edges) > 2500:
+            filtered_edges = filtered_edges[:2500]
+
+        segments = []
+        for e in filtered_edges:
+            geom = e.get("geometry")
+            if not geom:
+                fn = nodes.get(e["from_node"], {})
+                tn = nodes.get(e["to_node"], {})
+                if fn and tn:
+                    geom = [[fn["x"], fn["y"]], [tn["x"], tn["y"]]]
+                else:
+                    geom = [[grid_meta["origin_x"], grid_meta["origin_y"]], [grid_meta["origin_x"]+100, grid_meta["origin_y"]+100]]
+            segments.append({
+                "road_id": e["edge_id"],
+                "road_class": e.get("highway", "primary"),
+                "name": e.get("name") or e.get("highway", "Street").replace("_", " ").title(),
+                "length_m": round(float(e.get("length_m", 100.0)), 1),
+                "baseline_speed_kmh": 60.0 if e.get("highway") in ("primary", "trunk", "motorway") else 35.0 if e.get("highway") in ("secondary", "tertiary") else 25.0,
+                "geometry": [[round(float(p[0]), 2), round(float(p[1]), 2)] for p in geom],
+                "source": "OSM_GEOFABRIK_REAL",
+                "status": "REAL_OBSERVED",
+                "fingerprint": e["edge_id"],
+            })
+        return {
+            "source": f"REAL_ROADS_{active}",
+            "status": "REAL_OBSERVED",
+            "fingerprint": f"fp-{active.lower()}",
+            "crs": grid_meta["crs"],
+            "grid": grid_meta,
+            "roads": segments,
+            "segments": segments,
+            "segment_count": len(segments),
+            "primary_count": sum(1 for s in segments if s["road_class"] in ("primary", "trunk", "motorway")),
+            "secondary_count": sum(1 for s in segments if s["road_class"] not in ("primary", "trunk", "motorway")),
+            "total_length_m": round(sum(s["length_m"] for s in segments), 1),
+        }
+    net_dict = NETWORK.to_dict()
+    net_dict["roads"] = net_dict.get("segments", [])
+    return net_dict
+
+
 def road_network() -> dict[str, Any]:
     """Execute Road Network operation and return result."""
     active = getattr(city_api, "ACTIVE_CITY", "DEMO")
     if active != "DEMO":
         city_key = city_api.CITY_METADATA.get(active, {}).get("city_id", "mumbai")
-        road_file = PROCESSED_DIR / city_key / "road_graph.json"
-        grid_meta = grid_metadata()
-        if road_file.exists():
-            rg = json.loads(road_file.read_text(encoding="utf-8"))
-            nodes = rg.get("nodes", {})
-            edges = rg.get("edges", [])
-
-            # Filter to major arterial, trunk, primary, secondary, tertiary corridors
-            major_classes = {"motorway", "trunk", "primary", "secondary", "tertiary", "motorway_link", "trunk_link", "primary_link", "secondary_link", "tertiary_link"}
-            filtered_edges = [e for e in edges if e.get("highway") in major_classes]
-            if not filtered_edges:
-                filtered_edges = edges[:2500]
-            elif len(filtered_edges) > 3000:
-                filtered_edges = filtered_edges[:3000]
-
-            segments = []
-            for e in filtered_edges:
-                geom = e.get("geometry")
-                if not geom:
-                    fn = nodes.get(e["from_node"], {})
-                    tn = nodes.get(e["to_node"], {})
-                    if fn and tn:
-                        geom = [[fn["x"], fn["y"]], [tn["x"], tn["y"]]]
-                    else:
-                        geom = [[grid_meta["origin_x"], grid_meta["origin_y"]], [grid_meta["origin_x"]+100, grid_meta["origin_y"]+100]]
-                segments.append({
-                    "road_id": e["edge_id"],
-                    "road_class": e.get("highway", "primary"),
-                    "name": e.get("name") or e.get("highway", "Street").replace("_", " ").title(),
-                    "length_m": round(float(e.get("length_m", 100.0)), 1),
-                    "baseline_speed_kmh": 60.0 if e.get("highway") in ("primary", "trunk", "motorway") else 35.0 if e.get("highway") in ("secondary", "tertiary") else 25.0,
-                    "geometry": [[round(float(p[0]), 2), round(float(p[1]), 2)] for p in geom],
-                    "source": "OSM_GEOFABRIK_REAL",
-                    "status": "REAL_OBSERVED",
-                    "fingerprint": e["edge_id"],
-                })
-            return {
-                "source": f"REAL_ROADS_{active}",
-                "status": "REAL_OBSERVED",
-                "fingerprint": f"fp-{active.lower()}",
-                "crs": grid_meta["crs"],
-                "grid": grid_meta,
-                "roads": segments,
-                "segments": segments,
-                "segment_count": len(segments),
-                "primary_count": sum(1 for s in segments if s["road_class"] in ("primary", "trunk", "motorway")),
-                "secondary_count": sum(1 for s in segments if s["road_class"] not in ("primary", "trunk", "motorway")),
-                "total_length_m": round(sum(s["length_m"] for s in segments), 1),
-            }
+        return _cached_city_road_network(city_key, active)
     net_dict = NETWORK.to_dict()
     net_dict["roads"] = net_dict.get("segments", [])
     return net_dict

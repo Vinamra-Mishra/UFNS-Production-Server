@@ -19,21 +19,26 @@ htmlcov/
 *.pem
 *.key
 
-# Data (raw downloads and processed outputs stay out of Git)
+# Data (raw downloads stay out of Git; keep essential processed metadata & filtered graphs)
 data/raw/*
 !data/raw/.gitkeep
-data/processed/*
-!data/processed/.gitkeep
+data/processed/mumbai/road_graph.json
+data/processed/vijayawada/road_graph.json
+data/processed/**/cartodem_merged_4326.tif
 data/DEM/*.zip
 data/DEM/**/*.zip
 data/DEM/*.tif
 data/DEM/**/*.tif
 *.tif.aux.xml
 
-# Node
+# Node & Vite
 node_modules/
 .next/
 out/
+.vite/
+apps/web/.vite/
+apps/web/dist/
+dist/
 
 # OS / editor
 .DS_Store

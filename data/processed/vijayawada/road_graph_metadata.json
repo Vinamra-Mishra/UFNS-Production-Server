@@ -1,0 +1,14 @@
+{
+  "city": "VIJAYAWADA",
+  "source": "OpenStreetMap Geofabrik (Strictly Bounded)",
+  "bounds": [
+    451947.81727774726,
+    1818732.6834524535,
+    470127.81727774726,
+    1833162.6834524535
+  ],
+  "raw_features": 13832,
+  "drivable_segments": 13697,
+  "routing_nodes": 22792,
+  "routing_edges": 13697
+}

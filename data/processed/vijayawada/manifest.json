@@ -1,0 +1,37 @@
+{
+  "city": "vijayawada",
+  "status": "VALIDATED_PROCESSED_DATASET",
+  "crs": "EPSG:32644",
+  "files": {
+    "dem_normalized.tif": {
+      "size_bytes": 1167288,
+      "sha256": "7976bbb7a9d6f14758c736e4148a475aa3928db2cdd55661aaf31c461a260553",
+      "created_at": "2026-08-27T04:21:23.798488+00:00"
+    },
+    "drainage_graph.json": {
+      "size_bytes": 15231,
+      "sha256": "269a9a8a34feb39dc94635ed4238113588c9755da5202eebcb939f96af8bb9c1",
+      "created_at": "2026-08-27T04:21:23.798488+00:00"
+    },
+    "drainage_network.inp": {
+      "size_bytes": 28165,
+      "sha256": "385baea8ad37e840453a77da4b26cc511524ca016802445a79735bf699ab5e3b",
+      "created_at": "2026-08-27T04:21:23.798488+00:00"
+    },
+    "grid_spec.json": {
+      "size_bytes": 430,
+      "sha256": "5c86168468141b271cbc8cd5c9db1c5e3edb639db0d24bd657a53e5c3fb21d19",
+      "created_at": "2026-08-27T04:21:23.798488+00:00"
+    },
+    "road_graph.json": {
+      "size_bytes": 1198608,
+      "sha256": "269cd0db8d162a1ed1b88878f1265781e3369ac963f9bea9ef59f9a7e99717cc",
+      "created_at": "2026-08-27T04:21:23.799550+00:00"
+    },
+    "scenarios.json": {
+      "size_bytes": 2359,
+      "sha256": "1558d8f4ee3759671429f5a796b4f0ea71aa382ad406b1531fccf89bbdf904cd",
+      "created_at": "2026-08-27T04:21:23.799550+00:00"
+    }
+  }
+}
