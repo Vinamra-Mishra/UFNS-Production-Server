@@ -94,8 +94,17 @@ def road_network() -> dict[str, Any]:
             rg = json.loads(road_file.read_text(encoding="utf-8"))
             nodes = rg.get("nodes", {})
             edges = rg.get("edges", [])
+
+            # Filter to major arterial, trunk, primary, secondary, tertiary corridors
+            major_classes = {"motorway", "trunk", "primary", "secondary", "tertiary", "motorway_link", "trunk_link", "primary_link", "secondary_link", "tertiary_link"}
+            filtered_edges = [e for e in edges if e.get("highway") in major_classes]
+            if not filtered_edges:
+                filtered_edges = edges[:2500]
+            elif len(filtered_edges) > 3000:
+                filtered_edges = filtered_edges[:3000]
+
             segments = []
-            for e in edges:
+            for e in filtered_edges:
                 geom = e.get("geometry")
                 if not geom:
                     fn = nodes.get(e["from_node"], {})
@@ -108,9 +117,9 @@ def road_network() -> dict[str, Any]:
                     "road_id": e["edge_id"],
                     "road_class": e.get("highway", "primary"),
                     "name": e.get("name") or e.get("highway", "Street").replace("_", " ").title(),
-                    "length_m": e.get("length_m", 100.0),
+                    "length_m": round(float(e.get("length_m", 100.0)), 1),
                     "baseline_speed_kmh": 60.0 if e.get("highway") in ("primary", "trunk", "motorway") else 35.0 if e.get("highway") in ("secondary", "tertiary") else 25.0,
-                    "geometry": geom,
+                    "geometry": [[round(float(p[0]), 2), round(float(p[1]), 2)] for p in geom],
                     "source": "OSM_GEOFABRIK_REAL",
                     "status": "REAL_OBSERVED",
                     "fingerprint": e["edge_id"],
@@ -126,7 +135,7 @@ def road_network() -> dict[str, Any]:
                 "segment_count": len(segments),
                 "primary_count": sum(1 for s in segments if s["road_class"] in ("primary", "trunk", "motorway")),
                 "secondary_count": sum(1 for s in segments if s["road_class"] not in ("primary", "trunk", "motorway")),
-                "total_length_m": sum(s["length_m"] for s in segments),
+                "total_length_m": round(sum(s["length_m"] for s in segments), 1),
             }
     net_dict = NETWORK.to_dict()
     net_dict["roads"] = net_dict.get("segments", [])

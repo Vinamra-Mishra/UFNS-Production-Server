@@ -27,8 +27,8 @@ interface CachedFrame {
 }
 
 export const App: React.FC = () => {
-  // Active City State (Defaults to DEMO on startup)
-  const [activeCity, setActiveCity] = useState<CityId>('DEMO');
+  // Active City State (Defaults to MUMBAI on startup)
+  const [activeCity, setActiveCity] = useState<CityId>('MUMBAI');
   const [cityMeta, setCityMeta] = useState<CityMetadata | null>(null);
 
   // Core Simulation & Scenario State
@@ -43,12 +43,12 @@ export const App: React.FC = () => {
 
   // GIS Data Stores (Default: DEMO 134x134 Synthetic Catchment)
   const [gridMeta, setGridMeta] = useState<GridMeta>({
-    origin_x: 300000.0,
-    origin_y: 2500000.0,
-    width: 134,
-    height: 134,
+    origin_x: 262955.57,
+    origin_y: 2088778.45,
+    width: 825,
+    height: 1486,
     cell_size_m: 30.0,
-    crs: 'EPSG:32645',
+    crs: 'EPSG:32643',
   });
   const [depthGrid, setDepthGrid] = useState<Float32Array | null>(null);
   const [rainfallGrid, setRainfallGrid] = useState<Float32Array | null>(null);
@@ -370,23 +370,28 @@ export const App: React.FC = () => {
       frameCacheRef.current.clear();
       setBufferedLeads([]);
 
-      await fetch('/api/v1/city/switch', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ city_id: city }),
-      });
+      try {
+        await fetch('/api/v1/city/switch', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ city_id: city }),
+        });
+      } catch (e) {
+        console.warn('City switch notification notice:', e);
+      }
 
-      const [metaRes, scenRes, roadsRes, drainRes, assetsRes, telemRes] = await Promise.all([
-        fetch('/api/v1/city/active'),
-        fetch('/api/v1/scenarios'),
-        fetch('/api/v1/roads'),
-        fetch('/api/v1/drainage/points'),
-        fetch(`/api/v1/vulnerability/assets?city=${city}`),
-        fetch('/api/v1/telemetry/live'),
+      // Fetch core GIS and active city specification
+      const [metaRes, scenRes, roadsRes, drainRes, assetsRes, telemRes] = await Promise.allSettled([
+        fetch('/api/v1/city/active').then((r) => (r.ok ? r.json() : null)),
+        fetch('/api/v1/scenarios').then((r) => (r.ok ? r.json() : null)),
+        fetch('/api/v1/roads').then((r) => (r.ok ? r.json() : null)),
+        fetch('/api/v1/drainage/points').then((r) => (r.ok ? r.json() : null)),
+        fetch(`/api/v1/vulnerability/assets?city=${city}`).then((r) => (r.ok ? r.json() : null)),
+        fetch('/api/v1/telemetry/live').then((r) => (r.ok ? r.json() : null)),
       ]);
 
-      if (metaRes.ok) {
-        const data = await metaRes.json();
+      if (metaRes.status === 'fulfilled' && metaRes.value) {
+        const data = metaRes.value;
         const m = data.metadata || data;
         setCityMeta(m);
         const gs = data.grid_spec;
@@ -402,45 +407,45 @@ export const App: React.FC = () => {
         }
       }
 
-      if (scenRes.ok) {
-        const sc = await scenRes.json();
-        setScenarios(sc.scenarios || []);
+      if (scenRes.status === 'fulfilled' && scenRes.value) {
+        setScenarios(scenRes.value.scenarios || []);
       }
 
-      if (roadsRes.ok) {
-        const r = await roadsRes.json();
+      if (roadsRes.status === 'fulfilled' && roadsRes.value) {
+        const r = roadsRes.value;
         setRoads(r.roads || r.features || r.segments || []);
       }
 
-      if (drainRes.ok) {
-        const d = await drainRes.json();
-        setDrainage(d);
+      if (drainRes.status === 'fulfilled' && drainRes.value) {
+        setDrainage(drainRes.value);
       }
 
-      if (assetsRes.ok) {
-        const a = await assetsRes.json();
-        setCriticalAssets(a.assets || []);
+      if (assetsRes.status === 'fulfilled' && assetsRes.value) {
+        setCriticalAssets(assetsRes.value.assets || []);
       }
 
-      if (telemRes.ok) {
-        const t = await telemRes.json();
-        setTelemetry(t);
+      if (telemRes.status === 'fulfilled' && telemRes.value) {
+        setTelemetry(telemRes.value);
       }
 
-      // Now fetch lead 0 frame for this switched city
-      const frameRes = await fetch(`/api/v1/scenarios/${activeScenarioId}/frame?lead=0`);
-      if (frameRes.ok) {
-        const fData = await frameRes.json();
-        const parsed = parseFramePayload(fData, activeScenarioId, 0);
-        frameCacheRef.current.set(`${activeScenarioId}_0`, parsed);
-        setDepthGrid(parsed.depth);
-        setRainfallGrid(parsed.rainfallGrid || null);
-        setRoadImpacts(parsed.roadImpacts);
-        setMetrics(parsed.metrics);
-        if (parsed.grid) {
-          setGridMeta((prev) => ({ ...prev, ...parsed.grid }));
+      // Fetch initial lead 0 nowcast frame
+      try {
+        const frameRes = await fetch(`/api/v1/scenarios/${activeScenarioId}/frame?lead=0`);
+        if (frameRes.ok) {
+          const fData = await frameRes.json();
+          const parsed = parseFramePayload(fData, activeScenarioId, 0);
+          frameCacheRef.current.set(`${activeScenarioId}_0`, parsed);
+          setDepthGrid(parsed.depth);
+          setRainfallGrid(parsed.rainfallGrid || null);
+          setRoadImpacts(parsed.roadImpacts);
+          setMetrics(parsed.metrics);
+          if (parsed.grid) {
+            setGridMeta((prev) => ({ ...prev, ...parsed.grid }));
+          }
+          setBufferedLeads([0]);
         }
-        setBufferedLeads([0]);
+      } catch (fe) {
+        console.warn('Initial frame fetch warning:', fe);
       }
 
       preloadHorizon(180, 5);

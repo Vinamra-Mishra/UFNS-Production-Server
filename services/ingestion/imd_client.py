@@ -218,6 +218,10 @@ def _resolve_city_key(key: Any) -> str:
     return "MUMBAI"
 
 
+
+
+
+
 class IMDClient:
     """Official India Meteorological Department API client with resilient fallbacks & caching."""
 
@@ -398,18 +402,7 @@ class IMDClient:
         return {"status": base.get("status", "FALLBACK_CALIBRATED"), "data": rows}
 
 
-def _as_float(value: Any, default: float) -> float:
-    try:
-        return float(value)
-    except (TypeError, ValueError):
-        return default
 
-
-def _as_int(value: Any, default: int) -> int:
-    try:
-        return int(float(value))
-    except (TypeError, ValueError):
-        return default
 
 
     # 3. Current Weather API
