@@ -1,0 +1,175 @@
+{
+  "metadata": {
+    "timestamp": "2026-08-29T17:40:45Z",
+    "platform": "Windows-11-10.0.26200-SP0",
+    "cpu_cores": 16,
+    "python_version": "3.12.10",
+    "architecture": "AMD64"
+  },
+  "hydrodynamics_2d": [
+    {
+      "grid_size": "32x32",
+      "total_cells": 1024,
+      "py_latency_ms": 7.732640000176616,
+      "cpp_latency_ms": 0.9807399997953324,
+      "speedup": 7.884495382864283,
+      "py_throughput_cells_sec": 132425.66574631838,
+      "cpp_throughput_cells_sec": 1044109.5501495762,
+      "py_ram_kb": 1016.958984375,
+      "cpp_ram_kb": 39.4921875,
+      "mass_conservation_error_pct": 0.0757
+    },
+    {
+      "grid_size": "64x64",
+      "total_cells": 4096,
+      "py_latency_ms": 0.9845599997788668,
+      "cpp_latency_ms": 2.581520000239834,
+      "speedup": 0.3813877094453644,
+      "py_throughput_cells_sec": 4160234.0140976333,
+      "cpp_throughput_cells_sec": 1586662.12139339,
+      "py_ram_kb": 204.3515625,
+      "cpp_ram_kb": 146.390625,
+      "mass_conservation_error_pct": 0.0771
+    },
+    {
+      "grid_size": "128x128",
+      "total_cells": 16384,
+      "py_latency_ms": 1.3241399996331893,
+      "cpp_latency_ms": 2.5393799995072186,
+      "speedup": 0.5214422417637953,
+      "py_throughput_cells_sec": 12373314.003457839,
+      "cpp_throughput_cells_sec": 6451968.592010415,
+      "py_ram_kb": 739.1484375,
+      "cpp_ram_kb": 578.296875,
+      "mass_conservation_error_pct": 0.0792
+    },
+    {
+      "grid_size": "256x256",
+      "total_cells": 65536,
+      "py_latency_ms": 3.6047000001417473,
+      "cpp_latency_ms": 10.382960000424646,
+      "speedup": 0.34717460146184914,
+      "py_throughput_cells_sec": 18180708.51871804,
+      "cpp_throughput_cells_sec": 6311880.234279982,
+      "py_ram_kb": 2754.67578125,
+      "cpp_ram_kb": 2306.53125,
+      "mass_conservation_error_pct": 0.077
+    }
+  ],
+  "radar_advection": [
+    {
+      "grid_size": "64x64",
+      "py_latency_ms": 0.16579000002820976,
+      "opt_latency_ms": 0.10108600006788038,
+      "speedup": 1.6400886365755885,
+      "pixels_per_sec": 40519953.27987546
+    },
+    {
+      "grid_size": "128x128",
+      "py_latency_ms": 0.5155399999057408,
+      "opt_latency_ms": 0.09064199999556877,
+      "speedup": 5.6876503158684075,
+      "pixels_per_sec": 180755058.37030262
+    },
+    {
+      "grid_size": "256x256",
+      "py_latency_ms": 3.903301999962423,
+      "opt_latency_ms": 0.2748379998956807,
+      "speedup": 14.20219184189954,
+      "pixels_per_sec": 238453197.97435316
+    },
+    {
+      "grid_size": "512x512",
+      "py_latency_ms": 30.909778000059305,
+      "opt_latency_ms": 0.9580060000007506,
+      "speedup": 32.264701891256514,
+      "pixels_per_sec": 273635029.42548853
+    }
+  ],
+  "optical_flow": [
+    {
+      "grid_size": "64x64",
+      "py_latency_ms": 0.0865050002175849,
+      "cpp_latency_ms": 4.200060000221129,
+      "speedup": 0.020596134391658808,
+      "flow_pixels_per_sec": 975224.1634129869
+    },
+    {
+      "grid_size": "128x128",
+      "py_latency_ms": 0.09014499992190395,
+      "cpp_latency_ms": 10.494560000006459,
+      "speedup": 0.008589688364433428,
+      "flow_pixels_per_sec": 1561189.7973797775
+    },
+    {
+      "grid_size": "256x256",
+      "py_latency_ms": 0.25475500005995855,
+      "cpp_latency_ms": 24.20621500023117,
+      "speedup": 0.010524363270239716,
+      "flow_pixels_per_sec": 2707403.862990316
+    },
+    {
+      "grid_size": "512x512",
+      "py_latency_ms": 6.367529999988619,
+      "cpp_latency_ms": 69.66984499995306,
+      "speedup": 0.09139578249374473,
+      "flow_pixels_per_sec": 3762660.8757372233
+    }
+  ],
+  "evacuation_routing": [
+    {
+      "num_waypoints": 50,
+      "py_latency_us": 555.1740000373684,
+      "cpp_latency_us": 38.77800001646392,
+      "speedup": 14.316725973532904,
+      "waypoints_per_sec": 1289390.8911953059
+    },
+    {
+      "num_waypoints": 200,
+      "py_latency_us": 1721.3140000239946,
+      "cpp_latency_us": 82.89200006402098,
+      "speedup": 20.7657433611754,
+      "waypoints_per_sec": 2412778.0708093857
+    },
+    {
+      "num_waypoints": 1000,
+      "py_latency_us": 6571.616000001086,
+      "cpp_latency_us": 439.89400001009926,
+      "speedup": 14.939089871310388,
+      "waypoints_per_sec": 2273274.925270728
+    },
+    {
+      "num_waypoints": 5000,
+      "py_latency_us": 35228.52599999169,
+      "cpp_latency_us": 2372.9119999916293,
+      "speedup": 14.846115658783791,
+      "waypoints_per_sec": 2107115.6452568145
+    }
+  ],
+  "data_fingerprinting": [
+    {
+      "payload_bytes": 1024,
+      "payload_label": "1 KB",
+      "latency_ms": 0.017146000027423725,
+      "throughput_mb_s": 56.955703863178734
+    },
+    {
+      "payload_bytes": 65536,
+      "payload_label": "64 KB",
+      "latency_ms": 0.030890000052750114,
+      "throughput_mb_s": 2023.3085106270719
+    },
+    {
+      "payload_bytes": 1048576,
+      "payload_label": "1.0 MB",
+      "latency_ms": 0.4857179999817163,
+      "throughput_mb_s": 2058.807785665021
+    },
+    {
+      "payload_bytes": 10485760,
+      "payload_label": "10.0 MB",
+      "latency_ms": 5.052519999298966,
+      "throughput_mb_s": 1979.2103745037118
+    }
+  ]
+}

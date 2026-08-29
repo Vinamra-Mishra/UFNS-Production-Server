@@ -1,0 +1,47 @@
+{
+  "Health Check": {
+    "path": "/health",
+    "p50_ms": 4.18,
+    "p90_ms": 4.7,
+    "p99_ms": 6.08,
+    "mean_ms": 4.23,
+    "throughput_rps": 236.7,
+    "payload_size_kb": 1.09
+  },
+  "Live Telemetry": {
+    "path": "/api/v1/telemetry/live",
+    "p50_ms": 1547.93,
+    "p90_ms": 1744.42,
+    "p99_ms": 2659.45,
+    "mean_ms": 1627.79,
+    "throughput_rps": 0.6,
+    "payload_size_kb": 1.83
+  },
+  "Road Segments": {
+    "path": "/api/v1/roads",
+    "p50_ms": 3.01,
+    "p90_ms": 3.64,
+    "p99_ms": 23.9,
+    "mean_ms": 3.52,
+    "throughput_rps": 284.1,
+    "payload_size_kb": 35.71
+  },
+  "Scenario Frame (S4, 15m)": {
+    "path": "/api/v1/scenarios/S4/frame?lead=15",
+    "p50_ms": 9.37,
+    "p90_ms": 10.04,
+    "p99_ms": 15.13,
+    "mean_ms": 9.51,
+    "throughput_rps": 105.1,
+    "payload_size_kb": 217.95
+  },
+  "Horizon Summary": {
+    "path": "/api/v1/scenarios/S4/horizon?max_lead=60&step=5",
+    "p50_ms": 23.83,
+    "p90_ms": 25.22,
+    "p99_ms": 27.84,
+    "mean_ms": 24.04,
+    "throughput_rps": 41.6,
+    "payload_size_kb": 2811.2
+  }
+}
