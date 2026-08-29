@@ -103,3 +103,4 @@ If you prefer deploying directly from the repository root without setting a subf
 * [x] **Health Check Endpoint:** Active at `/health` returning status `"ok"` when all artifacts and providers are operational, or `"degraded"` when artifacts are missing or rainfall provider is unavailable.
 * [x] **Fallback Data Providers:** Autonomous synthetic fallbacks ensure 100% uptime when external IMD/MOSDAC servers are unreachable.
 * [x] **Single-Page Application (SPA) Routing:** `vercel.json` rewrites all client routes to `/index.html` preventing 404s on page refresh.
+* [x] **Verified Cloud Deployment:** Production backend live on Render (`https://ufns-demo-v4.onrender.com`), reverse-proxied through Vercel frontend.
