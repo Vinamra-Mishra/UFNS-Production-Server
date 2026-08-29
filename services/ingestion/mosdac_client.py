@@ -132,8 +132,19 @@ class MOSDACClient:
         timeout_sec: float = 12.0,
     ) -> None:
         """Initialize the ISRO MOSDAC client with environment or explicit credentials."""
-        self.username = username or os.getenv("MOSDAC_USERNAME") or ""
-        self.password = password or os.getenv("MOSDAC_PASSWORD") or ""
+        self.username = username or os.getenv("MOSDAC_USERNAME") or os.getenv("MOSDAC_USER") or ""
+        self.password = password or os.getenv("MOSDAC_PASSWORD") or os.getenv("MOSDAC_PASS") or ""
+        if not self.username or not self.password:
+            config_file = Path("data/mosdac/config.json")
+            if config_file.exists():
+                try:
+                    with open(config_file, "r", encoding="utf-8") as f:
+                        cfg = json.load(f)
+                    user_creds = cfg.get("user_credentials", {})
+                    self.username = self.username or user_creds.get("username/email") or user_creds.get("username") or ""
+                    self.password = self.password or user_creds.get("password") or ""
+                except Exception:
+                    pass
         self.timeout_sec = timeout_sec
         self.access_token: Optional[str] = None
         self.refresh_token: Optional[str] = None
