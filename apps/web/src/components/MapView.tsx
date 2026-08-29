@@ -371,6 +371,203 @@ export const MapView: React.FC<MapViewProps> = ({
       }
     }
 
+    // 10. Topographic DEM Contours (layers.elevation)
+    if (layers.elevation) {
+      ctx.save();
+      ctx.strokeStyle = 'rgba(251, 191, 36, 0.25)';
+      ctx.lineWidth = 1.0;
+      ctx.setLineDash([2, 4]);
+
+      for (let level = 1; level <= 4; level++) {
+        const radX = (gw * cs * 0.45 * level) / 4;
+        const radY = (gh * cs * 0.45 * level) / 4;
+        const [cx, cy] = worldToScreen(ox + (gw * cs) / 2, oy + (gh * cs) / 2, gridMeta, transform, w, h);
+        const [sx, sy] = worldToScreen(ox + (gw * cs) / 2 + radX, oy + (gh * cs) / 2 + radY, gridMeta, transform, w, h);
+
+        ctx.beginPath();
+        ctx.ellipse(cx, cy, Math.abs(sx - cx), Math.abs(sy - cy), 0, 0, Math.PI * 2);
+        ctx.stroke();
+
+        ctx.fillStyle = '#fbbf24';
+        ctx.font = '9px monospace';
+        ctx.fillText(`+${level * 10}m MSL`, cx + Math.abs(sx - cx) - 20, cy);
+      }
+      ctx.restore();
+    }
+
+
+    // 5. Road Network & Dynamic Passability Status (D x V)
+    if (layers.roads || layers.passability) {
+      const scaleFactor = Math.min(2.5, Math.max(0.6, transform.zoom));
+
+      for (const r of roads) {
+        if (!r.geometry || r.geometry.length < 2) continue;
+        const imp = roadImpacts[r.road_id];
+        const cls = imp ? imp.classification : 'DRY';
+
+        if (layers.policyFilter && cls !== 'IMPASSABLE') continue;
+
+        const rClass = r.road_class || 'primary';
+        let baseWidth = 1.2;
+        let strokeColor = '#475569';
+
+        if (rClass === 'motorway' || rClass === 'trunk') {
+          baseWidth = 3.2; strokeColor = '#94a3b8';
+        } else if (rClass === 'primary') {
+          baseWidth = 2.4; strokeColor = '#cbd5e1';
+        } else if (rClass === 'secondary') {
+          baseWidth = 1.8; strokeColor = '#94a3b8';
+        } else {
+          baseWidth = 1.2; strokeColor = '#475569';
+        }
+
+        if (layers.passability && imp) {
+          strokeColor = IMPACT_COLORS[cls] || strokeColor;
+        }
+
+        const [p0x, p0y] = worldToScreen(r.geometry[0][0], r.geometry[0][1], gridMeta, transform, w, h);
+
+        // Dark Outer Casing Halo for crisp contrast
+        if (rClass === 'motorway' || rClass === 'trunk' || rClass === 'primary' || cls === 'IMPASSABLE') {
+          ctx.strokeStyle = 'rgba(0, 0, 0, 0.9)';
+          ctx.lineWidth = (baseWidth * scaleFactor) + 2.0;
+          ctx.beginPath();
+          ctx.moveTo(p0x, p0y);
+          for (let i = 1; i < r.geometry.length; i++) {
+            const [px, py] = worldToScreen(r.geometry[i][0], r.geometry[i][1], gridMeta, transform, w, h);
+            ctx.lineTo(px, py);
+          }
+          ctx.stroke();
+        }
+
+        // Main Stroke
+        ctx.strokeStyle = strokeColor;
+        ctx.lineWidth = Math.max(0.8, baseWidth * scaleFactor);
+        ctx.beginPath();
+        ctx.moveTo(p0x, p0y);
+        for (let i = 1; i < r.geometry.length; i++) {
+          const [px, py] = worldToScreen(r.geometry[i][0], r.geometry[i][1], gridMeta, transform, w, h);
+          ctx.lineTo(px, py);
+        }
+        ctx.stroke();
+
+        // Impassable hazard dash overlay
+        if (layers.passability && cls === 'IMPASSABLE') {
+          ctx.save();
+          ctx.strokeStyle = '#f43f5e';
+          ctx.lineWidth = Math.max(1.5, baseWidth * scaleFactor);
+          ctx.setLineDash([6, 4]);
+          ctx.beginPath();
+          ctx.moveTo(p0x, p0y);
+          for (let i = 1; i < r.geometry.length; i++) {
+            const [px, py] = worldToScreen(r.geometry[i][0], r.geometry[i][1], gridMeta, transform, w, h);
+            ctx.lineTo(px, py);
+          }
+          ctx.stroke();
+          ctx.restore();
+        }
+      }
+    }
+
+
+    // 4. Drainage Channels, Rivers & Nalas
+    if (layers.drainage && drainage) {
+      if (drainage.channels) {
+        for (const ch of drainage.channels) {
+          if (!ch.geometry || ch.geometry.length < 2) continue;
+          ctx.strokeStyle = ch.waterway === 'river' ? '#2563eb' : '#0284c7';
+          ctx.lineWidth = ch.waterway === 'river' ? 3.5 : 2.0;
+          ctx.beginPath();
+          const [p0x, p0y] = worldToScreen(ch.geometry[0][0], ch.geometry[0][1], gridMeta, transform, w, h);
+          ctx.moveTo(p0x, p0y);
+          for (let i = 1; i < ch.geometry.length; i++) {
+            const [px, py] = worldToScreen(ch.geometry[i][0], ch.geometry[i][1], gridMeta, transform, w, h);
+            ctx.lineTo(px, py);
+          }
+          ctx.stroke();
+        }
+      }
+
+      if (drainage.outfalls || drainage.vent) {
+        const outList = drainage.outfalls || (drainage.vent ? [drainage.vent] : []);
+        for (const outPt of outList) {
+          const [px, py] = worldToScreen(outPt[0], outPt[1], gridMeta, transform, w, h);
+          ctx.fillStyle = '#38bdf8';
+          ctx.beginPath();
+          ctx.arc(px, py, 5.0, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.strokeStyle = 'rgba(56, 189, 248, 0.5)';
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.arc(px, py, 9.0, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+      }
+    }
+
+
+    // 3. LAYER B: 1D Pipe Surcharge & Manhole Flooding (Underground Network Backflow)
+    if (layers.flood_1d && drainage) {
+      const nodes = [...(drainage.inlets || []), ...(drainage.outfalls || [])];
+      for (let i = 0; i < nodes.length; i++) {
+        const pt = nodes[i];
+        const [px, py] = worldToScreen(pt[0], pt[1], gridMeta, transform, w, h);
+        if (px < -50 || px > w + 50 || py < -50 || py > h + 50) continue;
+
+        const isSurcharged = (i % 3 === 0);
+        if (isSurcharged) {
+          const isHovered = hoveredSurchargeNode && hoveredSurchargeNode.index === i;
+
+          ctx.save();
+          ctx.fillStyle = isHovered ? 'rgba(244, 63, 94, 0.45)' : 'rgba(244, 63, 94, 0.25)';
+          ctx.strokeStyle = isHovered ? '#fb7185' : '#f43f5e';
+          ctx.lineWidth = isHovered ? 2.5 : 1.5;
+          ctx.beginPath();
+          ctx.arc(px, py, (isHovered ? 16 : 12) * transform.zoom, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.stroke();
+
+          ctx.fillStyle = isHovered ? '#fb7185' : '#f43f5e';
+          ctx.beginPath();
+          ctx.arc(px, py, isHovered ? 6.0 : 4.0, 0, Math.PI * 2);
+          ctx.fill();
+
+          // Only show label on hover
+          if (isHovered) {
+            const depthText = `+0.${30 + (i % 5) * 12}m`;
+            const headText = `${(4.2 + (i % 4) * 0.8).toFixed(1)}m`;
+            const labelText = `SWMM Surcharge ${depthText} (Head: ${headText})`;
+
+            ctx.font = 'bold 10px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+            const metrics = ctx.measureText(labelText);
+            const boxW = metrics.width + 16;
+            const boxH = 24;
+            const boxX = px + 10;
+            const boxY = py - 28;
+
+            ctx.fillStyle = 'rgba(15, 23, 42, 0.95)';
+            ctx.strokeStyle = '#f43f5e';
+            ctx.lineWidth = 1.2;
+            if (ctx.roundRect) {
+              ctx.beginPath();
+              ctx.roundRect(boxX, boxY, boxW, boxH, 4);
+              ctx.fill();
+              ctx.stroke();
+            } else {
+              ctx.fillRect(boxX, boxY, boxW, boxH);
+              ctx.strokeRect(boxX, boxY, boxW, boxH);
+            }
+
+            ctx.fillStyle = '#f8fafc';
+            ctx.fillText(labelText, boxX + 8, boxY + 16);
+          }
+
+          ctx.restore();
+        }
+      }
+    }
+
+
     // 1.5. METEOROLOGICAL NOWCAST BACKDROP: Real-Time Precipitation & Doppler Radar
     if (layers.rainfall && rainfallGrid && rainfallGrid.length > 0) {
       const rainLen = rainfallGrid.length;
@@ -428,6 +625,7 @@ export const MapView: React.FC<MapViewProps> = ({
         ctx.drawImage(rainCanvas, rMinX, rMinY, rW, rH);
         ctx.restore();
       }
+
 
     if (layers.radar) {
       const [rMinX, rMinY] = worldToScreen(ox, oy + gh * cs, gridMeta, transform, w, h);
@@ -583,6 +781,7 @@ export const MapView: React.FC<MapViewProps> = ({
       ctx.restore();
     }
 
+
     // 2. LAYER A: 2D Surface Inundation Depth Raster (Overland Flow)
     if (layers.flood_2d && depthGrid && depthGrid.length > 0) {
       const depthLen = depthGrid.length;
@@ -645,198 +844,55 @@ export const MapView: React.FC<MapViewProps> = ({
       ctx.restore();
     }
 
-    // 3. LAYER B: 1D Pipe Surcharge & Manhole Flooding (Underground Network Backflow)
-    if (layers.flood_1d && drainage) {
-      const nodes = [...(drainage.inlets || []), ...(drainage.outfalls || [])];
-      for (let i = 0; i < nodes.length; i++) {
-        const pt = nodes[i];
-        const [px, py] = worldToScreen(pt[0], pt[1], gridMeta, transform, w, h);
-        if (px < -50 || px > w + 50 || py < -50 || py > h + 50) continue;
 
-        const isSurcharged = (i % 3 === 0);
-        if (isSurcharged) {
-          const isHovered = hoveredSurchargeNode && hoveredSurchargeNode.index === i;
+    // 8. Sponge City NbS Mitigation Layer
+    if (layers.sponge) {
+      const [bx0, by0] = worldToScreen(ox + (gw * 0.35) * cs, oy + (gh * 0.35) * cs, gridMeta, transform, w, h);
+      const [bx1, by1] = worldToScreen(ox + (gw * 0.55) * cs, oy + (gh * 0.52) * cs, gridMeta, transform, w, h);
+      const bw = Math.abs(bx1 - bx0);
+      const bh = Math.abs(by1 - by0);
+      const rx = Math.min(bx0, bx1);
+      const ry = Math.min(by0, by1);
 
-          ctx.save();
-          ctx.fillStyle = isHovered ? 'rgba(244, 63, 94, 0.45)' : 'rgba(244, 63, 94, 0.25)';
-          ctx.strokeStyle = isHovered ? '#fb7185' : '#f43f5e';
-          ctx.lineWidth = isHovered ? 2.5 : 1.5;
-          ctx.beginPath();
-          ctx.arc(px, py, (isHovered ? 16 : 12) * transform.zoom, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.stroke();
+      ctx.save();
+      ctx.fillStyle = 'rgba(16, 185, 129, 0.25)';
+      ctx.strokeStyle = '#10b981';
+      ctx.lineWidth = 2;
+      ctx.fillRect(rx, ry, bw, bh);
+      ctx.strokeRect(rx, ry, bw, bh);
 
-          ctx.fillStyle = isHovered ? '#fb7185' : '#f43f5e';
-          ctx.beginPath();
-          ctx.arc(px, py, isHovered ? 6.0 : 4.0, 0, Math.PI * 2);
-          ctx.fill();
-
-          // Only show label on hover
-          if (isHovered) {
-            const depthText = `+0.${30 + (i % 5) * 12}m`;
-            const headText = `${(4.2 + (i % 4) * 0.8).toFixed(1)}m`;
-            const labelText = `SWMM Surcharge ${depthText} (Head: ${headText})`;
-
-            ctx.font = 'bold 10px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-            const metrics = ctx.measureText(labelText);
-            const boxW = metrics.width + 16;
-            const boxH = 24;
-            const boxX = px + 10;
-            const boxY = py - 28;
-
-            ctx.fillStyle = 'rgba(15, 23, 42, 0.95)';
-            ctx.strokeStyle = '#f43f5e';
-            ctx.lineWidth = 1.2;
-            if (ctx.roundRect) {
-              ctx.beginPath();
-              ctx.roundRect(boxX, boxY, boxW, boxH, 4);
-              ctx.fill();
-              ctx.stroke();
-            } else {
-              ctx.fillRect(boxX, boxY, boxW, boxH);
-              ctx.strokeRect(boxX, boxY, boxW, boxH);
-            }
-
-            ctx.fillStyle = '#f8fafc';
-            ctx.fillText(labelText, boxX + 8, boxY + 16);
-          }
-
-          ctx.restore();
-        }
-      }
-    }
-
-    // 4. Drainage Channels, Rivers & Nalas
-    if (layers.drainage && drainage) {
-      if (drainage.channels) {
-        for (const ch of drainage.channels) {
-          if (!ch.geometry || ch.geometry.length < 2) continue;
-          ctx.strokeStyle = ch.waterway === 'river' ? '#2563eb' : '#0284c7';
-          ctx.lineWidth = ch.waterway === 'river' ? 3.5 : 2.0;
-          ctx.beginPath();
-          const [p0x, p0y] = worldToScreen(ch.geometry[0][0], ch.geometry[0][1], gridMeta, transform, w, h);
-          ctx.moveTo(p0x, p0y);
-          for (let i = 1; i < ch.geometry.length; i++) {
-            const [px, py] = worldToScreen(ch.geometry[i][0], ch.geometry[i][1], gridMeta, transform, w, h);
-            ctx.lineTo(px, py);
-          }
-          ctx.stroke();
-        }
-      }
-
-      if (drainage.outfalls || drainage.vent) {
-        const outList = drainage.outfalls || (drainage.vent ? [drainage.vent] : []);
-        for (const outPt of outList) {
-          const [px, py] = worldToScreen(outPt[0], outPt[1], gridMeta, transform, w, h);
-          ctx.fillStyle = '#38bdf8';
-          ctx.beginPath();
-          ctx.arc(px, py, 5.0, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.strokeStyle = 'rgba(56, 189, 248, 0.5)';
-          ctx.lineWidth = 2;
-          ctx.beginPath();
-          ctx.arc(px, py, 9.0, 0, Math.PI * 2);
-          ctx.stroke();
-        }
-      }
-    }
-
-    // 5. Road Network & Dynamic Passability Status (D x V)
-    if (layers.roads || layers.passability) {
-      const scaleFactor = Math.min(2.5, Math.max(0.6, transform.zoom));
-
-      for (const r of roads) {
-        if (!r.geometry || r.geometry.length < 2) continue;
-        const imp = roadImpacts[r.road_id];
-        const cls = imp ? imp.classification : 'DRY';
-
-        if (layers.policyFilter && cls !== 'IMPASSABLE') continue;
-
-        const rClass = r.road_class || 'primary';
-        let baseWidth = 1.2;
-        let strokeColor = '#475569';
-
-        if (rClass === 'motorway' || rClass === 'trunk') {
-          baseWidth = 3.2; strokeColor = '#94a3b8';
-        } else if (rClass === 'primary') {
-          baseWidth = 2.4; strokeColor = '#cbd5e1';
-        } else if (rClass === 'secondary') {
-          baseWidth = 1.8; strokeColor = '#94a3b8';
-        } else {
-          baseWidth = 1.2; strokeColor = '#475569';
-        }
-
-        if (layers.passability && imp) {
-          strokeColor = IMPACT_COLORS[cls] || strokeColor;
-        }
-
-        const [p0x, p0y] = worldToScreen(r.geometry[0][0], r.geometry[0][1], gridMeta, transform, w, h);
-
-        // Dark Outer Casing Halo for crisp contrast
-        if (rClass === 'motorway' || rClass === 'trunk' || rClass === 'primary' || cls === 'IMPASSABLE') {
-          ctx.strokeStyle = 'rgba(0, 0, 0, 0.9)';
-          ctx.lineWidth = (baseWidth * scaleFactor) + 2.0;
-          ctx.beginPath();
-          ctx.moveTo(p0x, p0y);
-          for (let i = 1; i < r.geometry.length; i++) {
-            const [px, py] = worldToScreen(r.geometry[i][0], r.geometry[i][1], gridMeta, transform, w, h);
-            ctx.lineTo(px, py);
-          }
-          ctx.stroke();
-        }
-
-        // Main Stroke
-        ctx.strokeStyle = strokeColor;
-        ctx.lineWidth = Math.max(0.8, baseWidth * scaleFactor);
-        ctx.beginPath();
-        ctx.moveTo(p0x, p0y);
-        for (let i = 1; i < r.geometry.length; i++) {
-          const [px, py] = worldToScreen(r.geometry[i][0], r.geometry[i][1], gridMeta, transform, w, h);
-          ctx.lineTo(px, py);
-        }
-        ctx.stroke();
-
-        // Impassable hazard dash overlay
-        if (layers.passability && cls === 'IMPASSABLE') {
-          ctx.save();
-          ctx.strokeStyle = '#f43f5e';
-          ctx.lineWidth = Math.max(1.5, baseWidth * scaleFactor);
-          ctx.setLineDash([6, 4]);
-          ctx.beginPath();
-          ctx.moveTo(p0x, p0y);
-          for (let i = 1; i < r.geometry.length; i++) {
-            const [px, py] = worldToScreen(r.geometry[i][0], r.geometry[i][1], gridMeta, transform, w, h);
-            ctx.lineTo(px, py);
-          }
-          ctx.stroke();
-          ctx.restore();
-        }
-      }
-    }
-
-    // 6. Active Evacuation Route
-    if (activeRoute && activeRoute.waypoints && activeRoute.waypoints.length > 1) {
-      ctx.strokeStyle = '#34d399';
-      ctx.lineWidth = 4.0;
-      ctx.beginPath();
-      const [wp0x, wp0y] = worldToScreen(activeRoute.waypoints[0][0], activeRoute.waypoints[0][1], gridMeta, transform, w, h);
-      ctx.moveTo(wp0x, wp0y);
-      for (let i = 1; i < activeRoute.waypoints.length; i++) {
-        const [wpx, wpy] = worldToScreen(activeRoute.waypoints[i][0], activeRoute.waypoints[i][1], gridMeta, transform, w, h);
-        ctx.lineTo(wpx, wpy);
-      }
-      ctx.stroke();
-
-      const [destX, destY] = worldToScreen(
-        activeRoute.waypoints[activeRoute.waypoints.length - 1][0],
-        activeRoute.waypoints[activeRoute.waypoints.length - 1][1],
-        gridMeta, transform, w, h
-      );
       ctx.fillStyle = '#34d399';
-      ctx.beginPath();
-      ctx.arc(destX, destY, 7.0, 0, Math.PI * 2);
-      ctx.fill();
+      ctx.font = 'bold 10px -apple-system, sans-serif';
+      ctx.fillText('Retention Basin (Capacity: 5,000 m³)', rx + 8, ry + 16);
+      ctx.fillText('Dewatering Pump Station (2,000 m³/h)', rx + 8, ry + 30);
+      ctx.restore();
     }
+
+
+    // 9. Spatial Risk Surface (P90 Envelopes)
+    if (layers.risk) {
+      const [rx0, ry0] = worldToScreen(ox + (gw * 0.15) * cs, oy + (gh * 0.85) * cs, gridMeta, transform, w, h);
+      const [rx1, ry1] = worldToScreen(ox + (gw * 0.65) * cs, oy + (gh * 0.35) * cs, gridMeta, transform, w, h);
+      const rw = Math.abs(rx1 - rx0);
+      const rh = Math.abs(ry1 - ry0);
+      const minX = Math.min(rx0, rx1);
+      const minY = Math.min(ry0, ry1);
+
+      ctx.save();
+      ctx.fillStyle = 'rgba(168, 85, 247, 0.22)';
+      ctx.strokeStyle = '#c084fc';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([6, 4]);
+      ctx.fillRect(minX, minY, rw, rh);
+      ctx.strokeRect(minX, minY, rw, rh);
+
+      ctx.fillStyle = '#e879f9';
+      ctx.font = 'bold 10px -apple-system, sans-serif';
+      ctx.fillText('Monte Carlo P90 Extreme Hazard Envelope', minX + 8, minY + 16);
+      ctx.fillText('Exceedance Prob: 90% (Depth > 0.85m)', minX + 8, minY + 30);
+      ctx.restore();
+    }
+
 
     // 7. Critical Civic Assets (Filtered by selected category, distinct badges & glyphs)
     if (layers.assets && filteredAssets.length > 0) {
@@ -943,76 +999,31 @@ export const MapView: React.FC<MapViewProps> = ({
       }
     }
 
-    // 8. Sponge City NbS Mitigation Layer
-    if (layers.sponge) {
-      const [bx0, by0] = worldToScreen(ox + (gw * 0.35) * cs, oy + (gh * 0.35) * cs, gridMeta, transform, w, h);
-      const [bx1, by1] = worldToScreen(ox + (gw * 0.55) * cs, oy + (gh * 0.52) * cs, gridMeta, transform, w, h);
-      const bw = Math.abs(bx1 - bx0);
-      const bh = Math.abs(by1 - by0);
-      const rx = Math.min(bx0, bx1);
-      const ry = Math.min(by0, by1);
 
-      ctx.save();
-      ctx.fillStyle = 'rgba(16, 185, 129, 0.25)';
-      ctx.strokeStyle = '#10b981';
-      ctx.lineWidth = 2;
-      ctx.fillRect(rx, ry, bw, bh);
-      ctx.strokeRect(rx, ry, bw, bh);
-
-      ctx.fillStyle = '#34d399';
-      ctx.font = 'bold 10px -apple-system, sans-serif';
-      ctx.fillText('Retention Basin (Capacity: 5,000 m³)', rx + 8, ry + 16);
-      ctx.fillText('Dewatering Pump Station (2,000 m³/h)', rx + 8, ry + 30);
-      ctx.restore();
-    }
-
-    // 9. Spatial Risk Surface (P90 Envelopes)
-    if (layers.risk) {
-      const [rx0, ry0] = worldToScreen(ox + (gw * 0.15) * cs, oy + (gh * 0.85) * cs, gridMeta, transform, w, h);
-      const [rx1, ry1] = worldToScreen(ox + (gw * 0.65) * cs, oy + (gh * 0.35) * cs, gridMeta, transform, w, h);
-      const rw = Math.abs(rx1 - rx0);
-      const rh = Math.abs(ry1 - ry0);
-      const minX = Math.min(rx0, rx1);
-      const minY = Math.min(ry0, ry1);
-
-      ctx.save();
-      ctx.fillStyle = 'rgba(168, 85, 247, 0.22)';
-      ctx.strokeStyle = '#c084fc';
-      ctx.lineWidth = 2;
-      ctx.setLineDash([6, 4]);
-      ctx.fillRect(minX, minY, rw, rh);
-      ctx.strokeRect(minX, minY, rw, rh);
-
-      ctx.fillStyle = '#e879f9';
-      ctx.font = 'bold 10px -apple-system, sans-serif';
-      ctx.fillText('Monte Carlo P90 Extreme Hazard Envelope', minX + 8, minY + 16);
-      ctx.fillText('Exceedance Prob: 90% (Depth > 0.85m)', minX + 8, minY + 30);
-      ctx.restore();
-    }
-
-    // 10. Topographic DEM Contours (layers.elevation)
-    if (layers.elevation) {
-      ctx.save();
-      ctx.strokeStyle = 'rgba(251, 191, 36, 0.25)';
-      ctx.lineWidth = 1.0;
-      ctx.setLineDash([2, 4]);
-
-      for (let level = 1; level <= 4; level++) {
-        const radX = (gw * cs * 0.45 * level) / 4;
-        const radY = (gh * cs * 0.45 * level) / 4;
-        const [cx, cy] = worldToScreen(ox + (gw * cs) / 2, oy + (gh * cs) / 2, gridMeta, transform, w, h);
-        const [sx, sy] = worldToScreen(ox + (gw * cs) / 2 + radX, oy + (gh * cs) / 2 + radY, gridMeta, transform, w, h);
-
-        ctx.beginPath();
-        ctx.ellipse(cx, cy, Math.abs(sx - cx), Math.abs(sy - cy), 0, 0, Math.PI * 2);
-        ctx.stroke();
-
-        ctx.fillStyle = '#fbbf24';
-        ctx.font = '9px monospace';
-        ctx.fillText(`+${level * 10}m MSL`, cx + Math.abs(sx - cx) - 20, cy);
+    // 6. Active Evacuation Route
+    if (activeRoute && activeRoute.waypoints && activeRoute.waypoints.length > 1) {
+      ctx.strokeStyle = '#34d399';
+      ctx.lineWidth = 4.0;
+      ctx.beginPath();
+      const [wp0x, wp0y] = worldToScreen(activeRoute.waypoints[0][0], activeRoute.waypoints[0][1], gridMeta, transform, w, h);
+      ctx.moveTo(wp0x, wp0y);
+      for (let i = 1; i < activeRoute.waypoints.length; i++) {
+        const [wpx, wpy] = worldToScreen(activeRoute.waypoints[i][0], activeRoute.waypoints[i][1], gridMeta, transform, w, h);
+        ctx.lineTo(wpx, wpy);
       }
-      ctx.restore();
+      ctx.stroke();
+
+      const [destX, destY] = worldToScreen(
+        activeRoute.waypoints[activeRoute.waypoints.length - 1][0],
+        activeRoute.waypoints[activeRoute.waypoints.length - 1][1],
+        gridMeta, transform, w, h
+      );
+      ctx.fillStyle = '#34d399';
+      ctx.beginPath();
+      ctx.arc(destX, destY, 7.0, 0, Math.PI * 2);
+      ctx.fill();
     }
+
 
     ctx.restore();
   }, [transform, layers, basemapStyle, depthGrid, roads, roadImpacts, drainage, filteredAssets, activeRoute, gridMeta, minDepthThreshold, utmZone, radarAngle, currentLead, telemetry, cityMeta, hoveredSurchargeNode, hoveredAsset]);
@@ -1315,51 +1326,31 @@ export const MapView: React.FC<MapViewProps> = ({
               </button>
             </div>
 
-            {/* 13 Clean SVG Layer Toggles */}
+            {/* Clean Layer Toggles - Bottom-to-Top Hierarchy */}
+            <div style={{ fontSize: '9px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.4px', marginBottom: '2px' }}>
+              1. Base Geography &amp; Grid
+            </div>
+
             <label style={{ display: 'flex', alignItems: 'center', gap: '7px', cursor: 'pointer' }}>
               <input
                 type="checkbox"
-                checked={layers.flood_2d}
-                onChange={(e) => onLayersChange({ ...layers, flood_2d: e.target.checked })}
+                checked={layers.tiles}
+                onChange={(e) => onLayersChange({ ...layers, tiles: e.target.checked })}
                 style={{ accentColor: '#38bdf8' }}
               />
-              <Waves size={13} color="#38bdf8" />
-              <span>2D Overland Inundation Depth</span>
+              <Layers size={13} color="#38bdf8" />
+              <span>Base Maps (Vector / Raster)</span>
             </label>
 
             <label style={{ display: 'flex', alignItems: 'center', gap: '7px', cursor: 'pointer' }}>
               <input
                 type="checkbox"
-                checked={layers.flood_1d}
-                onChange={(e) => onLayersChange({ ...layers, flood_1d: e.target.checked })}
-                style={{ accentColor: '#f43f5e' }}
-              />
-              <Droplets size={13} color="#f43f5e" />
-              <span>1D Pipe Surcharge &amp; Manholes</span>
-            </label>
-
-            {/* Separate OG Continuous Rainfall Heatmap Layer */}
-            <label style={{ display: 'flex', alignItems: 'center', gap: '7px', cursor: 'pointer' }}>
-              <input
-                type="checkbox"
-                checked={layers.rainfall}
-                onChange={(e) => onLayersChange({ ...layers, rainfall: e.target.checked })}
+                checked={layers.elevation}
+                onChange={(e) => onLayersChange({ ...layers, elevation: e.target.checked })}
                 style={{ accentColor: '#38bdf8' }}
               />
-              <CloudRain size={13} color="#38bdf8" />
-              <span>Rainfall Intensity Heatmap (mm/h)</span>
-            </label>
-
-            {/* Separate Doppler Radar Layer */}
-            <label style={{ display: 'flex', alignItems: 'center', gap: '7px', cursor: 'pointer' }}>
-              <input
-                type="checkbox"
-                checked={layers.radar}
-                onChange={(e) => onLayersChange({ ...layers, radar: e.target.checked })}
-                style={{ accentColor: '#38bdf8' }}
-              />
-              <Radio size={13} color="#34d399" />
-              <span>Doppler Weather Radar (DWR)</span>
+              <Mountain size={13} color="#fbbf24" />
+              <span>Terrain DEM Elevation (m)</span>
             </label>
 
             <label style={{ display: 'flex', alignItems: 'center', gap: '7px', cursor: 'pointer' }}>
@@ -1406,7 +1397,58 @@ export const MapView: React.FC<MapViewProps> = ({
               <span>Drainage Channels &amp; Outfalls</span>
             </label>
 
-            {/* Critical Civic Assets Layer with Category Selector */}
+            <label style={{ display: 'flex', alignItems: 'center', gap: '7px', cursor: 'pointer' }}>
+              <input
+                type="checkbox"
+                checked={layers.flood_1d}
+                onChange={(e) => onLayersChange({ ...layers, flood_1d: e.target.checked })}
+                style={{ accentColor: '#f43f5e' }}
+              />
+              <Droplets size={13} color="#f43f5e" />
+              <span>1D Pipe Surcharge &amp; Manholes</span>
+            </label>
+
+            <div style={{ fontSize: '9px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.4px', marginTop: '6px', marginBottom: '2px' }}>
+              2. Atmospheric &amp; Hydrodynamics
+            </div>
+
+            <label style={{ display: 'flex', alignItems: 'center', gap: '7px', cursor: 'pointer' }}>
+              <input
+                type="checkbox"
+                checked={layers.rainfall}
+                onChange={(e) => onLayersChange({ ...layers, rainfall: e.target.checked })}
+                style={{ accentColor: '#38bdf8' }}
+              />
+              <CloudRain size={13} color="#38bdf8" />
+              <span>Rainfall Intensity Heatmap (mm/h)</span>
+            </label>
+
+            <label style={{ display: 'flex', alignItems: 'center', gap: '7px', cursor: 'pointer' }}>
+              <input
+                type="checkbox"
+                checked={layers.radar}
+                onChange={(e) => onLayersChange({ ...layers, radar: e.target.checked })}
+                style={{ accentColor: '#38bdf8' }}
+              />
+              <Radio size={13} color="#34d399" />
+              <span>Doppler Weather Radar (DWR)</span>
+            </label>
+
+            <label style={{ display: 'flex', alignItems: 'center', gap: '7px', cursor: 'pointer' }}>
+              <input
+                type="checkbox"
+                checked={layers.flood_2d}
+                onChange={(e) => onLayersChange({ ...layers, flood_2d: e.target.checked })}
+                style={{ accentColor: '#38bdf8' }}
+              />
+              <Waves size={13} color="#38bdf8" />
+              <span>2D Overland Inundation Depth</span>
+            </label>
+
+            <div style={{ fontSize: '9px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.4px', marginTop: '6px', marginBottom: '2px' }}>
+              3. Civic Assets &amp; Mitigation
+            </div>
+
             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', background: '#050505', padding: '6px 8px', borderRadius: '6px', border: '1px solid #171717' }}>
               <label style={{ display: 'flex', alignItems: 'center', gap: '7px', cursor: 'pointer' }}>
                 <input
@@ -1448,28 +1490,6 @@ export const MapView: React.FC<MapViewProps> = ({
                 </div>
               )}
             </div>
-
-            <label style={{ display: 'flex', alignItems: 'center', gap: '7px', cursor: 'pointer' }}>
-              <input
-                type="checkbox"
-                checked={layers.tiles}
-                onChange={(e) => onLayersChange({ ...layers, tiles: e.target.checked })}
-                style={{ accentColor: '#38bdf8' }}
-              />
-              <Layers size={13} color="#38bdf8" />
-              <span>Base Maps (Vector / Raster)</span>
-            </label>
-
-            <label style={{ display: 'flex', alignItems: 'center', gap: '7px', cursor: 'pointer' }}>
-              <input
-                type="checkbox"
-                checked={layers.elevation}
-                onChange={(e) => onLayersChange({ ...layers, elevation: e.target.checked })}
-                style={{ accentColor: '#38bdf8' }}
-              />
-              <Mountain size={13} color="#fbbf24" />
-              <span>Terrain DEM Elevation (m)</span>
-            </label>
 
             <label style={{ display: 'flex', alignItems: 'center', gap: '7px', cursor: 'pointer' }}>
               <input

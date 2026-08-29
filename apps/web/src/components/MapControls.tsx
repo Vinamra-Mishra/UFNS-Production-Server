@@ -229,17 +229,57 @@ export const MapControls: React.FC<MapControlsProps> = ({
             </div>
           </div>
 
-          {/* Layer Toggles */}
+          {/* Layer Toggles - Bottom-to-Top Hierarchy */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '11px', color: 'var(--ink)' }}>
-            <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', padding: '4px 8px', borderRadius: '8px', background: layers.flood_2d ? 'rgba(41, 151, 255, 0.12)' : 'transparent' }}>
+            <div style={{ fontSize: '9px', fontWeight: 700, color: 'var(--body-muted)', textTransform: 'uppercase', letterSpacing: '0.4px', marginTop: '2px' }}>
+              1. Base Geography &amp; Grid
+            </div>
+
+            <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', padding: '4px 8px', borderRadius: '8px', background: layers.elevation ? 'rgba(251, 191, 36, 0.12)' : 'transparent' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <Waves size={13} color="var(--primary-on-dark)" aria-hidden="true" />
-                <span>2D Overland Inundation</span>
+                <Mountain size={13} color="var(--amber)" aria-hidden="true" />
+                <span>DEM Elevation Contours</span>
               </div>
               <input
                 type="checkbox"
-                checked={layers.flood_2d}
-                onChange={(e) => onLayersChange({ ...layers, flood_2d: e.target.checked })}
+                checked={layers.elevation}
+                onChange={(e) => onLayersChange({ ...layers, elevation: e.target.checked })}
+              />
+            </label>
+
+            <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', padding: '4px 8px', borderRadius: '8px', background: layers.roads ? 'rgba(56, 189, 248, 0.12)' : 'transparent' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <Compass size={13} color="var(--primary-on-dark)" aria-hidden="true" />
+                <span>Road Network ({roadsCount} Segments)</span>
+              </div>
+              <input
+                type="checkbox"
+                checked={layers.roads}
+                onChange={(e) => onLayersChange({ ...layers, roads: e.target.checked })}
+              />
+            </label>
+
+            <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', padding: '4px 8px', borderRadius: '8px', background: layers.passability ? 'rgba(255, 214, 10, 0.12)' : 'transparent' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <ShieldAlert size={13} color="var(--amber)" aria-hidden="true" />
+                <span>Passability (D × V Status)</span>
+              </div>
+              <input
+                type="checkbox"
+                checked={layers.passability}
+                onChange={(e) => onLayersChange({ ...layers, passability: e.target.checked })}
+              />
+            </label>
+
+            <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', padding: '4px 8px', borderRadius: '8px', background: layers.drainage ? 'rgba(100, 210, 255, 0.12)' : 'transparent' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <Pipette size={13} color="var(--cyan)" aria-hidden="true" />
+                <span>Drainage Channels &amp; Outfalls</span>
+              </div>
+              <input
+                type="checkbox"
+                checked={layers.drainage}
+                onChange={(e) => onLayersChange({ ...layers, drainage: e.target.checked })}
               />
             </label>
 
@@ -254,6 +294,10 @@ export const MapControls: React.FC<MapControlsProps> = ({
                 onChange={(e) => onLayersChange({ ...layers, flood_1d: e.target.checked })}
               />
             </label>
+
+            <div style={{ fontSize: '9px', fontWeight: 700, color: 'var(--body-muted)', textTransform: 'uppercase', letterSpacing: '0.4px', marginTop: '6px' }}>
+              2. Atmospheric &amp; Hydrodynamics
+            </div>
 
             <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', padding: '4px 8px', borderRadius: '8px', background: layers.rainfall ? 'rgba(41, 151, 255, 0.12)' : 'transparent' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -279,29 +323,21 @@ export const MapControls: React.FC<MapControlsProps> = ({
               />
             </label>
 
-            <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', padding: '4px 8px', borderRadius: '8px', background: layers.passability ? 'rgba(255, 214, 10, 0.12)' : 'transparent' }}>
+            <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', padding: '4px 8px', borderRadius: '8px', background: layers.flood_2d ? 'rgba(41, 151, 255, 0.12)' : 'transparent' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <ShieldAlert size={13} color="var(--amber)" aria-hidden="true" />
-                <span>Road Passability Status ({roadsCount})</span>
+                <Waves size={13} color="var(--primary-on-dark)" aria-hidden="true" />
+                <span>2D Overland Inundation</span>
               </div>
               <input
                 type="checkbox"
-                checked={layers.passability}
-                onChange={(e) => onLayersChange({ ...layers, passability: e.target.checked })}
+                checked={layers.flood_2d}
+                onChange={(e) => onLayersChange({ ...layers, flood_2d: e.target.checked })}
               />
             </label>
 
-            <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', padding: '4px 8px', borderRadius: '8px', background: layers.drainage ? 'rgba(100, 210, 255, 0.12)' : 'transparent' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <Pipette size={13} color="var(--cyan)" aria-hidden="true" />
-                <span>Drainage &amp; Outfalls</span>
-              </div>
-              <input
-                type="checkbox"
-                checked={layers.drainage}
-                onChange={(e) => onLayersChange({ ...layers, drainage: e.target.checked })}
-              />
-            </label>
+            <div style={{ fontSize: '9px', fontWeight: 700, color: 'var(--body-muted)', textTransform: 'uppercase', letterSpacing: '0.4px', marginTop: '6px' }}>
+              3. Civic Assets &amp; Mitigation
+            </div>
 
             {/* Critical Assets Filter */}
             <div style={{ background: 'rgba(30, 30, 32, 0.7)', padding: '6px 8px', borderRadius: '8px', border: '1px solid var(--hairline-soft)' }}>
@@ -345,18 +381,6 @@ export const MapControls: React.FC<MapControlsProps> = ({
                 </select>
               )}
             </div>
-
-            <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', padding: '4px 8px', borderRadius: '8px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <Mountain size={13} color="var(--amber)" aria-hidden="true" />
-                <span>DEM Elevation Contours</span>
-              </div>
-              <input
-                type="checkbox"
-                checked={layers.elevation}
-                onChange={(e) => onLayersChange({ ...layers, elevation: e.target.checked })}
-              />
-            </label>
 
             <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', padding: '4px 8px', borderRadius: '8px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
