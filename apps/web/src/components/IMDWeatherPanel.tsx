@@ -166,25 +166,38 @@ export const IMDWeatherPanel: React.FC<IMDWeatherPanelProps> = ({ activeCity }) 
       </div>
 
       {/* 2. Top-Level Stream Mode Selector: IMD vs ISRO */}
-      <div className="glass-pill" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px', padding: '3px', width: '100%', boxSizing: 'border-box' }}>
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: '1fr 1fr',
+          gap: '4px',
+          padding: '4px',
+          width: '100%',
+          background: 'rgba(28, 28, 30, 0.85)',
+          border: '1px solid var(--hairline-soft)',
+          borderRadius: '8px',
+          boxSizing: 'border-box',
+        }}
+      >
         <button
           type="button"
           onClick={() => setMainMode('imd')}
           aria-pressed={mainMode === 'imd'}
           style={{
-            padding: '7px 4px',
+            padding: '7px 6px',
             fontSize: '11px',
             fontWeight: 700,
-            background: mainMode === 'imd' ? 'var(--primary-focus)' : 'transparent',
-            color: mainMode === 'imd' ? '#ffffff' : 'var(--body-muted)',
-            border: 'none',
+            background: mainMode === 'imd' ? 'var(--primary-focus, #007aff)' : 'transparent',
+            color: mainMode === 'imd' ? '#ffffff' : 'var(--body-muted, #94a3b8)',
+            border: mainMode === 'imd' ? '1px solid rgba(255, 255, 255, 0.2)' : '1px solid transparent',
             borderRadius: '6px',
             cursor: 'pointer',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            gap: '5px',
+            gap: '6px',
             boxSizing: 'border-box',
+            transition: 'all 0.15s ease',
           }}
         >
           <span aria-hidden="true">🏛️</span> IMD Weather (20 APIs)
@@ -197,19 +210,20 @@ export const IMDWeatherPanel: React.FC<IMDWeatherPanelProps> = ({ activeCity }) 
           }}
           aria-pressed={mainMode === 'isro'}
           style={{
-            padding: '7px 4px',
+            padding: '7px 6px',
             fontSize: '11px',
             fontWeight: 700,
-            background: mainMode === 'isro' ? 'var(--purple)' : 'transparent',
-            color: mainMode === 'isro' ? '#ffffff' : 'var(--body-muted)',
-            border: 'none',
+            background: mainMode === 'isro' ? 'var(--purple, #af52de)' : 'transparent',
+            color: mainMode === 'isro' ? '#ffffff' : 'var(--body-muted, #94a3b8)',
+            border: mainMode === 'isro' ? '1px solid rgba(255, 255, 255, 0.2)' : '1px solid transparent',
             borderRadius: '6px',
             cursor: 'pointer',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            gap: '5px',
+            gap: '6px',
             boxSizing: 'border-box',
+            transition: 'all 0.15s ease',
           }}
         >
           <span aria-hidden="true">🛰️</span> ISRO MOSDAC Satellite
