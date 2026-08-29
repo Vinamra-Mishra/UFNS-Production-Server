@@ -5,15 +5,15 @@
   "rewrites": [
     {
       "source": "/api/(.*)",
-      "destination": "https://ufns-demo-v4.onrender.com/api/$1"
+      "destination": "http://paloma.hidencloud.com:24666/api/$1"
     },
     {
       "source": "/health",
-      "destination": "https://ufns-demo-v4.onrender.com/health"
+      "destination": "http://paloma.hidencloud.com:24666/health"
     },
     {
       "source": "/data/(.*)",
-      "destination": "https://ufns-demo-v4.onrender.com/data/$1"
+      "destination": "http://paloma.hidencloud.com:24666/data/$1"
     },
     {
       "source": "/((?!assets/).*)",
