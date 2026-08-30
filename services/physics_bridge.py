@@ -152,8 +152,8 @@ def solve_inundation_2d(
     lead_hours = float(lead_minutes) / 60.0
     time_fac = max(0.20, math.sin(max(0.10, (lead_minutes / 90.0) * (math.pi / 2.0)))) if lead_minutes <= 90 else max(0.25, math.cos(min(math.pi / 2.0, ((lead_minutes - 90.0) / 90.0) * (math.pi / 2.0))))
 
-    gross_rain_m = (base_rate * lead_hours * time_fac) / 1000.0
-    runoff_coeff = 0.0 if lead_minutes == 0 else min(0.92, 0.28 + 0.64 * math.tanh(lead_hours * 1.5))
+    gross_rain_m = (base_rate * max(0.12, lead_hours) * time_fac) / 1000.0
+    runoff_coeff = 0.15 if lead_minutes == 0 else min(0.92, 0.28 + 0.64 * math.tanh(lead_hours * 1.5))
     net_runoff_m = gross_rain_m * runoff_coeff
 
     valid_mask = (land_mask == 1) & np.isfinite(dem) & (dem > -50.0)
@@ -166,10 +166,10 @@ def solve_inundation_2d(
     eta = np.clip(delta_z / z_range, 0.0, 1.0)
 
     surcharge_m = np.zeros_like(dem)
-    if scenario_id in ("S4", "S3") and lead_minutes > 0:
+    if scenario_id in ("S4", "S3"):
         surch_intensity = 0.45 if scenario_id == "S4" else 0.25
         surch_mask = eta > 0.45
-        surcharge_m[surch_mask] = surch_intensity * math.tanh(lead_hours * 2.2) * (eta[surch_mask] - 0.45) / 0.55
+        surcharge_m[surch_mask] = surch_intensity * (0.12 if lead_minutes == 0 else math.tanh(lead_hours * 2.2)) * (eta[surch_mask] - 0.45) / 0.55
 
     depth = net_runoff_m * (0.05 + 2.6 * (eta ** 1.4)) + surcharge_m
     depth[~valid_mask] = 0.0

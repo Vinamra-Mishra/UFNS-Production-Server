@@ -97,7 +97,7 @@ export const App: React.FC = () => {
     assets: true,
     tiles: true,
     elevation: false,
-    rainfall: true, // Enabled by default for vivid precipitation & Doppler backdrop
+    rainfall: false, // Default off per user preference to prioritize flood depth clarity
     radar: true,
     vuln: false,
     sponge: false,
