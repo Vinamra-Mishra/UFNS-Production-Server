@@ -114,19 +114,16 @@ export const TimelineController: React.FC<TimelineControllerProps> = ({
             type="button"
             onClick={() => setIsPlaying(!isPlaying)}
             aria-label={isPlaying ? 'Pause simulation playback' : 'Play simulation timeline'}
-            className="glass-btn"
+            className="glass-circle-btn"
             style={{
               background: isPlaying ? 'linear-gradient(135deg, #3b82f6, #1d4ed8)' : 'rgba(40, 40, 48, 0.85)',
               borderColor: isPlaying ? 'var(--primary-on-dark)' : 'var(--hairline)',
               color: '#ffffff',
-              borderRadius: '9999px',
-              width: '36px',
-              height: '36px',
               boxShadow: isPlaying ? '0 4px 14px rgba(37, 99, 235, 0.45)' : 'none',
             }}
             title={isPlaying ? 'Pause' : 'Play Continuous Hydrodynamic Timeline'}
           >
-            {isPlaying ? <Pause size={14} aria-hidden="true" /> : <Play size={14} style={{ marginLeft: '1px' }} aria-hidden="true" />}
+            {isPlaying ? <Pause size={14} aria-hidden="true" /> : <Play size={14} style={{ marginLeft: '2px' }} aria-hidden="true" />}
           </button>
 
           <button
@@ -136,51 +133,30 @@ export const TimelineController: React.FC<TimelineControllerProps> = ({
               onLeadChange(0);
             }}
             aria-label="Reset timeline to T+0m baseline"
-            className="glass-btn"
-            style={{
-              width: '32px',
-              height: '32px',
-              borderRadius: '9999px',
-              color: 'var(--body-muted)',
-              padding: 0,
-            }}
+            className="glass-circle-btn"
             title="Reset to T+0m"
           >
-            <RotateCcw size={12} aria-hidden="true" />
+            <RotateCcw size={13} aria-hidden="true" />
           </button>
 
           <button
             type="button"
             onClick={() => onLeadChange(Math.max(0, currentLead - currentStep))}
             aria-label={`Step back ${currentStep} minutes`}
-            className="glass-btn"
-            style={{
-              width: '32px',
-              height: '32px',
-              borderRadius: '9999px',
-              color: 'var(--body-muted)',
-              padding: 0,
-            }}
+            className="glass-circle-btn"
             title={`Step Back -${currentStep}m`}
           >
-            <SkipBack size={12} aria-hidden="true" />
+            <SkipBack size={13} aria-hidden="true" />
           </button>
 
           <button
             type="button"
             onClick={() => onLeadChange(Math.min(maxLead, currentLead + currentStep))}
             aria-label={`Step forward ${currentStep} minutes`}
-            className="glass-btn"
-            style={{
-              width: '32px',
-              height: '32px',
-              borderRadius: '9999px',
-              color: 'var(--body-muted)',
-              padding: 0,
-            }}
+            className="glass-circle-btn"
             title={`Step Forward +${currentStep}m`}
           >
-            <SkipForward size={12} aria-hidden="true" />
+            <SkipForward size={13} aria-hidden="true" />
           </button>
         </div>
 

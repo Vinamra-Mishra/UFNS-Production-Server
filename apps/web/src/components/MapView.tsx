@@ -1808,11 +1808,8 @@ export const MapView: React.FC<MapViewProps> = ({
         <button
           type="button"
           onClick={() => setTransform((prev) => ({ ...prev, zoom: Math.min(25.0, prev.zoom * 1.25) }))}
-          className="glass-btn"
+          className="glass-icon-btn"
           style={{
-            width: '32px',
-            height: '32px',
-            borderRadius: '8px',
             color: 'var(--primary-on-dark)',
           }}
           aria-label="Zoom in map viewport"
@@ -1823,11 +1820,8 @@ export const MapView: React.FC<MapViewProps> = ({
         <button
           type="button"
           onClick={() => setTransform((prev) => ({ ...prev, zoom: Math.max(0.1, prev.zoom * 0.8) }))}
-          className="glass-btn"
+          className="glass-icon-btn"
           style={{
-            width: '32px',
-            height: '32px',
-            borderRadius: '8px',
             color: 'var(--primary-on-dark)',
           }}
           aria-label="Zoom out map viewport"
@@ -1838,11 +1832,8 @@ export const MapView: React.FC<MapViewProps> = ({
         <button
           type="button"
           onClick={resetView}
-          className="glass-btn"
+          className="glass-icon-btn"
           style={{
-            width: '32px',
-            height: '32px',
-            borderRadius: '8px',
             color: 'var(--green)',
           }}
           aria-label="Recenter viewport on active catchment domain"

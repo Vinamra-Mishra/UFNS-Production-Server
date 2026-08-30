@@ -140,7 +140,7 @@ export const MapControls: React.FC<MapControlsProps> = ({
           type="button"
           onClick={onResetView}
           aria-label="Reset map bearing and align to true north"
-          className="glass-btn"
+          className="glass-icon-btn"
           style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'transparent', border: 'none' }}
           title="Align North"
         >
@@ -154,7 +154,7 @@ export const MapControls: React.FC<MapControlsProps> = ({
           type="button"
           onClick={onZoomIn}
           aria-label="Zoom in map view"
-          className="glass-btn"
+          className="glass-icon-btn"
           style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'transparent', border: 'none' }}
           title="Zoom In"
         >
@@ -165,7 +165,7 @@ export const MapControls: React.FC<MapControlsProps> = ({
           type="button"
           onClick={onZoomOut}
           aria-label="Zoom out map view"
-          className="glass-btn"
+          className="glass-icon-btn"
           style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'transparent', border: 'none' }}
           title="Zoom Out"
         >

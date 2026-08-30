@@ -482,7 +482,7 @@ export const App: React.FC = () => {
 
       // Initial Frame (t=0)
       try {
-        const frameRes = await fetch(`/api/v1/scenarios/${activeScenarioId}/frame?lead=0`);
+        const frameRes = await fetch(apiUrl(`/api/v1/scenarios/${activeScenarioId}/frame?lead=0`));
         if (frameRes.ok) {
           const fData = await frameRes.json();
           const parsed = parseFramePayload(fData, activeScenarioId, 0);
