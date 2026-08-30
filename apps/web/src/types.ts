@@ -1,4 +1,5 @@
 export type CityId = 'MUMBAI' | 'VIJAYAWADA' | 'DEMO';
+export type RoadTier = 'none' | 'critical' | 'main' | 'all';
 
 export interface CityMetadata {
   city_id: string;
@@ -100,6 +101,19 @@ export interface MetricsSummary {
   dataset_source: string;
 }
 
+export interface RouteTier {
+  tier_id: 'safest' | 'caution' | 'hazardous';
+  label: string;
+  color: string;
+  waypoints: [number, number][];
+  total_distance_m: number;
+  estimated_travel_time_min: number;
+  max_encountered_depth_m: number;
+  max_flood_depth_m?: number;
+  safety_status: 'SAFE' | 'CAUTION' | 'HAZARDOUS';
+  is_passable: boolean;
+}
+
 export interface RouteResponse {
   route_found: boolean;
   status?: string;
@@ -113,6 +127,12 @@ export interface RouteResponse {
   flood_aware?: { distance_m: number; travel_time_min: number; max_depth_m: number };
   difference?: { additional_distance_m: number; additional_travel_time_min: number };
   waypoints: [number, number][];
+  baseline_waypoints?: [number, number][];
+  flood_aware_waypoints?: [number, number][];
+  safest?: RouteTier;
+  caution?: RouteTier;
+  hazardous?: RouteTier;
+  selected_tier?: 'safest' | 'caution' | 'hazardous';
   segments: {
     road_id: string;
     name?: string;

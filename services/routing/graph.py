@@ -138,6 +138,27 @@ def baseline_edge_cost(graph: RoadGraph) -> Callable[[str], Optional[float]]:
     return cost
 
 
+def safest_edge_cost(
+    graph: RoadGraph,
+    impacts: dict[str, object],
+    policy: PassabilityPolicy = POLICY,
+) -> Callable[[str], Optional[float]]:
+    """Tier 1 Safest: Strictly prioritizes zero/lowest flood depth across dry perimeter."""
+
+    def cost(road_id: str) -> Optional[float]:
+        seg = graph.segment(road_id)
+        imp = impacts.get(road_id)
+        cls = imp.classification if imp is not None else "DRY"
+        if cls == "IMPASSABLE":
+            return None
+        base = seg.length_m / (seg.baseline_speed_kmh / 3.6)
+        depth = getattr(imp, "max_depth_m", 0.0) if imp is not None else 0.0
+        # Strict exponential depth penalty for Tier 1
+        return base + ((max(0.0, depth) / 0.05) ** 4) * 500.0
+
+    return cost
+
+
 def flood_aware_edge_cost(
     graph: RoadGraph,
     impacts: dict[str, object],
@@ -146,21 +167,20 @@ def flood_aware_edge_cost(
 ) -> Callable[[str], Optional[float]]:
     """Edge cost that consumes actual road-impact information.
 
-    mode == "avoid_impassable": impassable roads excluded; others at baseline
-        speed (no penalty).
-    mode == "flood_aware": impassable roads excluded; impacted roads penalised
-        by the policy speed factor (configurable, documented).
-
-    Unknown roads (no impact record) are treated as DRY at baseline speed so a
-    missing impact record cannot silently block a route; a genuinely impassable
-    road always has an impact record with classification IMPASSABLE.
+    mode == "avoid_impassable": impassable roads excluded; others at baseline speed.
+    mode == "flood_aware": impassable roads excluded; impacted roads penalised by speed factor.
+    mode == "safest": strict exponential depth penalty for lowest possible inundation risk.
     """
-    if mode not in ("avoid_impassable", "flood_aware"):
+    if mode == "safest":
+        return safest_edge_cost(graph, impacts, policy)
+
+    if mode not in ("avoid_impassable", "flood_aware", "baseline"):
         raise ValueError(f"unknown routing mode: {mode!r}")
 
     def cost(road_id: str) -> Optional[float]:
-        """Execute Cost operation and return result."""
         seg = graph.segment(road_id)
+        if mode == "baseline":
+            return seg.length_m / (seg.baseline_speed_kmh / 3.6)
         imp = impacts.get(road_id)
         cls = imp.classification if imp is not None else "DRY"
         if cls == "IMPASSABLE":

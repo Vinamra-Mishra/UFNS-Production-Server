@@ -52,6 +52,7 @@ class TestDispatchRequest(BaseModel):
     )
 
 
+@router.post("/generate")
 @router.post("/evaluate")
 def evaluate_alerts(req: EvaluateAlertRequest) -> dict[str, Any]:
     """Evaluate flood depths and road impacts to generate a standardized CAP v1.2 alert."""
@@ -66,16 +67,13 @@ def evaluate_alerts(req: EvaluateAlertRequest) -> dict[str, Any]:
             },
         )
 
-    if req.scenario_id not in store.VALID_SCENARIO_IDS:
-        raise HTTPException(
-            status_code=404,
-            detail={"error": {"code": "SCENARIO_NOT_FOUND", "message": f"Scenario {req.scenario_id} not found"}},
-        )
+    clean_sid = req.scenario_id.upper()
+    effective_sid = "S4" if clean_sid == "REALTIME" or clean_sid not in store.VALID_SCENARIO_IDS else req.scenario_id
 
     # 1. Load depth grid and road impacts from impacts module
     try:
-        depth_grid = impacts.depth_grid(req.scenario_id, req.lead_minutes)
-        raw_impacts = impacts.impacts_at(req.scenario_id, req.lead_minutes)
+        depth_grid = impacts.depth_grid(effective_sid, req.lead_minutes)
+        raw_impacts = impacts.impacts_at(effective_sid, req.lead_minutes)
         road_impacts = [imp.to_dict() if hasattr(imp, "to_dict") else imp for imp in raw_impacts.values()]
     except Exception as exc:
         raise HTTPException(
@@ -89,7 +87,7 @@ def evaluate_alerts(req: EvaluateAlertRequest) -> dict[str, Any]:
         depth_grid=depth_grid,
         road_impacts=road_impacts,
         lead_minutes=req.lead_minutes,
-        scenario_id=req.scenario_id,
+        scenario_id=effective_sid,
         status=req.status,
     )
 
@@ -111,14 +109,25 @@ def evaluate_alerts(req: EvaluateAlertRequest) -> dict[str, Any]:
     rec = GLOBAL_ALERT_LEDGER.record_alert(
         alert=alert,
         receipts=receipts,
-        scenario_id=req.scenario_id,
+        scenario_id=effective_sid,
         lead_minutes=req.lead_minutes,
     )
+
+    alert_dict = alert.to_dict()
+    info_0 = alert_dict.get("info", [{}])[0] if alert_dict.get("info") else {}
 
     return {
         "alert_generated": True,
         "record_id": rec.record_id,
-        "alert": alert.to_dict(),
+        "alert_id": alert.identifier,
+        "event": info_0.get("event", "Urban Flood Warning"),
+        "headline": info_0.get("headline", "Urban Flood Advisory"),
+        "severity": info_0.get("severity", "Severe"),
+        "urgency": info_0.get("urgency", "Immediate"),
+        "certainty": info_0.get("certainty", "Observed"),
+        "description": info_0.get("description", ""),
+        "instruction": info_0.get("instruction", ""),
+        "alert": alert_dict,
         "xml_url": f"/api/v1/alerts/{alert.identifier}.xml",
         "receipts": [r.to_dict() for r in receipts],
     }

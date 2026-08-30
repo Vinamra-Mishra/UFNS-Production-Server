@@ -15,6 +15,8 @@ import {
   CriticalAssetItem,
   LayerState,
   MetricsSummary,
+  RoadTier,
+  RouteTier,
 } from './types';
 import { GridMeta } from './gl/coords';
 
@@ -53,11 +55,30 @@ export const App: React.FC = () => {
   const [depthGrid, setDepthGrid] = useState<Float32Array | null>(null);
   const [rainfallGrid, setRainfallGrid] = useState<Float32Array | null>(null);
   const [roads, setRoads] = useState<RoadSegment[]>([]);
+  const [roadTier, setRoadTier] = useState<RoadTier>('main');
   const [roadImpacts, setRoadImpacts] = useState<Record<string, RoadImpact>>({});
   const [drainage, setDrainage] = useState<any>(null);
   const [criticalAssets, setCriticalAssets] = useState<CriticalAssetItem[]>([]);
   const [activeRoute, setActiveRoute] = useState<RouteResponse | null>(null);
   const [telemetry, setTelemetry] = useState<LiveTelemetry | null>(null);
+
+  // Dynamic Map Waypoint Selection State
+  const [routingOrigin, setRoutingOrigin] = useState<[number, number] | null>([300615.0, 2503405.0]);
+  const [routingDestination, setRoutingDestination] = useState<[number, number] | null>([303405.0, 2500615.0]);
+  const [pickingWaypointMode, setPickingWaypointMode] = useState<'origin' | 'destination' | null>(null);
+
+  const handlePickWaypoint = useCallback((coords: [number, number]) => {
+    if (pickingWaypointMode === 'origin') {
+      setRoutingOrigin(coords);
+    } else if (pickingWaypointMode === 'destination') {
+      setRoutingDestination(coords);
+    }
+    setPickingWaypointMode(null);
+  }, [pickingWaypointMode]);
+
+  const handleCancelPickingWaypoint = useCallback(() => {
+    setPickingWaypointMode(null);
+  }, []);
 
   // In-Memory Fast Frame Cache & Pre-Buffering State
   const frameCacheRef = useRef<Map<string, CachedFrame>>(new Map());
@@ -408,7 +429,7 @@ export const App: React.FC = () => {
       const [metaRes, scenRes, roadsRes, drainRes, assetsRes, telemRes] = await Promise.allSettled([
         fetch('/api/v1/city/active').then((r) => (r.ok ? r.json() : null)),
         fetch('/api/v1/scenarios').then((r) => (r.ok ? r.json() : null)),
-        fetch('/api/v1/roads').then((r) => (r.ok ? r.json() : null)),
+        fetch(`/api/v1/roads?tier=${roadTier === 'none' ? 'main' : roadTier}`).then((r) => (r.ok ? r.json() : null)),
         fetch('/api/v1/drainage/points').then((r) => (r.ok ? r.json() : null)),
         fetch(`/api/v1/vulnerability/assets?city=${city}`).then((r) => (r.ok ? r.json() : null)),
         fetch('/api/v1/telemetry/live').then((r) => (r.ok ? r.json() : null)),
@@ -420,14 +441,20 @@ export const App: React.FC = () => {
         setCityMeta(m);
         const gs = data.grid_spec;
         if (gs && gs.bounds) {
+          const ox = gs.bounds[0];
+          const oy = gs.bounds[1];
+          const w_m = gs.width * gs.cell_size_m;
+          const h_m = gs.height * gs.cell_size_m;
           setGridMeta({
-            origin_x: gs.bounds[0],
-            origin_y: gs.bounds[1],
+            origin_x: ox,
+            origin_y: oy,
             width: gs.width,
             height: gs.height,
             cell_size_m: gs.cell_size_m,
             crs: gs.crs_wkt_or_epsg,
           });
+          setRoutingOrigin([Math.round(ox + w_m * 0.35), Math.round(oy + h_m * 0.65)]);
+          setRoutingDestination([Math.round(ox + w_m * 0.65), Math.round(oy + h_m * 0.35)]);
         }
       }
 
@@ -452,7 +479,7 @@ export const App: React.FC = () => {
         setTelemetry(telemRes.value);
       }
 
-      // Fetch initial lead 0 nowcast frame
+      // Initial Frame (t=0)
       try {
         const frameRes = await fetch(`/api/v1/scenarios/${activeScenarioId}/frame?lead=0`);
         if (frameRes.ok) {
@@ -478,29 +505,124 @@ export const App: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [activeScenarioId, parseFramePayload, preloadHorizon]);
+  }, [activeScenarioId, parseFramePayload, preloadHorizon, roadTier]);
+
+  // Handle dynamic road tier partition switching
+  const handleRoadTierChange = useCallback(async (tier: RoadTier) => {
+    setRoadTier(tier);
+    if (tier === 'none') {
+      setRoads([]);
+      setLayers((prev) => ({ ...prev, roads: false }));
+      return;
+    }
+    setLayers((prev) => ({ ...prev, roads: true }));
+    try {
+      const res = await fetch(`/api/v1/roads?tier=${tier}`);
+      if (res.ok) {
+        const data = await res.json();
+        const segs: RoadSegment[] = data.roads || data.segments || [];
+        setRoads(segs);
+      }
+    } catch (e) {
+      console.error('Error fetching road tier:', e);
+    }
+  }, []);
 
   // Handle Route Calculation
   const handleCalculateRoute = async (origin: [number, number], destination: [number, number], mode: string) => {
     try {
-      const res = await fetch('/api/v1/routes/evaluate', {
+      const res = await fetch('/api/v1/routes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           scenario_id: activeScenarioId,
-          lead_minutes: currentLead,
+          lead: currentLead,
           origin,
           destination,
-          mode,
+          mode: mode || 'safest',
         }),
       });
       if (res.ok) {
         const routeData = await res.json();
-        setActiveRoute(routeData);
+
+        const parseTier = (t: any, defaultId: 'safest' | 'caution' | 'hazardous', defaultLabel: string, defaultColor: string): RouteTier | undefined => {
+          if (!t) return undefined;
+          const wps = t.waypoints || t.coordinates || t.geometry || [];
+          if (!wps || wps.length === 0) return undefined;
+          const d_m = t.total_distance_m ?? t.length_m ?? t.distance_m ?? 0;
+          const t_min = t.estimated_travel_time_min ?? (t.travel_time_s ? t.travel_time_s / 60 : (t.estimated_time_s ? t.estimated_time_s / 60 : 0));
+          const depth = t.max_encountered_depth_m ?? t.max_flood_depth_m ?? 0;
+          return {
+            tier_id: defaultId,
+            label: t.label || defaultLabel,
+            color: t.color || defaultColor,
+            waypoints: wps,
+            total_distance_m: Math.round(d_m),
+            estimated_travel_time_min: Math.round(t_min * 10) / 10,
+            max_encountered_depth_m: Math.round(depth * 1000) / 1000,
+            safety_status: t.safety_status || (depth < 0.15 ? 'SAFE' : (depth < 0.28 ? 'CAUTION' : 'HAZARDOUS')),
+            is_passable: t.is_passable ?? (depth <= 0.25),
+          };
+        };
+
+        const safestTier = parseTier(routeData.safest || routeData.flood_aware, 'safest', 'Safest Route (Recommended)', '#10b981');
+        const cautionTier = parseTier(routeData.caution, 'caution', 'Moderate / Not Suggested', '#f59e0b');
+        const hazardousTier = parseTier(routeData.hazardous || routeData.baseline, 'hazardous', 'Hazardous / Flooded Shortcut', '#ef4444');
+
+        const initialSelectedTier: 'safest' | 'caution' | 'hazardous' = (mode === 'baseline' || mode === 'hazardous') ? 'hazardous' : (mode === 'caution' ? 'caution' : 'safest');
+        const activeTier = (initialSelectedTier === 'hazardous' ? hazardousTier : (initialSelectedTier === 'caution' ? cautionTier : safestTier)) || safestTier || cautionTier || hazardousTier;
+
+        const totalDist = activeTier?.total_distance_m ?? 0;
+        const travelTimeMin = activeTier?.estimated_travel_time_min ?? 0;
+        const maxDepth = activeTier?.max_encountered_depth_m ?? 0;
+        const waypoints = activeTier?.waypoints || [origin, destination];
+
+        const formattedRoute: RouteResponse = {
+          route_found: true,
+          status: activeTier?.safety_status || 'PASSABLE',
+          mode: mode || 'safest',
+          total_distance_m: totalDist,
+          estimated_travel_time_min: travelTimeMin,
+          max_encountered_depth_m: maxDepth,
+          safety_status: activeTier?.safety_status || 'SAFE',
+          waypoints: waypoints,
+          baseline_waypoints: hazardousTier?.waypoints || [],
+          flood_aware_waypoints: safestTier?.waypoints || [],
+          safest: safestTier,
+          caution: cautionTier,
+          hazardous: hazardousTier,
+          selected_tier: initialSelectedTier,
+          segments: [],
+          itinerary: [],
+          provenance_label: 'Coupled Flood-Aware Dynamic Dijkstra',
+        };
+        setActiveRoute(formattedRoute);
+        setRoutingOrigin(origin);
+        setRoutingDestination(destination);
+      } else {
+        const err = await res.json().catch(() => ({}));
+        console.warn('Route calculation warning response:', err);
       }
     } catch (e) {
       console.error('Route calculation error:', e);
     }
+  };
+
+  const handleSelectRouteTier = (tierId: 'safest' | 'caution' | 'hazardous') => {
+    setActiveRoute((prev) => {
+      if (!prev) return null;
+      const target = tierId === 'safest' ? prev.safest : (tierId === 'caution' ? prev.caution : prev.hazardous);
+      if (!target) return prev;
+      return {
+        ...prev,
+        selected_tier: tierId,
+        waypoints: target.waypoints,
+        total_distance_m: target.total_distance_m,
+        estimated_travel_time_min: target.estimated_travel_time_min,
+        max_encountered_depth_m: target.max_encountered_depth_m,
+        safety_status: target.safety_status,
+      };
+    });
   };
 
   // When activeCity changes (initial load or city switch)
@@ -550,8 +672,15 @@ export const App: React.FC = () => {
           telemetry={telemetry}
           activeRoute={activeRoute}
           onCalculateRoute={handleCalculateRoute}
+          onSelectRouteTier={handleSelectRouteTier}
           criticalAssets={criticalAssets}
           activeCity={activeCity}
+          routingOrigin={routingOrigin}
+          routingDestination={routingDestination}
+          pickingWaypointMode={pickingWaypointMode}
+          onStartPickingWaypoint={setPickingWaypointMode}
+          onOriginChange={setRoutingOrigin}
+          onDestinationChange={setRoutingDestination}
         />
 
         {/* Center / Right Dynamic Canvas Map View */}
@@ -576,6 +705,13 @@ export const App: React.FC = () => {
             basemapStyle={basemapStyle}
             onBasemapChange={setBasemapStyle}
             selectedAssetCategory={selectedAssetCategory}
+            roadTier={roadTier}
+            onRoadTierChange={handleRoadTierChange}
+            routingOrigin={routingOrigin}
+            routingDestination={routingDestination}
+            pickingWaypointMode={pickingWaypointMode}
+            onPickWaypoint={handlePickWaypoint}
+            onCancelPickingWaypoint={handleCancelPickingWaypoint}
           />
         </div>
       </div>

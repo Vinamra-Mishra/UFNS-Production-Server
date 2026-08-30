@@ -88,6 +88,8 @@ def _error(status_code: int, code: str, message: str, **details: Any) -> HTTPExc
 
 def _require_scenario(scenario_id: str) -> None:
     """Execute Require Scenario operation and return result."""
+    if scenario_id.upper() == "REALTIME":
+        return
     valid = list(store.VALID_SCENARIO_IDS)
     if scenario_id not in valid:
         raise _error(
@@ -156,8 +158,8 @@ def _validate_xy(name: str, xy: list[float]) -> tuple[float, float]:
     x, y = float(xy[0]), float(xy[1])
     gm = impacts.grid_metadata()
     b = gm.get("bounds", [_DOMAIN_XMIN, _DOMAIN_YMIN, _DOMAIN_XMAX, _DOMAIN_YMAX])
-    pad_x = max(1000.0, (b[2] - b[0]) * 0.15)
-    pad_y = max(1000.0, (b[3] - b[1]) * 0.15)
+    pad_x = max(15000.0, (b[2] - b[0]) * 0.75)
+    pad_y = max(15000.0, (b[3] - b[1]) * 0.75)
     if not (b[0] - pad_x <= x <= b[2] + pad_x and b[1] - pad_y <= y <= b[3] + pad_y):
         raise _error(
             400, "COORDINATES_OUT_OF_RANGE",
@@ -169,18 +171,20 @@ def _validate_xy(name: str, xy: list[float]) -> tuple[float, float]:
 
 class RouteRequest(BaseModel):
     """Routerequest schema and data model representation."""
-    scenario_id: str
-    lead: int = Field(ge=0, le=180)
+    scenario_id: str = "S4"
+    lead: int = Field(default=0, ge=0, le=180)
+    lead_minutes: Optional[int] = None
     origin: list[float] = Field(min_length=2, max_length=2)
     destination: list[float] = Field(min_length=2, max_length=2)
-    mode: Literal["flood_aware", "avoid_impassable", "baseline"] = "flood_aware"
+    mode: Literal["flood_aware", "avoid_impassable", "baseline", "safest", "caution", "hazardous"] = "safest"
     vehicle_profile: Optional[str] = "LIGHT_VEHICLE"
     max_wading_depth_m: Optional[float] = None
 
 
 class ProjectionRouteRequest(BaseModel):
     """Projectionrouterequest schema and data model representation."""
-    lead: int = Field(ge=0, le=180)
+    lead: int = Field(default=0, ge=0, le=180)
+    lead_minutes: Optional[int] = None
     origin: list[float] = Field(min_length=2, max_length=2)
     destination: list[float] = Field(min_length=2, max_length=2)
     mode: Literal["flood_aware", "avoid_impassable", "baseline"] = "flood_aware"
@@ -442,9 +446,9 @@ def comparison_s3s4() -> dict[str, Any]:
 # ---------------------------------------------------------------------------
 
 @app.get("/api/v1/roads")
-def roads() -> dict[str, Any]:
-    """Synthetic road network (SYNTHETIC / DEMO DATA / NOT REAL ROAD GEOMETRY)."""
-    return impacts.road_network()
+def roads(tier: str = Query("main", pattern="^(none|critical|main|all)$", description="Road density tier: none | critical | main | all")) -> dict[str, Any]:
+    """Road network partitioned by operational density tier."""
+    return impacts.road_network(tier=tier)
 
 
 @app.get("/api/v1/policies")
@@ -557,22 +561,93 @@ def scenario_road_metrics(scenario_id: str, lead: int = Query(..., ge=0, le=180)
 
 
 @app.post("/api/v1/routes")
+@app.post("/api/v1/routes/evaluate")
 def routes(req: RouteRequest) -> dict[str, Any]:
     """Compute baseline + flood-aware routes (and their comparison)."""
+    effective_lead = req.lead_minutes if req.lead_minutes is not None else req.lead
+    effective_lead = int(round(effective_lead / 5.0) * 5)
+    effective_lead = max(0, min(180, effective_lead))
+
     _require_scenario(req.scenario_id)
-    _require_lead(req.lead)
+    _require_lead(effective_lead)
     origin = _validate_xy("origin", req.origin)
     destination = _validate_xy("destination", req.destination)
     try:
-        return impacts.compute_route_request(
+        res = impacts.compute_route_request(
             req.scenario_id,
-            req.lead,
+            effective_lead,
             list(origin),
             list(destination),
             req.mode,
             getattr(req, "vehicle_profile", "LIGHT_VEHICLE"),
             getattr(req, "max_wading_depth_m", None),
         )
+        raw_impacts = impacts.impacts_at(req.scenario_id, effective_lead) if req.scenario_id.upper() != "REALTIME" else {}
+
+        def format_tier(t_dict: dict, label: str, tier_id: str, default_color: str) -> dict:
+            if not t_dict:
+                return {}
+            c = t_dict.get("coordinates") or t_dict.get("geometry") or [list(origin), list(destination)]
+            l_m = t_dict.get("total_distance_m") or t_dict.get("length_m") or t_dict.get("distance_m", 0.0)
+            t_s = t_dict.get("travel_time_s") or t_dict.get("estimated_time_s", 0.0)
+            m_d = t_dict.get("max_flood_depth_m")
+            if m_d is None:
+                road_ids = t_dict.get("road_ids", [])
+                m_d = 0.0
+                for rid in road_ids:
+                    imp = raw_impacts.get(rid)
+                    if imp is not None:
+                        d_val = getattr(imp, "max_depth_m", None) or (imp.get("max_depth_m") if isinstance(imp, dict) else 0.0)
+                        if d_val is not None and d_val > m_d:
+                            m_d = d_val
+            m_d = float(m_d or 0.0)
+
+            p_bool = t_dict.get("is_passable", True) if "is_passable" in t_dict else (m_d <= 0.25)
+            s_stat = "SAFE" if (p_bool and m_d < 0.15) else ("CAUTION" if (p_bool and m_d < 0.28) else "HAZARDOUS")
+
+            return {
+                "tier_id": tier_id,
+                "label": label,
+                "color": default_color,
+                "waypoints": c,
+                "total_distance_m": round(float(l_m), 1),
+                "estimated_travel_time_min": round(float(t_s) / 60.0, 2),
+                "max_encountered_depth_m": round(float(m_d), 3),
+                "safety_status": s_stat,
+                "is_passable": p_bool,
+            }
+
+        safest_obj = format_tier(res.get("safest") or res.get("flood_aware", {}), "Safest Route (Recommended)", "safest", "#10b981")
+        caution_obj = format_tier(res.get("caution") or res.get("flood_aware", {}), "Moderate / Not Suggested", "caution", "#f59e0b")
+        hazardous_obj = format_tier(res.get("hazardous") or res.get("baseline", {}), "Hazardous / Flooded Shortcut", "hazardous", "#ef4444")
+
+        # Select primary route based on requested mode
+        if req.mode == "baseline":
+            primary = hazardous_obj
+        elif req.mode == "safest":
+            primary = safest_obj
+        else:
+            primary = safest_obj if safest_obj.get("waypoints") else caution_obj
+
+        res["route_found"] = True
+        res["status"] = primary.get("safety_status", "PASSABLE")
+        res["total_distance_m"] = primary.get("total_distance_m", 0.0)
+        res["estimated_travel_time_min"] = primary.get("estimated_travel_time_min", 0.0)
+        res["max_encountered_depth_m"] = primary.get("max_encountered_depth_m", 0.0)
+        res["safety_status"] = primary.get("safety_status", "SAFE")
+        res["waypoints"] = primary.get("waypoints", [list(origin), list(destination)])
+        res["baseline_waypoints"] = hazardous_obj.get("waypoints", [])
+        res["flood_aware_waypoints"] = safest_obj.get("waypoints", [])
+        res["safest"] = safest_obj
+        res["caution"] = caution_obj
+        res["hazardous"] = hazardous_obj
+        res["routes"] = {
+            "safest": safest_obj,
+            "caution": caution_obj,
+            "hazardous": hazardous_obj,
+        }
+        res["provenance_label"] = "Coupled Flood-Aware Dynamic Dijkstra"
+        return res
     except store.StoreError as exc:
         raise _store_not_ready() from exc
 

@@ -8,6 +8,7 @@ import {
   CriticalAssetItem,
   LayerState,
   LiveTelemetry,
+  RoadTier,
 } from '../types';
 import {
   worldToScreen,
@@ -61,6 +62,13 @@ interface MapViewProps {
   basemapStyle?: 'vector' | 'dark' | 'voyager' | 'satellite' | 'cad';
   onBasemapChange?: (style: 'vector' | 'dark' | 'voyager' | 'satellite' | 'cad') => void;
   selectedAssetCategory?: string;
+  roadTier?: RoadTier;
+  onRoadTierChange?: (tier: RoadTier) => void;
+  routingOrigin?: [number, number] | null;
+  routingDestination?: [number, number] | null;
+  pickingWaypointMode?: 'origin' | 'destination' | null;
+  onPickWaypoint?: (coords: [number, number]) => void;
+  onCancelPickingWaypoint?: () => void;
 }
 
 const IMPACT_COLORS: Record<string, string> = {
@@ -93,6 +101,13 @@ export const MapView: React.FC<MapViewProps> = ({
   basemapStyle: basemapStyleProp,
   onBasemapChange,
   selectedAssetCategory: selectedAssetCategoryProp,
+  roadTier = 'main',
+  onRoadTierChange,
+  routingOrigin,
+  routingDestination,
+  pickingWaypointMode,
+  onPickWaypoint,
+  onCancelPickingWaypoint,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const tileCacheRef = useRef<Map<string, HTMLImageElement>>(new Map());
@@ -998,33 +1013,150 @@ export const MapView: React.FC<MapViewProps> = ({
     }
 
 
-    // 6. Active Evacuation Route
-    if (activeRoute && activeRoute.waypoints && activeRoute.waypoints.length > 1) {
-      ctx.strokeStyle = '#34d399';
-      ctx.lineWidth = 4.0;
-      ctx.beginPath();
-      const [wp0x, wp0y] = worldToScreen(activeRoute.waypoints[0][0], activeRoute.waypoints[0][1], gridMeta, transform, w, h);
-      ctx.moveTo(wp0x, wp0y);
-      for (let i = 1; i < activeRoute.waypoints.length; i++) {
-        const [wpx, wpy] = worldToScreen(activeRoute.waypoints[i][0], activeRoute.waypoints[i][1], gridMeta, transform, w, h);
-        ctx.lineTo(wpx, wpy);
+    // 6. 3-Tier Multi-Route Rendering (Safest Green, Caution Yellow, Hazardous Red)
+    if (activeRoute) {
+      const selectedTier = activeRoute.selected_tier || 'safest';
+
+      const drawPolyline = (
+        wps: [number, number][],
+        strokeColor: string,
+        lineWidth: number,
+        dash: number[] = [],
+        hasCasing = false
+      ) => {
+        if (!wps || wps.length < 2) return;
+        const [wp0x, wp0y] = worldToScreen(wps[0][0], wps[0][1], gridMeta, transform, w, h);
+
+        if (hasCasing) {
+          ctx.save();
+          ctx.strokeStyle = 'rgba(0, 0, 0, 0.95)';
+          ctx.lineWidth = lineWidth + 3.5;
+          ctx.lineCap = 'round';
+          ctx.lineJoin = 'round';
+          ctx.beginPath();
+          ctx.moveTo(wp0x, wp0y);
+          for (let i = 1; i < wps.length; i++) {
+            const [wpx, wpy] = worldToScreen(wps[i][0], wps[i][1], gridMeta, transform, w, h);
+            ctx.lineTo(wpx, wpy);
+          }
+          ctx.stroke();
+          ctx.restore();
+        }
+
+        ctx.save();
+        ctx.strokeStyle = strokeColor;
+        ctx.lineWidth = lineWidth;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        if (dash.length > 0) ctx.setLineDash(dash);
+        ctx.beginPath();
+        ctx.moveTo(wp0x, wp0y);
+        for (let i = 1; i < wps.length; i++) {
+          const [wpx, wpy] = worldToScreen(wps[i][0], wps[i][1], gridMeta, transform, w, h);
+          ctx.lineTo(wpx, wpy);
+        }
+        ctx.stroke();
+        ctx.restore();
+      };
+
+      // 6a. Tier 3: Hazardous (Red) — Always visible underneath as the flooded baseline reference
+      const hazWps = activeRoute.hazardous?.waypoints || activeRoute.baseline_waypoints;
+      if (hazWps && hazWps.length > 1) {
+        const isSelected = selectedTier === 'hazardous';
+        drawPolyline(hazWps, isSelected ? '#ef4444' : 'rgba(239, 68, 68, 0.75)', isSelected ? 4.5 : 2.5, [6, 6], isSelected);
       }
+
+      // 6b. Tier 2: Caution (Yellow) — Intermediate compromise route
+      const cautWps = activeRoute.caution?.waypoints;
+      if (cautWps && cautWps.length > 1 && JSON.stringify(cautWps) !== JSON.stringify(hazWps)) {
+        const isSelected = selectedTier === 'caution';
+        drawPolyline(cautWps, isSelected ? '#f59e0b' : 'rgba(245, 158, 11, 0.85)', isSelected ? 5.0 : 3.5, [10, 6], isSelected);
+      }
+
+      // 6c. Tier 1: Safest (Green) — Elevated dry evacuation route
+      const safeWps = activeRoute.safest?.waypoints || activeRoute.waypoints;
+      if (safeWps && safeWps.length > 1) {
+        const isSelected = selectedTier === 'safest';
+        drawPolyline(safeWps, '#10b981', isSelected ? 5.5 : 4.0, [], true);
+
+        // Dashed highlighted centerline on Safest / Active route
+        ctx.save();
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 1.8;
+        ctx.setLineDash([8, 8]);
+        const [wp0x, wp0y] = worldToScreen(safeWps[0][0], safeWps[0][1], gridMeta, transform, w, h);
+        ctx.beginPath();
+        ctx.moveTo(wp0x, wp0y);
+        for (let i = 1; i < safeWps.length; i++) {
+          const [wpx, wpy] = worldToScreen(safeWps[i][0], safeWps[i][1], gridMeta, transform, w, h);
+          ctx.lineTo(wpx, wpy);
+        }
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
+
+    // Origin Pin (Point A)
+    if (routingOrigin) {
+      const [ox, oy] = worldToScreen(routingOrigin[0], routingOrigin[1], gridMeta, transform, w, h);
+      ctx.save();
+      ctx.fillStyle = 'rgba(16, 185, 129, 0.25)';
+      ctx.beginPath();
+      ctx.arc(ox, oy, 18, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.strokeStyle = '#10b981';
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.arc(ox, oy, 10, 0, Math.PI * 2);
+      ctx.fillStyle = '#059669';
+      ctx.fill();
       ctx.stroke();
 
-      const [destX, destY] = worldToScreen(
-        activeRoute.waypoints[activeRoute.waypoints.length - 1][0],
-        activeRoute.waypoints[activeRoute.waypoints.length - 1][1],
-        gridMeta, transform, w, h
-      );
-      ctx.fillStyle = '#34d399';
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 11px -apple-system, BlinkMacSystemFont, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('A', ox, oy);
+
+      ctx.font = 'bold 9px monospace';
+      ctx.fillStyle = '#10b981';
+      ctx.fillText('ORIGIN (A)', ox, oy - 15);
+      ctx.restore();
+    }
+
+    // Destination Pin (Point B)
+    if (routingDestination) {
+      const [dx, dy] = worldToScreen(routingDestination[0], routingDestination[1], gridMeta, transform, w, h);
+      ctx.save();
+      ctx.fillStyle = 'rgba(239, 68, 68, 0.25)';
       ctx.beginPath();
-      ctx.arc(destX, destY, 7.0, 0, Math.PI * 2);
+      ctx.arc(dx, dy, 18, 0, Math.PI * 2);
       ctx.fill();
+
+      ctx.strokeStyle = '#ef4444';
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.arc(dx, dy, 10, 0, Math.PI * 2);
+      ctx.fillStyle = '#dc2626';
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 11px -apple-system, BlinkMacSystemFont, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('B', dx, dy);
+
+      ctx.font = 'bold 9px monospace';
+      ctx.fillStyle = '#ef4444';
+      ctx.fillText('DEST (B)', dx, dy - 15);
+      ctx.restore();
     }
 
 
     ctx.restore();
-  }, [transform, layers, basemapStyle, depthGrid, roads, roadImpacts, drainage, filteredAssets, activeRoute, gridMeta, minDepthThreshold, utmZone, currentLead, telemetry, cityMeta, hoveredSurchargeNode, hoveredAsset]);
+  }, [transform, layers, basemapStyle, depthGrid, roads, roadImpacts, drainage, filteredAssets, activeRoute, gridMeta, minDepthThreshold, utmZone, currentLead, telemetry, cityMeta, hoveredSurchargeNode, hoveredAsset, routingOrigin, routingDestination]);
 
   useEffect(() => {
     let animId: number;
@@ -1165,7 +1297,35 @@ export const MapView: React.FC<MapViewProps> = ({
     }
   };
 
-  const handleMouseUp = () => setIsDragging(false);
+  // Handle Esc key to cancel picking mode
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && pickingWaypointMode && onCancelPickingWaypoint) {
+        onCancelPickingWaypoint();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [pickingWaypointMode, onCancelPickingWaypoint]);
+
+  const handleCanvasClick = (e: React.MouseEvent) => {
+    const dist = Math.hypot(e.clientX - dragStart.x, e.clientY - dragStart.y);
+    if (dist > 6) return; // Ignore drag
+
+    if (pickingWaypointMode && onPickWaypoint) {
+      const rect = canvasRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      const mx = e.clientX - rect.left;
+      const my = e.clientY - rect.top;
+      const [wx, wy] = screenToWorld(mx, my, gridMeta, transform, rect.width, rect.height);
+      onPickWaypoint([Math.round(wx), Math.round(wy)]);
+    }
+  };
+
+  const handleMouseUp = (e: React.MouseEvent) => {
+    setIsDragging(false);
+    handleCanvasClick(e);
+  };
 
   const handleMouseLeave = () => {
     setIsDragging(false);
@@ -1192,7 +1352,7 @@ export const MapView: React.FC<MapViewProps> = ({
         height: '100%',
         background: '#000000',
         overflow: 'hidden',
-        cursor: isDragging ? 'grabbing' : (hoveredSurchargeNode || hoveredAsset ? 'pointer' : 'grab'),
+        cursor: pickingWaypointMode ? 'crosshair' : (isDragging ? 'grabbing' : (hoveredSurchargeNode || hoveredAsset ? 'pointer' : 'grab')),
       }}
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
@@ -1204,6 +1364,60 @@ export const MapView: React.FC<MapViewProps> = ({
         ref={canvasRef}
         style={{ width: '100%', height: '100%', display: 'block' }}
       />
+
+      {/* Floating Waypoint Picking Mode Instruction Banner */}
+      {pickingWaypointMode && (
+        <div
+          style={{
+            position: 'absolute',
+            top: '16px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            background: 'rgba(15, 23, 42, 0.92)',
+            backdropFilter: 'blur(12px)',
+            border: `1px solid ${pickingWaypointMode === 'origin' ? '#10b981' : '#ef4444'}`,
+            boxShadow: `0 8px 32px ${pickingWaypointMode === 'origin' ? 'rgba(16, 185, 129, 0.35)' : 'rgba(239, 68, 68, 0.35)'}`,
+            color: '#ffffff',
+            padding: '8px 16px',
+            borderRadius: '24px',
+            fontSize: '12px',
+            fontWeight: 700,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '12px',
+            zIndex: 60,
+            pointerEvents: 'auto',
+          }}
+        >
+          <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span style={{ fontSize: '14px' }}>{pickingWaypointMode === 'origin' ? '📍' : '🎯'}</span>
+            <span>
+              Click anywhere on the map to set{' '}
+              <strong style={{ color: pickingWaypointMode === 'origin' ? '#34d399' : '#f87171' }}>
+                {pickingWaypointMode === 'origin' ? 'Origin (Point A)' : 'Destination (Point B)'}
+              </strong>
+            </span>
+          </span>
+          {onCancelPickingWaypoint && (
+            <button
+              type="button"
+              onClick={onCancelPickingWaypoint}
+              style={{
+                background: 'rgba(255, 255, 255, 0.15)',
+                border: '1px solid rgba(255, 255, 255, 0.25)',
+                borderRadius: '12px',
+                color: '#ffffff',
+                padding: '2px 8px',
+                fontSize: '10px',
+                fontWeight: 600,
+                cursor: 'pointer',
+              }}
+            >
+              Cancel (Esc)
+            </button>
+          )}
+        </div>
+      )}
 
       {/* Collapsible Layers Control Floating Panel */}
       <div
@@ -1367,12 +1581,65 @@ export const MapView: React.FC<MapViewProps> = ({
               <input
                 type="checkbox"
                 checked={layers.roads}
-                onChange={(e) => onLayersChange({ ...layers, roads: e.target.checked })}
+                onChange={(e) => {
+                  const nextVal = e.target.checked;
+                  onLayersChange({ ...layers, roads: nextVal });
+                  if (!nextVal && onRoadTierChange) {
+                    onRoadTierChange('none');
+                  } else if (nextVal && roadTier === 'none' && onRoadTierChange) {
+                    onRoadTierChange('main');
+                  }
+                }}
                 style={{ accentColor: '#38bdf8' }}
               />
               <Navigation size={13} color="#94a3b8" />
               <span>Road Network ({roads.length} Segments)</span>
             </label>
+
+            {/* Road Density Filter Selector */}
+            {onRoadTierChange && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', padding: '4px 6px', background: '#0a0a0a', borderRadius: '6px', border: '1px solid #1e293b' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: '9px', color: '#94a3b8', fontWeight: 600 }}>Density Filter:</span>
+                  <span style={{ fontSize: '9px', color: '#38bdf8', fontWeight: 700 }}>
+                    {roadTier === 'none' ? 'Disabled' : roadTier === 'critical' ? 'Critical Routes' : roadTier === 'main' ? 'Main Roads' : 'Full Grid'}
+                  </span>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '3px' }}>
+                  {[
+                    { id: 'none', label: 'None', icon: '❌' },
+                    { id: 'critical', label: 'Critical', icon: '🚨' },
+                    { id: 'main', label: 'Main', icon: '🛣️' },
+                    { id: 'all', label: 'All', icon: '🌐' },
+                  ].map((tier) => (
+                    <button
+                      key={tier.id}
+                      type="button"
+                      onClick={() => onRoadTierChange(tier.id as RoadTier)}
+                      style={{
+                        padding: '4px 2px',
+                        fontSize: '9px',
+                        fontWeight: 700,
+                        borderRadius: '4px',
+                        border: roadTier === tier.id ? '1px solid rgba(56, 189, 248, 0.4)' : '1px solid transparent',
+                        cursor: 'pointer',
+                        background: roadTier === tier.id ? 'rgba(14, 165, 233, 0.35)' : 'rgba(255, 255, 255, 0.05)',
+                        color: roadTier === tier.id ? '#ffffff' : '#94a3b8',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '2px',
+                        transition: 'all 0.15s ease',
+                      }}
+                      title={`Fetch & Render ${tier.label} Road Density`}
+                    >
+                      <span style={{ fontSize: '8px' }}>{tier.icon}</span>
+                      <span>{tier.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <label style={{ display: 'flex', alignItems: 'center', gap: '7px', cursor: 'pointer' }}>
               <input

@@ -17,7 +17,7 @@ import {
   Activity,
   X,
 } from 'lucide-react';
-import { LayerState, CriticalAssetItem } from '../types';
+import { LayerState, CriticalAssetItem, RoadTier } from '../types';
 
 interface MapControlsProps {
   layers: LayerState;
@@ -25,6 +25,8 @@ interface MapControlsProps {
   basemapStyle: 'vector' | 'dark' | 'voyager' | 'satellite' | 'cad';
   onBasemapChange: (style: 'vector' | 'dark' | 'voyager' | 'satellite' | 'cad') => void;
   roadsCount: number;
+  roadTier?: RoadTier;
+  onRoadTierChange?: (tier: RoadTier) => void;
   criticalAssets: CriticalAssetItem[];
   selectedAssetCategory: string;
   onSelectAssetCategory: (cat: string) => void;
@@ -39,6 +41,8 @@ export const MapControls: React.FC<MapControlsProps> = ({
   basemapStyle,
   onBasemapChange,
   roadsCount,
+  roadTier = 'main',
+  onRoadTierChange,
   criticalAssets,
   selectedAssetCategory,
   onSelectAssetCategory,
@@ -255,9 +259,62 @@ export const MapControls: React.FC<MapControlsProps> = ({
               <input
                 type="checkbox"
                 checked={layers.roads}
-                onChange={(e) => onLayersChange({ ...layers, roads: e.target.checked })}
+                onChange={(e) => {
+                  const nextVal = e.target.checked;
+                  onLayersChange({ ...layers, roads: nextVal });
+                  if (!nextVal && onRoadTierChange) {
+                    onRoadTierChange('none');
+                  } else if (nextVal && roadTier === 'none' && onRoadTierChange) {
+                    onRoadTierChange('main');
+                  }
+                }}
               />
             </label>
+
+            {/* Road Density Tier Partition Selector */}
+            {onRoadTierChange && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', padding: '5px 6px', background: 'rgba(255, 255, 255, 0.04)', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: '9px', color: 'var(--body-muted)', fontWeight: 600 }}>Density Filter:</span>
+                  <span style={{ fontSize: '9px', color: 'var(--primary-on-dark)', fontWeight: 700 }}>
+                    {roadTier === 'none' ? 'Disabled' : roadTier === 'critical' ? 'Critical Routes' : roadTier === 'main' ? 'Main Roads' : 'Full Grid'}
+                  </span>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '3px' }}>
+                  {[
+                    { id: 'none', label: 'None', icon: '❌' },
+                    { id: 'critical', label: 'Critical', icon: '🚨' },
+                    { id: 'main', label: 'Main', icon: '🛣️' },
+                    { id: 'all', label: 'All', icon: '🌐' },
+                  ].map((tier) => (
+                    <button
+                      key={tier.id}
+                      type="button"
+                      onClick={() => onRoadTierChange(tier.id as RoadTier)}
+                      style={{
+                        padding: '4px 2px',
+                        fontSize: '9px',
+                        fontWeight: 700,
+                        borderRadius: '5px',
+                        border: roadTier === tier.id ? '1px solid rgba(255, 255, 255, 0.2)' : '1px solid transparent',
+                        cursor: 'pointer',
+                        background: roadTier === tier.id ? 'var(--primary-focus)' : 'rgba(255, 255, 255, 0.08)',
+                        color: roadTier === tier.id ? '#ffffff' : 'var(--body-muted)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '2px',
+                        transition: 'all 0.15s ease',
+                      }}
+                      title={`Fetch & Render ${tier.label} Road Density`}
+                    >
+                      <span style={{ fontSize: '8px' }}>{tier.icon}</span>
+                      <span>{tier.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', padding: '4px 8px', borderRadius: '8px', background: layers.passability ? 'rgba(255, 214, 10, 0.12)' : 'transparent' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>

@@ -69,6 +69,9 @@ class RouteResult:
     explanation: dict[str, Any]
     policy_version: str
     policy_fingerprint: str
+    safest: Optional[Route] = None
+    caution: Optional[Route] = None
+    hazardous: Optional[Route] = None
 
     def to_dict(self) -> dict[str, Any]:
         """Execute To Dict operation and return result."""
@@ -82,6 +85,9 @@ class RouteResult:
             "status": self.status,
             "baseline": self.baseline.to_dict() if self.baseline else None,
             "flood_aware": self.flood_aware.to_dict() if self.flood_aware else None,
+            "safest": self.safest.to_dict() if self.safest else (self.flood_aware.to_dict() if self.flood_aware else None),
+            "caution": self.caution.to_dict() if self.caution else (self.flood_aware.to_dict() if self.flood_aware else None),
+            "hazardous": self.hazardous.to_dict() if self.hazardous else (self.baseline.to_dict() if self.baseline else None),
             "difference": self.difference,
             "explanation": self.explanation,
             "policy_version": self.policy_version,
@@ -111,7 +117,7 @@ def compute_route(
     snapshot_time: str,
     policy: PassabilityPolicy = POLICY,
 ) -> RouteResult:
-    """Compute baseline + flood-aware routes and their comparison."""
+    """Compute 3-tier routes (safest, caution, hazardous) and baseline comparison."""
     graph = build_graph(network)
     o_node = snap_to_node(graph, *origin_xy)
     d_node = snap_to_node(graph, *destination_xy)
@@ -119,29 +125,42 @@ def compute_route(
     origin = {"node": o_node, "xy": [round(origin_xy[0], 3), round(origin_xy[1], 3)]}
     destination = {"node": d_node, "xy": [round(destination_xy[0], 3), round(destination_xy[1], 3)]}
 
-    # Baseline (no flood constraints).
+    # 1. Tier 3 / Baseline (no flood constraints - hazardous shortest).
     base = dijkstra(graph, o_node, d_node, baseline_edge_cost(graph))
     baseline = _make_route(graph, base)
+    hazardous = baseline
 
-    # Flood-aware (mode controls exclusion vs penalty).
-    faw = dijkstra(graph, o_node, d_node, flood_aware_edge_cost(graph, impacts, mode, policy))
-    flood_aware = _make_route(graph, faw)
+    # 2. Tier 2 / Caution (moderate flood penalty).
+    caut = dijkstra(graph, o_node, d_node, flood_aware_edge_cost(graph, impacts, "flood_aware", policy))
+    caution = _make_route(graph, caut)
 
-    if flood_aware is None:
+    # 3. Tier 1 / Safest (strict exponential flood avoidance).
+    safe = dijkstra(graph, o_node, d_node, flood_aware_edge_cost(graph, impacts, "safest", policy))
+    safest = _make_route(graph, safe)
+
+    # Selected primary route according to mode
+    if mode == "baseline":
+        primary = baseline
+    elif mode == "safest":
+        primary = safest or caution or baseline
+    else:
+        primary = caution or safest or baseline
+
+    if primary is None:
         return RouteResult(
             scenario_id=scenario_id, lead_minutes=lead_minutes, snapshot_time=snapshot_time,
             mode=mode, origin=origin, destination=destination,
-            baseline=baseline, flood_aware=None,
+            baseline=baseline, flood_aware=None, safest=safest, caution=caution, hazardous=hazardous,
             status="NO_SAFE_ROUTE",
             difference={}, explanation=_no_route_explanation(mode, policy),
             policy_version=policy.policy_id, policy_fingerprint=policy.fingerprint,
         )
 
-    diff, explanation = _difference_and_explanation(graph, baseline, flood_aware, impacts)
+    diff, explanation = _difference_and_explanation(graph, baseline, primary, impacts)
     return RouteResult(
         scenario_id=scenario_id, lead_minutes=lead_minutes, snapshot_time=snapshot_time,
         mode=mode, origin=origin, destination=destination,
-        baseline=baseline, flood_aware=flood_aware,
+        baseline=baseline, flood_aware=primary, safest=safest, caution=caution, hazardous=hazardous,
         status="OK", difference=diff, explanation=explanation,
         policy_version=policy.policy_id, policy_fingerprint=policy.fingerprint,
     )

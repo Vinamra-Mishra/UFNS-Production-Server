@@ -83,9 +83,26 @@ def grid_metadata() -> dict[str, Any]:
 # Road network / policy
 # ---------------------------------------------------------------------------
 
-@lru_cache(maxsize=4)
-def _cached_city_road_network(city_key: str, active: str) -> dict[str, Any]:
-    """Load and cache road network for real cities to conserve RAM."""
+@lru_cache(maxsize=32)
+def _cached_city_road_network(city_key: str, active: str, tier: str = "main") -> dict[str, Any]:
+    """Load and cache road network for real cities partitioned by operational density tier."""
+    if tier == "none":
+        grid_meta = grid_metadata()
+        return {
+            "source": f"REAL_ROADS_{active}",
+            "status": "REAL_OBSERVED",
+            "fingerprint": f"fp-{active.lower()}-none",
+            "tier": "none",
+            "crs": grid_meta.get("crs", "EPSG:32643"),
+            "grid": grid_meta,
+            "roads": [],
+            "segments": [],
+            "segment_count": 0,
+            "primary_count": 0,
+            "secondary_count": 0,
+            "total_length_m": 0.0,
+        }
+
     road_file = PROCESSED_DIR / city_key / "road_graph_filtered.json"
     if not road_file.exists():
         road_file = PROCESSED_DIR / city_key / "road_graph.json"
@@ -95,17 +112,37 @@ def _cached_city_road_network(city_key: str, active: str) -> dict[str, Any]:
         nodes = rg.get("nodes", {})
         edges = rg.get("edges", [])
 
-        # High-Density Road Network (utilizing 3GB server headroom)
-        major_classes = {
-            "motorway", "trunk", "primary", "secondary", "tertiary",
-            "motorway_link", "trunk_link", "primary_link", "secondary_link", "tertiary_link",
-            "unclassified", "living_street", "residential"
-        }
-        filtered_edges = [e for e in edges if e.get("highway") in major_classes]
-        if not filtered_edges:
-            filtered_edges = edges
-        elif len(filtered_edges) > 25000:
-            filtered_edges = filtered_edges[:25000]
+        # Categorize edges by operational tier
+        if tier == "critical":
+            # Tier 1: Emergency & Critical Corridors connecting hospitals, NDRF, shelters & primary expressways
+            critical_classes = {"motorway", "trunk", "primary", "motorway_link", "trunk_link", "primary_link"}
+            filtered_edges = [
+                e for e in edges
+                if e.get("highway") in critical_classes or any(
+                    k in e.get("name", "").lower() for k in ("express", "link", "marg", "highway", "hospital", "station", "ndrf", "shelter")
+                )
+            ][:1500]
+        elif tier == "main":
+            # Tier 2: Big Roads (Expressways, Highways, Primary & Secondary Arterials)
+            main_classes = {
+                "motorway", "trunk", "primary", "secondary",
+                "motorway_link", "trunk_link", "primary_link", "secondary_link"
+            }
+            filtered_edges = [e for e in edges if e.get("highway") in main_classes]
+            if not filtered_edges:
+                filtered_edges = edges[:4000]
+        else:
+            # Tier 3: All drivable OpenStreetMap streets (High-density full grid)
+            major_classes = {
+                "motorway", "trunk", "primary", "secondary", "tertiary",
+                "motorway_link", "trunk_link", "primary_link", "secondary_link", "tertiary_link",
+                "unclassified", "living_street", "residential", "service"
+            }
+            filtered_edges = [e for e in edges if e.get("highway") in major_classes]
+            if not filtered_edges:
+                filtered_edges = edges
+            elif len(filtered_edges) > 30000:
+                filtered_edges = filtered_edges[:30000]
 
         segments = []
         for e in filtered_edges:
@@ -131,7 +168,8 @@ def _cached_city_road_network(city_key: str, active: str) -> dict[str, Any]:
         return {
             "source": f"REAL_ROADS_{active}",
             "status": "REAL_OBSERVED",
-            "fingerprint": f"fp-{active.lower()}",
+            "fingerprint": f"fp-{active.lower()}-{tier}",
+            "tier": tier,
             "crs": grid_meta["crs"],
             "grid": grid_meta,
             "roads": segments,
@@ -143,17 +181,19 @@ def _cached_city_road_network(city_key: str, active: str) -> dict[str, Any]:
         }
     net_dict = NETWORK.to_dict()
     net_dict["roads"] = net_dict.get("segments", [])
+    net_dict["tier"] = tier
     return net_dict
 
 
-def road_network() -> dict[str, Any]:
-    """Execute Road Network operation and return result."""
+def road_network(tier: str = "main") -> dict[str, Any]:
+    """Execute Road Network operation with tier filtering and return result."""
     active = getattr(city_api, "ACTIVE_CITY", "DEMO")
     if active != "DEMO":
         city_key = city_api.CITY_METADATA.get(active, {}).get("city_id", "mumbai")
-        return _cached_city_road_network(city_key, active)
+        return _cached_city_road_network(city_key, active, tier=tier)
     net_dict = NETWORK.to_dict()
     net_dict["roads"] = net_dict.get("segments", [])
+    net_dict["tier"] = tier
     return net_dict
 
 
@@ -763,34 +803,106 @@ def rainfall_grid(sid: str, lead: int) -> dict[str, Any]:
 import heapq
 import collections
 
-@lru_cache(maxsize=4)
+@lru_cache(maxsize=8)
 def _load_city_road_routing_graph(city_key: str):
-    """Loads and caches road routing topology and spatial index for instant lookups."""
+    """Loads and caches road routing topology, 15m vertex clustering, and spatial index."""
     road_file = PROCESSED_DIR / city_key / "road_graph.json"
     if not road_file.exists():
-        return {}, [], {}, collections.defaultdict(list), {}
-        
+        road_file = PROCESSED_DIR / city_key / "road_graph_filtered.json"
+    if not road_file.exists():
+        return {}, collections.defaultdict(list), {}, collections.defaultdict(list), set()
+
     rg = json.loads(road_file.read_text(encoding="utf-8"))
-    nodes = rg.get("nodes", {})
     edges = rg.get("edges", [])
-    
+
+    points: dict[tuple[int, int], list[float]] = {}
     adj = collections.defaultdict(list)
     edge_by_id = {}
+
     for e in edges:
-        edge_by_id[e["edge_id"]] = e
-        l_m = e.get("length_m", 100.0)
-        t_s = e.get("free_flow_time_s", 15.0)
-        adj[e["from_node"]].append((e["to_node"], e["edge_id"], l_m, t_s))
-        adj[e["to_node"]].append((e["from_node"], e["edge_id"], l_m, t_s))
-        
-    # Spatial grid for fast sub-millisecond nearest node queries (cell size = 500m)
+        eid = e.get("edge_id", "")
+        edge_by_id[eid] = e
+        geom = e.get("geometry", [])
+        speed = max(15.0, e.get("baseline_speed_kmh", 35.0))
+        speed_ms = speed * (1000.0 / 3600.0)
+
+        for i in range(len(geom) - 1):
+            p1 = geom[i]
+            p2 = geom[i + 1]
+            k1 = (int(round(p1[0] / 15.0)), int(round(p1[1] / 15.0)))
+            k2 = (int(round(p2[0] / 15.0)), int(round(p2[1] / 15.0)))
+            if k1 not in points:
+                points[k1] = [p1[0], p1[1]]
+            if k2 not in points:
+                points[k2] = [p2[0], p2[1]]
+            if k1 != k2:
+                d = math.hypot(p2[0] - p1[0], p2[1] - p1[1])
+                t_s = d / speed_ms
+                adj[k1].append((k2, d, t_s, eid))
+                adj[k2].append((k1, d, t_s, eid))
+
+    # Spatial grid index for O(1) snapping from arbitrary world coordinates
     spatial_grid = collections.defaultdict(list)
-    for nid, n in nodes.items():
-        gx = int(n["x"] // 500)
-        gy = int(n["y"] // 500)
-        spatial_grid[(gx, gy)].append((nid, n["x"], n["y"]))
-        
-    return nodes, edges, edge_by_id, adj, spatial_grid
+    for k, pt in points.items():
+        gx = int(pt[0] // 500)
+        gy = int(pt[1] // 500)
+        spatial_grid[(gx, gy)].append(k)
+
+    # Find giant connected component
+    visited = set()
+    components = []
+    for k in list(adj.keys()):
+        if k not in visited:
+            comp = []
+            q = [k]
+            visited.add(k)
+            for u in q:
+                comp.append(u)
+                for v, d, t, eid in adj[u]:
+                    if v not in visited:
+                        visited.add(v)
+                        q.append(v)
+            components.append((len(comp), set(comp)))
+
+    components.sort(key=lambda c: c[0], reverse=True)
+    giant_comp = components[0][1] if components else set(points.keys())
+
+    return points, adj, edge_by_id, spatial_grid, giant_comp
+
+
+def _snap_point_to_road_graph(
+    pt: list[float] | tuple[float, float],
+    points: dict[tuple[int, int], list[float]],
+    spatial_grid: dict[tuple[int, int], list[tuple[int, int]]],
+    giant_comp: set[tuple[int, int]],
+) -> tuple[int, int] | None:
+    """Snaps any arbitrary clicked point to the nearest road network vertex."""
+    px, py = pt[0], pt[1]
+    cgx, cgy = int(px // 500), int(py // 500)
+    best_k, best_d = None, 1e12
+
+    for r in range(1, 15):
+        for dx in range(-r, r + 1):
+            for dy in range(-r, r + 1):
+                for k in spatial_grid.get((cgx + dx, cgy + dy), []):
+                    if k in giant_comp:
+                        vx, vy = points[k]
+                        d = math.hypot(vx - px, vy - py)
+                        if d < best_d:
+                            best_d = d
+                            best_k = k
+        if best_k is not None:
+            break
+
+    if best_k is None and points:
+        for k in giant_comp:
+            vx, vy = points[k]
+            d = math.hypot(vx - px, vy - py)
+            if d < best_d:
+                best_d = d
+                best_k = k
+
+    return best_k
 
 
 def compute_route_request(
@@ -806,10 +918,9 @@ def compute_route_request(
     active = getattr(city_api, "ACTIVE_CITY", "DEMO")
     if active != "DEMO":
         city_key = city_api.CITY_METADATA.get(active, {}).get("city_id", "mumbai")
-        nodes, edges, edge_by_id, adj, spatial_grid = _load_city_road_routing_graph(city_key)
-        
-        if nodes:
-            # Wading depth policy limits
+        pts, adj, edge_by_id, spatial_grid, giant_comp = _load_city_road_routing_graph(city_key)
+
+        if pts and giant_comp:
             wading_limits = {
                 "LIGHT_VEHICLE": 0.10,
                 "CIVILIAN": 0.10,
@@ -818,45 +929,17 @@ def compute_route_request(
                 "HEAVY_RESCUE": 0.55,
                 "AMBULANCE": 0.20,
                 "PEDESTRIAN": 0.05,
-                "EMERGENCY": 0.60
+                "EMERGENCY": 0.60,
             }
             threshold = max_wading_depth_m if max_wading_depth_m is not None else wading_limits.get(vehicle_profile.upper(), 0.10)
-            
-            # Fast spatial grid search for nearest node
-            def find_nearest_node(pt: tuple[float, float]) -> str:
-                """Execute Find Nearest Node operation and return result."""
-                px, py = pt[0], pt[1]
-                cgx, cgy = int(px // 500), int(py // 500)
-                best_node, best_dist = None, 1e12
-                
-                # Check surrounding 3x3 to 5x5 grid cells
-                for r in range(1, 4):
-                    for dx in range(-r, r + 1):
-                        for dy in range(-r, r + 1):
-                            cell_nodes = spatial_grid.get((cgx + dx, cgy + dy), [])
-                            for nid, nx, ny in cell_nodes:
-                                d = math.hypot(nx - px, ny - py)
-                                if d < best_dist:
-                                    best_dist = d
-                                    best_node = nid
-                    if best_node is not None:
-                        break
-                        
-                # Fallback to full search if outside bounds
-                if not best_node:
-                    for nid, n in nodes.items():
-                        d = math.hypot(n["x"] - px, n["y"] - py)
-                        if d < best_dist:
-                            best_dist = d
-                            best_node = nid
-                return best_node or ""
-                
-            orig_node = find_nearest_node((origin[0], origin[1]))
-            dest_node = find_nearest_node((destination[0], destination[1]))
-            
-            if not orig_node or not dest_node or orig_node == dest_node:
-                dist_straight = round(math.hypot(destination[0]-origin[0], destination[1]-origin[1]), 1)
+
+            orig_k = _snap_point_to_road_graph(origin, pts, spatial_grid, giant_comp)
+            dest_k = _snap_point_to_road_graph(destination, pts, spatial_grid, giant_comp)
+
+            if orig_k is None or dest_k is None or orig_k == dest_k:
+                dist_straight = round(math.hypot(destination[0] - origin[0], destination[1] - origin[1]), 1)
                 time_est = round(dist_straight / 10.0, 1)
+                direct_wp = [list(origin), list(destination)]
                 return {
                     "scenario_id": sid,
                     "lead_minutes": lead,
@@ -866,99 +949,118 @@ def compute_route_request(
                     "origin": list(origin),
                     "destination": list(destination),
                     "baseline": {
-                        "route_type": "BASELINE_SHORTEST",
                         "length_m": dist_straight,
                         "travel_time_s": time_est,
-                        "coordinates": [list(origin), list(destination)],
+                        "coordinates": direct_wp,
                         "is_passable": True,
                         "max_flood_depth_m": 0.0,
                     },
                     "flood_aware": {
-                        "route_type": "FLOOD_SAFE_OPTIMAL",
                         "length_m": dist_straight,
                         "travel_time_s": time_est,
-                        "coordinates": [list(origin), list(destination)],
+                        "coordinates": direct_wp,
                         "is_passable": True,
                         "max_flood_depth_m": 0.0,
                     },
                     "comparison": {
                         "detour_distance_m": 0.0,
                         "detour_time_s": 0.0,
-                        "status": "PASSABLE"
-                    }
+                        "status": "PASSABLE",
+                    },
                 }
-                
-            impacts_dict = impacts_at(sid, lead)
-            
-            def solve_dijkstra(flood_aware: bool):
-                """Execute Solve Dijkstra operation and return result."""
-                dist = {orig_node: 0.0}
+
+            impacts_dict = impacts_at(sid, lead) if sid.upper() != "REALTIME" else {}
+            target_pt = pts[dest_k]
+
+            def solve_a_star(tier: str = "safest") -> dict[str, Any]:
+                """Fast Euclidean A* router over high-density road geometry with 3-tier weighting."""
+                heap = [(math.hypot(pts[orig_k][0] - target_pt[0], pts[orig_k][1] - target_pt[1]), 0.0, orig_k)]
+                dist = {orig_k: 0.0}
                 prev = {}
-                heap = [(0.0, orig_node)]
-                
+                found = False
+
                 while heap:
-                    curr_cost, u = heapq.heappop(heap)
-                    if u == dest_node:
+                    est, d_cur, u = heapq.heappop(heap)
+                    if u == dest_k:
+                        found = True
                         break
-                    if curr_cost > dist.get(u, 1e12):
+                    if d_cur > dist.get(u, 1e12):
                         continue
-                        
-                    for v, eid, length_m, time_s in adj[u]:
-                        cost = time_s
+
+                    for v, d_m, t_s, eid in adj[u]:
                         imp = impacts_dict.get(eid, {})
-                        d_m = imp.get("max_depth_m", 0.0)
-                        
-                        if flood_aware:
-                            if d_m > threshold:
+                        flood_d = imp.get("max_depth_m", 0.0) if hasattr(imp, "get") else getattr(imp, "max_depth_m", 0.0)
+
+                        cost = d_m
+                        if tier == "safest":
+                            # Tier 1 Safest: Extreme exponential penalty on water depth to find 100% dry elevation paths
+                            if flood_d > threshold:
+                                cost += 200000.0
+                            elif flood_d > 0.03:
+                                cost += ((flood_d / 0.05) ** 4) * 500.0
+                        elif tier == "caution":
+                            # Tier 2 Caution: Moderate penalty, allowing shallow wading for significant distance shortcuts
+                            if flood_d > threshold:
                                 cost += 100000.0
-                            elif d_m > 0.05:
-                                cost += (d_m / threshold) * 250.0
-                                
-                        new_dist = curr_cost + cost
-                        if new_dist < dist.get(v, 1e12):
-                            dist[v] = new_dist
-                            prev[v] = (u, eid)
-                            heapq.heappush(heap, (new_dist, v))
-                            
-                path_edges = []
-                curr = dest_node
-                while curr in prev:
-                    u, eid = prev[curr]
-                    path_edges.append(eid)
-                    curr = u
-                path_edges.reverse()
-                
-                coords = [list(origin)]
+                            elif flood_d > 0.03:
+                                cost += (flood_d / threshold) ** 2 * 350.0
+                        # Tier 3 Hazardous: Raw Euclidean distance cost with 0 flood penalty
+
+                        new_d = d_cur + cost
+                        if new_d < dist.get(v, 1e12):
+                            dist[v] = new_d
+                            prev[v] = (u, eid, d_m, t_s, flood_d)
+                            vx, vy = pts[v]
+                            h = math.hypot(vx - target_pt[0], vy - target_pt[1])
+                            heapq.heappush(heap, (new_d + h, new_d, v))
+
+                path_wp = []
+                curr = dest_k
                 total_len = 0.0
+                total_time = 0.0
                 max_depth = 0.0
-                
-                for eid in path_edges:
-                    e = edge_by_id[eid]
-                    g = e.get("geometry", [])
-                    for pt in g:
-                        coords.append(pt)
-                    total_len += e.get("length_m", 100.0)
-                    imp = impacts_dict.get(eid, {})
-                    max_depth = max(max_depth, imp.get("max_depth_m", 0.0))
-                    
-                coords.append(list(destination))
-                total_time = (total_len / (35.0 * 1000.0 / 3600.0)) if total_len > 0 else 30.0
-                
+
+                if found:
+                    while curr in prev:
+                        u, eid, d_m, t_s, flood_d = prev[curr]
+                        path_wp.append(pts[curr])
+                        total_len += d_m
+                        total_time += t_s
+                        max_depth = max(max_depth, flood_d)
+                        curr = u
+                    path_wp.append(pts[orig_k])
+                    path_wp.reverse()
+                else:
+                    path_wp = [pts[orig_k], pts[dest_k]]
+                    total_len = math.hypot(pts[dest_k][0] - pts[orig_k][0], pts[dest_k][1] - pts[orig_k][1])
+                    total_time = total_len / 10.0
+
+                # Prepend exact clicked origin and append exact clicked destination
+                full_coordinates = [list(origin)] + path_wp + [list(destination)]
+
                 return {
                     "length_m": round(total_len, 1),
                     "travel_time_s": round(total_time, 1),
-                    "coordinates": coords,
+                    "coordinates": full_coordinates,
                     "max_flood_depth_m": round(max_depth, 3),
                     "is_passable": max_depth <= threshold,
-                    "path_edges_count": len(path_edges)
+                    "path_nodes_count": len(path_wp),
                 }
-                
-            baseline_res = solve_dijkstra(flood_aware=False)
-            flood_res = solve_dijkstra(flood_aware=True)
-            
-            detour_dist = max(0.0, flood_res["length_m"] - baseline_res["length_m"])
-            detour_time = max(0.0, flood_res["travel_time_s"] - baseline_res["travel_time_s"])
-            
+
+            hazardous_res = solve_a_star(tier="hazardous")
+            caution_res = solve_a_star(tier="caution")
+            safest_res = solve_a_star(tier="safest")
+
+            if mode == "baseline":
+                primary_res = hazardous_res
+            elif mode == "safest":
+                primary_res = safest_res
+            else:
+                primary_res = caution_res
+
+            detour_dist = max(0.0, primary_res["length_m"] - hazardous_res["length_m"])
+            detour_time = max(0.0, primary_res["travel_time_s"] - hazardous_res["travel_time_s"])
+
             return {
                 "scenario_id": sid,
                 "lead_minutes": lead,
@@ -967,15 +1069,18 @@ def compute_route_request(
                 "wading_threshold_m": threshold,
                 "origin": list(origin),
                 "destination": list(destination),
-                "baseline": baseline_res,
-                "flood_aware": flood_res,
+                "baseline": hazardous_res,
+                "flood_aware": primary_res,
+                "safest": safest_res,
+                "caution": caution_res,
+                "hazardous": hazardous_res,
                 "comparison": {
                     "detour_distance_m": round(detour_dist, 1),
                     "detour_time_s": round(detour_time, 1),
-                    "baseline_passable": baseline_res["is_passable"],
-                    "flood_aware_passable": flood_res["is_passable"],
-                    "status": "PASSABLE" if flood_res["is_passable"] else "IMPASSABLE"
-                }
+                    "baseline_passable": hazardous_res["is_passable"],
+                    "flood_aware_passable": primary_res["is_passable"],
+                    "status": "PASSABLE" if primary_res["is_passable"] else "IMPASSABLE",
+                },
             }
 
     impacts = impacts_at(sid, lead)
