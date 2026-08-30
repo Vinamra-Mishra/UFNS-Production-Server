@@ -97,7 +97,7 @@ export const App: React.FC = () => {
     assets: true,
     tiles: true,
     elevation: false,
-    rainfall: false, // Default off so flood inundation raster and road network are crystal clear
+    rainfall: true, // Enabled by default for vivid precipitation & Doppler backdrop
     radar: true,
     vuln: false,
     sponge: false,
