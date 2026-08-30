@@ -693,7 +693,13 @@ def realtime_frame(lead: int) -> dict[str, Any]:
     active = getattr(city_api, "ACTIVE_CITY", "MUMBAI")
     city_key = city_api.CITY_METADATA.get(active, {}).get("city_id", "mumbai") if active != "DEMO" else "mumbai"
     bucket_time = int(time.time() // 60)
-    return _realtime_frame_cached(lead, city_key, bucket_time)
+    try:
+        return _realtime_frame_cached(lead, city_key, bucket_time)
+    except Exception:
+        fallback = frame("S4", lead)
+        fallback["scenario_id"] = "REALTIME"
+        fallback["labels"] = ["REAL_OBSERVED", "FALLBACK_CALIBRATED"]
+        return fallback
 
 
 def rainfall_summary(sid: str, lead: int) -> dict[str, Any]:
