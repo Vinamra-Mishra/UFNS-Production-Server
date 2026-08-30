@@ -22,7 +22,7 @@ class SimulateProbabilisticRequest(BaseModel):
     """Simulateprobabilisticrequest schema and data model representation."""
     scenario_id: str = Field(default="S4", description="Scenario identifier (S1..S4)")
     lead_minutes: int = Field(default=110, ge=0, le=180, description="Lead time in minutes")
-    member_count: int = Field(default=10, ge=3, le=10, description="Number of ensemble members (3..10)")
+    member_count: int = Field(default=10, ge=1, le=50, description="Number of ensemble members (1..50)")
 
 
 @router.get("/members")
@@ -36,6 +36,7 @@ def list_ensemble_members() -> dict[str, Any]:
 
 
 @router.post("/simulate")
+@router.post("/ensemble")
 def simulate_probabilistic_ensemble(req: SimulateProbabilisticRequest) -> dict[str, Any]:
     """Execute stochastic ensemble simulation and return probabilistic risk envelope."""
     res = GLOBAL_PROBABILISTIC_ENGINE.simulate(

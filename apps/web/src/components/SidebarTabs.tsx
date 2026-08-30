@@ -334,7 +334,7 @@ export const SidebarTabs: React.FC<SidebarTabsProps> = ({
       const res = await fetch(apiUrl('/api/v1/probabilistic/simulate'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ scenario_id: activeScenarioId, lead_minutes: currentLead, member_count: 20 }),
+        body: JSON.stringify({ scenario_id: activeScenarioId, lead_minutes: currentLead, member_count: 10 }),
       });
       if (res.ok) {
         setMcResult(await res.json());
