@@ -408,77 +408,286 @@ export const MapView: React.FC<MapViewProps> = ({
     }
 
 
-    // 5. Road Network & Dynamic Passability Status (D x V)
-    if (layers.roads || layers.passability) {
-      const scaleFactor = Math.min(2.5, Math.max(0.6, transform.zoom));
+    // 2. LAYER A: 2D Surface Inundation Depth Raster (Overland Flow)
+    if (layers.flood_2d && depthGrid && depthGrid.length > 0) {
+      const depthLen = depthGrid.length;
+      let effectiveGW = gw;
+      let effectiveGH = gh;
 
-      for (const r of roads) {
-        if (!r.geometry || r.geometry.length < 2) continue;
-        const imp = roadImpacts[r.road_id];
-        const cls = imp ? imp.classification : 'DRY';
-
-        if (layers.policyFilter && cls !== 'IMPASSABLE') continue;
-
-        const rClass = r.road_class || 'primary';
-        let baseWidth = 1.2;
-        let strokeColor = '#475569';
-
-        if (rClass === 'motorway' || rClass === 'trunk') {
-          baseWidth = 3.2; strokeColor = '#94a3b8';
-        } else if (rClass === 'primary') {
-          baseWidth = 2.4; strokeColor = '#cbd5e1';
-        } else if (rClass === 'secondary') {
-          baseWidth = 1.8; strokeColor = '#94a3b8';
-        } else {
-          baseWidth = 1.2; strokeColor = '#475569';
-        }
-
-        if (layers.passability && imp) {
-          strokeColor = IMPACT_COLORS[cls] || strokeColor;
-        }
-
-        const [p0x, p0y] = worldToScreen(r.geometry[0][0], r.geometry[0][1], gridMeta, transform, w, h);
-
-        // Dark Outer Casing Halo for crisp contrast
-        if (rClass === 'motorway' || rClass === 'trunk' || rClass === 'primary' || cls === 'IMPASSABLE') {
-          ctx.strokeStyle = 'rgba(0, 0, 0, 0.9)';
-          ctx.lineWidth = (baseWidth * scaleFactor) + 2.0;
-          ctx.beginPath();
-          ctx.moveTo(p0x, p0y);
-          for (let i = 1; i < r.geometry.length; i++) {
-            const [px, py] = worldToScreen(r.geometry[i][0], r.geometry[i][1], gridMeta, transform, w, h);
-            ctx.lineTo(px, py);
-          }
-          ctx.stroke();
-        }
-
-        // Main Stroke
-        ctx.strokeStyle = strokeColor;
-        ctx.lineWidth = Math.max(0.8, baseWidth * scaleFactor);
-        ctx.beginPath();
-        ctx.moveTo(p0x, p0y);
-        for (let i = 1; i < r.geometry.length; i++) {
-          const [px, py] = worldToScreen(r.geometry[i][0], r.geometry[i][1], gridMeta, transform, w, h);
-          ctx.lineTo(px, py);
-        }
-        ctx.stroke();
-
-        // Impassable hazard dash overlay
-        if (layers.passability && cls === 'IMPASSABLE') {
-          ctx.save();
-          ctx.strokeStyle = '#f43f5e';
-          ctx.lineWidth = Math.max(1.5, baseWidth * scaleFactor);
-          ctx.setLineDash([6, 4]);
-          ctx.beginPath();
-          ctx.moveTo(p0x, p0y);
-          for (let i = 1; i < r.geometry.length; i++) {
-            const [px, py] = worldToScreen(r.geometry[i][0], r.geometry[i][1], gridMeta, transform, w, h);
-            ctx.lineTo(px, py);
-          }
-          ctx.stroke();
-          ctx.restore();
+      if (effectiveGW * effectiveGH !== depthLen) {
+        if (depthLen === 825 * 1486) { effectiveGW = 825; effectiveGH = 1486; }
+        else if (depthLen === 606 * 481) { effectiveGW = 606; effectiveGH = 481; }
+        else if (depthLen === 980 * 1240) { effectiveGW = 980; effectiveGH = 1240; }
+        else if (depthLen === 134 * 134) { effectiveGW = 134; effectiveGH = 134; }
+        else {
+          effectiveGW = Math.round(Math.sqrt(depthLen));
+          effectiveGH = Math.round(depthLen / effectiveGW);
         }
       }
+
+      const [minSX, minSY] = worldToScreen(ox, oy + effectiveGH * cs, gridMeta, transform, w, h);
+      const [maxSX, maxSY] = worldToScreen(ox + effectiveGW * cs, oy, gridMeta, transform, w, h);
+      const rasterW = maxSX - minSX;
+      const rasterH = maxSY - minSY;
+
+      const offscreen = document.createElement('canvas');
+      offscreen.width = effectiveGW;
+      offscreen.height = effectiveGH;
+      const offCtx = offscreen.getContext('2d')!;
+      const imgData = offCtx.createImageData(effectiveGW, effectiveGH);
+
+      for (let r = 0; r < effectiveGH; r++) {
+        for (let c = 0; c < effectiveGW; c++) {
+          const idx = r * effectiveGW + c;
+          if (idx >= depthLen) continue;
+          const d = depthGrid[idx];
+          if (d >= minDepthThreshold) {
+            const pIdx = idx * 4;
+            if (d < 0.08) {
+              // Initial runoff wetting front (1-8cm) - Translucent sky blue
+              imgData.data[pIdx] = 56; imgData.data[pIdx + 1] = 189; imgData.data[pIdx + 2] = 248; imgData.data[pIdx + 3] = 90;
+            } else if (d < 0.20) {
+              // Shallow street water (8-20cm - Low Impact) - Translucent cyan
+              imgData.data[pIdx] = 2; imgData.data[pIdx + 1] = 132; imgData.data[pIdx + 2] = 199; imgData.data[pIdx + 3] = 130;
+            } else if (d < 0.50) {
+              // Moderate inundation (20-50cm - Caution/High Impact) - Amber
+              imgData.data[pIdx] = 245; imgData.data[pIdx + 1] = 158; imgData.data[pIdx + 2] = 11; imgData.data[pIdx + 3] = 160;
+            } else if (d < 1.0) {
+              // Severe / Impassable (50-100cm) - Crimson
+              imgData.data[pIdx] = 239; imgData.data[pIdx + 1] = 68; imgData.data[pIdx + 2] = 68; imgData.data[pIdx + 3] = 190;
+            } else {
+              // Extreme flood (>1.0m) - Deep purple
+              imgData.data[pIdx] = 168; imgData.data[pIdx + 1] = 85; imgData.data[pIdx + 2] = 247; imgData.data[pIdx + 3] = 210;
+            }
+          }
+        }
+      }
+      offCtx.putImageData(imgData, 0, 0);
+
+      ctx.save();
+      ctx.imageSmoothingEnabled = true;
+      ctx.globalAlpha = 0.58; // High transparency for flood layer so basemap & roads shine through
+      ctx.drawImage(offscreen, minSX, minSY, rasterW, rasterH);
+      ctx.restore();
+    }
+
+
+    // 1.5. METEOROLOGICAL NOWCAST BACKDROP: Real-Time Precipitation & Doppler Radar
+    if (layers.rainfall && rainfallGrid && rainfallGrid.length > 0) {
+      const rainLen = rainfallGrid.length;
+      let effRW = gw;
+      let effRH = gh;
+      if (effRW * effRH !== rainLen) {
+        if (rainLen === 825 * 1486) { effRW = 825; effRH = 1486; }
+        else if (rainLen === 606 * 481) { effRW = 606; effRH = 481; }
+        else if (rainLen === 980 * 1240) { effRW = 980; effRH = 1240; }
+        else if (rainLen === 134 * 134) { effRW = 134; effRH = 134; }
+        else {
+          effRW = Math.round(Math.sqrt(rainLen));
+          effRH = Math.round(rainLen / effRW);
+        }
+      }
+
+      const [rMinX, rMinY] = worldToScreen(ox, oy + effRH * cs, gridMeta, transform, w, h);
+      const [rMaxX, rMaxY] = worldToScreen(ox + effRW * cs, oy, gridMeta, transform, w, h);
+      const rW = rMaxX - rMinX;
+      const rH = rMaxY - rMinY;
+
+      const rainCanvas = document.createElement('canvas');
+      rainCanvas.width = effRW;
+      rainCanvas.height = effRH;
+      const rainCtx = rainCanvas.getContext('2d')!;
+      const rainImg = rainCtx.createImageData(effRW, effRH);
+
+      for (let r = 0; r < effRH; r++) {
+        for (let c = 0; c < effRW; c++) {
+          const idx = r * effRW + c;
+          if (idx >= rainLen) continue;
+          const rate = rainfallGrid[idx];
+          if (rate > 2.0) {
+            const pIdx = idx * 4;
+            if (rate < 15.0) {
+              // Light Rain (2-15 mm/h - Emerald Green)
+              rainImg.data[pIdx] = 52; rainImg.data[pIdx + 1] = 211; rainImg.data[pIdx + 2] = 153; rainImg.data[pIdx + 3] = 70;
+            } else if (rate < 35.0) {
+              // Moderate Rain (15-35 mm/h - Amber)
+              rainImg.data[pIdx] = 245; rainImg.data[pIdx + 1] = 158; rainImg.data[pIdx + 2] = 11; rainImg.data[pIdx + 3] = 100;
+            } else if (rate < 65.0) {
+              // Heavy Rain (35-65 mm/h - Crimson)
+              rainImg.data[pIdx] = 239; rainImg.data[pIdx + 1] = 68; rainImg.data[pIdx + 2] = 68; rainImg.data[pIdx + 3] = 130;
+            } else {
+              // Torrential / Extreme (>65 mm/h - Deep Violet)
+              rainImg.data[pIdx] = 168; rainImg.data[pIdx + 1] = 85; rainImg.data[pIdx + 2] = 247; rainImg.data[pIdx + 3] = 160;
+            }
+          }
+        }
+      }
+      rainCtx.putImageData(rainImg, 0, 0);
+
+      ctx.save();
+      ctx.imageSmoothingEnabled = true;
+      ctx.globalAlpha = 0.55;
+      ctx.drawImage(rainCanvas, rMinX, rMinY, rW, rH);
+      ctx.restore();
+    }
+
+
+    if (layers.radar) {
+      const [rMinX, rMinY] = worldToScreen(ox, oy + gh * cs, gridMeta, transform, w, h);
+      const [rMaxX, rMaxY] = worldToScreen(ox + gw * cs, oy, gridMeta, transform, w, h);
+      const rW = rMaxX - rMinX;
+      const rH = rMaxY - rMinY;
+
+      // Real DWR Station coordinates in canvas space
+      const isMumbai = (cityMeta?.city_id === 'mumbai');
+      const isVijayawada = (cityMeta?.city_id === 'vijayawada');
+      
+      const centerX = isMumbai ? rMinX + rW * 0.46 : (isVijayawada ? rMinX + rW * 0.55 : rMinX + rW / 2);
+      const centerY = isMumbai ? rMinY + rH * 0.38 : (isVijayawada ? rMinY + rH * 0.52 : rMinY + rH / 2);
+      const maxRadius = Math.max(rW, rH) * 0.75;
+      const sweepSpan = Math.PI / 3.2; // ~56 degrees active phosphor sector
+      const radarAngle = ((Date.now() / 4500) % 1) * Math.PI * 2;
+
+      ctx.save();
+
+      // 1. Marshall-Palmer Spatial Reflectivity Heatmap (Z = 200 * R^1.6 -> dBZ)
+      if (rainfallGrid && rainfallGrid.length > 0) {
+        const rainLen = rainfallGrid.length;
+        let effRW = gw;
+        let effRH = gh;
+        if (effRW * effRH !== rainLen) {
+          if (rainLen === 825 * 1486) { effRW = 825; effRH = 1486; }
+          else if (rainLen === 606 * 481) { effRW = 606; effRH = 481; }
+          else if (rainLen === 980 * 1240) { effRW = 980; effRH = 1240; }
+          else {
+            effRW = Math.round(Math.sqrt(rainLen));
+            effRH = Math.round(rainLen / effRW);
+          }
+        }
+
+        const radarCanvas = document.createElement('canvas');
+        radarCanvas.width = effRW;
+        radarCanvas.height = effRH;
+        const radCtx = radarCanvas.getContext('2d')!;
+        const radImg = radCtx.createImageData(effRW, effRH);
+
+        for (let r = 0; r < effRH; r++) {
+          for (let c = 0; c < effRW; c++) {
+            const idx = r * effRW + c;
+            if (idx >= rainLen) continue;
+            const r_mmh = rainfallGrid[idx];
+            if (r_mmh > 0.5) {
+              // Marshall-Palmer Z = 200 * R^1.6, dBZ = 10 * log10(Z)
+              const dbz = 10.0 * Math.log10(Math.max(1.0, 200.0 * Math.pow(r_mmh, 1.6)));
+              const pIdx = idx * 4;
+
+              if (dbz < 20.0) {
+                // 10-20 dBZ (Light drizzle - Cyan/Light Blue)
+                radImg.data[pIdx] = 6; radImg.data[pIdx + 1] = 182; radImg.data[pIdx + 2] = 212; radImg.data[pIdx + 3] = 70;
+              } else if (dbz < 32.0) {
+                // 20-32 dBZ (Light rain - Green)
+                radImg.data[pIdx] = 34; radImg.data[pIdx + 1] = 197; radImg.data[pIdx + 2] = 94; radImg.data[pIdx + 3] = 100;
+              } else if (dbz < 42.0) {
+                // 32-42 dBZ (Moderate rain - Yellow/Amber)
+                radImg.data[pIdx] = 234; radImg.data[pIdx + 1] = 179; radImg.data[pIdx + 2] = 8; radImg.data[pIdx + 3] = 130;
+              } else if (dbz < 50.0) {
+                // 42-50 dBZ (Heavy convective rain - Orange/Red)
+                radImg.data[pIdx] = 249; radImg.data[pIdx + 1] = 115; radImg.data[pIdx + 2] = 22; radImg.data[pIdx + 3] = 160;
+              } else if (dbz < 58.0) {
+                // 50-58 dBZ (Very heavy / Storm cells - Crimson)
+                radImg.data[pIdx] = 239; radImg.data[pIdx + 1] = 68; radImg.data[pIdx + 2] = 68; radImg.data[pIdx + 3] = 185;
+              } else {
+                // >58 dBZ (Severe / Hail core - Magenta/Purple)
+                radImg.data[pIdx] = 217; radImg.data[pIdx + 1] = 70; radImg.data[pIdx + 2] = 239; radImg.data[pIdx + 3] = 200;
+              }
+            }
+          }
+        }
+        radCtx.putImageData(radImg, 0, 0);
+
+        ctx.save();
+        ctx.imageSmoothingEnabled = true;
+        ctx.globalAlpha = 0.52; // High transparency for radar storm echoes
+        ctx.drawImage(radarCanvas, rMinX, rMinY, rW, rH);
+        ctx.restore();
+      }
+
+      // 2. Phosphor Radar Beam Sweep Sector Glow (Atmospheric translucency)
+      const sweepGrad = ctx.createRadialGradient(centerX, centerY, 6, centerX, centerY, maxRadius);
+      sweepGrad.addColorStop(0, 'rgba(56, 189, 248, 0.28)');
+      sweepGrad.addColorStop(0.6, 'rgba(14, 165, 233, 0.09)');
+      sweepGrad.addColorStop(1.0, 'rgba(3, 105, 161, 0.00)');
+      ctx.fillStyle = sweepGrad;
+      ctx.beginPath();
+      ctx.moveTo(centerX, centerY);
+      ctx.arc(centerX, centerY, maxRadius, radarAngle - sweepSpan, radarAngle, false);
+      ctx.closePath();
+      ctx.fill();
+
+      // 3. Official Range Rings (25km, 50km, 100km, 150km, 200km)
+      ctx.strokeStyle = 'rgba(56, 189, 248, 0.30)';
+      ctx.lineWidth = 1.0;
+      ctx.setLineDash([3, 4]);
+      const ringIntervals = isMumbai ? [10, 25, 50, 100, 150] : [10, 25, 50, 100, 200];
+      for (const km of ringIntervals) {
+        const ringRadius = (km * 1000 / cs) * (rW / gw);
+        if (ringRadius < maxRadius * 1.5) {
+          ctx.beginPath();
+          ctx.arc(centerX, centerY, ringRadius, 0, Math.PI * 2);
+          ctx.stroke();
+
+          ctx.fillStyle = 'rgba(56, 189, 248, 0.85)';
+          ctx.font = 'bold 9px -apple-system, monospace';
+          ctx.fillText(`${km}km`, centerX + ringRadius - 26, centerY - 4);
+        }
+      }
+
+      // 4. Azimuth Radials (0°, 45°, 90°, 135°, 180°, 225°, 270°, 315°)
+      ctx.setLineDash([2, 6]);
+      for (let deg = 0; deg < 360; deg += 45) {
+        const rad = (deg * Math.PI) / 180;
+        ctx.beginPath();
+        ctx.moveTo(centerX, centerY);
+        ctx.lineTo(centerX + Math.cos(rad) * maxRadius, centerY + Math.sin(rad) * maxRadius);
+        ctx.stroke();
+      }
+
+      // 5. Leading Active Sweep Beam
+      ctx.strokeStyle = '#38bdf8';
+      ctx.lineWidth = 2.0;
+      ctx.setLineDash([]);
+      ctx.beginPath();
+      ctx.moveTo(centerX, centerY);
+      ctx.lineTo(centerX + Math.cos(radarAngle) * maxRadius, centerY + Math.sin(radarAngle) * maxRadius);
+      ctx.stroke();
+
+      // 6. Station Central Radar Tower Marker & Legend
+      ctx.fillStyle = '#ef4444';
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, 5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+
+      const stnName = (cityMeta?.city_id === 'mumbai') ? 'IMD DWR VERAVALI (MUMBAI C-BAND 5.6GHz)' : ((cityMeta?.city_id === 'vijayawada') ? 'IMD DWR MACHILIPATNAM (S-BAND 2.8GHz)' : (telemetry?.radar_station || 'IMD Doppler Weather Radar (5.6 GHz)'));
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.90)';
+      ctx.fillRect(centerX - 130, centerY + 12, 260, 36);
+      ctx.strokeStyle = '#0284c7';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(centerX - 130, centerY + 12, 260, 36);
+
+      ctx.fillStyle = '#38bdf8';
+      ctx.font = 'bold 9px -apple-system, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(stnName, centerX, centerY + 24);
+
+      ctx.fillStyle = '#94a3b8';
+      ctx.font = '8px monospace';
+      ctx.fillText('0.5° PPI | dBZ: 10-65 | Zdr: +1.4dB | Kdp: 2.1°/km | ρhv: 0.98', centerX, centerY + 38);
+      ctx.textAlign = 'left';
+
+      ctx.restore();
     }
 
 
@@ -580,285 +789,77 @@ export const MapView: React.FC<MapViewProps> = ({
     }
 
 
-    // 1.5. METEOROLOGICAL NOWCAST BACKDROP: Real-Time Precipitation & Doppler Radar
-    if (layers.rainfall && rainfallGrid && rainfallGrid.length > 0) {
-      const rainLen = rainfallGrid.length;
-      let effRW = gw;
-      let effRH = gh;
-      if (effRW * effRH !== rainLen) {
-        if (rainLen === 825 * 1486) { effRW = 825; effRH = 1486; }
-        else if (rainLen === 606 * 481) { effRW = 606; effRH = 481; }
-        else if (rainLen === 980 * 1240) { effRW = 980; effRH = 1240; }
-        else if (rainLen === 134 * 134) { effRW = 134; effRH = 134; }
-        else {
-          effRW = Math.round(Math.sqrt(rainLen));
-          effRH = Math.round(rainLen / effRW);
-        }
-      }
+    // 5. Road Network & Dynamic Passability Status (D x V) - Rendered ABOVE the Flood Layer
+    if (layers.roads || layers.passability) {
+      const scaleFactor = Math.min(2.5, Math.max(0.6, transform.zoom));
 
-      const [rMinX, rMinY] = worldToScreen(ox, oy + effRH * cs, gridMeta, transform, w, h);
-      const [rMaxX, rMaxY] = worldToScreen(ox + effRW * cs, oy, gridMeta, transform, w, h);
-      const rW = rMaxX - rMinX;
-      const rH = rMaxY - rMinY;
+      for (const r of roads) {
+        if (!r.geometry || r.geometry.length < 2) continue;
+        const imp = roadImpacts[r.road_id];
+        const cls = imp ? imp.classification : 'DRY';
 
-      const rainCanvas = document.createElement('canvas');
-      rainCanvas.width = effRW;
-      rainCanvas.height = effRH;
-      const rainCtx = rainCanvas.getContext('2d')!;
-      const rainImg = rainCtx.createImageData(effRW, effRH);
+        if (layers.policyFilter && cls !== 'IMPASSABLE') continue;
 
-      for (let r = 0; r < effRH; r++) {
-        for (let c = 0; c < effRW; c++) {
-          const idx = r * effRW + c;
-          if (idx >= rainLen) continue;
-          const rate = rainfallGrid[idx];
-          if (rate > 2.0) {
-            const pIdx = idx * 4;
-            if (rate < 15.0) {
-              // Light Rain (2-15 mm/h - Emerald Green)
-              rainImg.data[pIdx] = 52; rainImg.data[pIdx + 1] = 211; rainImg.data[pIdx + 2] = 153; rainImg.data[pIdx + 3] = 90;
-            } else if (rate < 35.0) {
-              // Moderate Rain (15-35 mm/h - Amber)
-              rainImg.data[pIdx] = 245; rainImg.data[pIdx + 1] = 158; rainImg.data[pIdx + 2] = 11; rainImg.data[pIdx + 3] = 130;
-            } else if (rate < 65.0) {
-              // Heavy Rain (35-65 mm/h - Crimson)
-              rainImg.data[pIdx] = 239; rainImg.data[pIdx + 1] = 68; rainImg.data[pIdx + 2] = 68; rainImg.data[pIdx + 3] = 160;
-            } else {
-              // Torrential / Extreme (>65 mm/h - Deep Violet)
-              rainImg.data[pIdx] = 168; rainImg.data[pIdx + 1] = 85; rainImg.data[pIdx + 2] = 247; rainImg.data[pIdx + 3] = 190;
-            }
-          }
-        }
-      }
-      rainCtx.putImageData(rainImg, 0, 0);
+        const rClass = r.road_class || 'primary';
+        let baseWidth = 1.2;
+        let strokeColor = '#475569';
 
-      ctx.save();
-      ctx.imageSmoothingEnabled = true;
-      ctx.drawImage(rainCanvas, rMinX, rMinY, rW, rH);
-      ctx.restore();
-    }
-
-
-    if (layers.radar) {
-      const [rMinX, rMinY] = worldToScreen(ox, oy + gh * cs, gridMeta, transform, w, h);
-      const [rMaxX, rMaxY] = worldToScreen(ox + gw * cs, oy, gridMeta, transform, w, h);
-      const rW = rMaxX - rMinX;
-      const rH = rMaxY - rMinY;
-
-      // Real DWR Station coordinates in canvas space
-      const isMumbai = (cityMeta?.city_id === 'mumbai');
-      const isVijayawada = (cityMeta?.city_id === 'vijayawada');
-      
-      const centerX = isMumbai ? rMinX + rW * 0.46 : (isVijayawada ? rMinX + rW * 0.55 : rMinX + rW / 2);
-      const centerY = isMumbai ? rMinY + rH * 0.38 : (isVijayawada ? rMinY + rH * 0.52 : rMinY + rH / 2);
-      const maxRadius = Math.max(rW, rH) * 0.75;
-      const sweepSpan = Math.PI / 3.2; // ~56 degrees active phosphor sector
-      const radarAngle = ((Date.now() / 4500) % 1) * Math.PI * 2;
-
-      ctx.save();
-
-      // 1. Marshall-Palmer Spatial Reflectivity Heatmap (Z = 200 * R^1.6 -> dBZ)
-      if (rainfallGrid && rainfallGrid.length > 0) {
-        const rainLen = rainfallGrid.length;
-        let effRW = gw;
-        let effRH = gh;
-        if (effRW * effRH !== rainLen) {
-          if (rainLen === 825 * 1486) { effRW = 825; effRH = 1486; }
-          else if (rainLen === 606 * 481) { effRW = 606; effRH = 481; }
-          else if (rainLen === 980 * 1240) { effRW = 980; effRH = 1240; }
-          else if (rainLen === 134 * 134) { effRW = 134; effRH = 134; }
-          else {
-            effRW = Math.round(Math.sqrt(rainLen));
-            effRH = Math.round(rainLen / effRW);
-          }
+        if (rClass === 'motorway' || rClass === 'trunk') {
+          baseWidth = 3.2; strokeColor = '#94a3b8';
+        } else if (rClass === 'primary') {
+          baseWidth = 2.4; strokeColor = '#cbd5e1';
+        } else if (rClass === 'secondary') {
+          baseWidth = 1.8; strokeColor = '#94a3b8';
+        } else {
+          baseWidth = 1.2; strokeColor = '#475569';
         }
 
-        const radarCanvas = document.createElement('canvas');
-        radarCanvas.width = effRW;
-        radarCanvas.height = effRH;
-        const radCtx = radarCanvas.getContext('2d')!;
-        const radImg = radCtx.createImageData(effRW, effRH);
-
-        for (let r = 0; r < effRH; r++) {
-          for (let c = 0; c < effRW; c++) {
-            const idx = r * effRW + c;
-            if (idx >= rainLen) continue;
-            const r_mmh = rainfallGrid[idx];
-            if (r_mmh > 0.5) {
-              // Marshall-Palmer Z = 200 * R^1.6, dBZ = 10 * log10(Z)
-              const dbz = 10.0 * Math.log10(Math.max(1.0, 200.0 * Math.pow(r_mmh, 1.6)));
-              const pIdx = idx * 4;
-
-              if (dbz < 20.0) {
-                // 10-20 dBZ (Light drizzle - Cyan/Light Blue)
-                radImg.data[pIdx] = 6; radImg.data[pIdx + 1] = 182; radImg.data[pIdx + 2] = 212; radImg.data[pIdx + 3] = 110;
-              } else if (dbz < 32.0) {
-                // 20-32 dBZ (Light rain - Green)
-                radImg.data[pIdx] = 34; radImg.data[pIdx + 1] = 197; radImg.data[pIdx + 2] = 94; radImg.data[pIdx + 3] = 150;
-              } else if (dbz < 42.0) {
-                // 32-42 dBZ (Moderate rain - Yellow/Amber)
-                radImg.data[pIdx] = 234; radImg.data[pIdx + 1] = 179; radImg.data[pIdx + 2] = 8; radImg.data[pIdx + 3] = 180;
-              } else if (dbz < 50.0) {
-                // 42-50 dBZ (Heavy convective rain - Orange/Red)
-                radImg.data[pIdx] = 249; radImg.data[pIdx + 1] = 115; radImg.data[pIdx + 2] = 22; radImg.data[pIdx + 3] = 210;
-              } else if (dbz < 58.0) {
-                // 50-58 dBZ (Very heavy / Storm cells - Crimson)
-                radImg.data[pIdx] = 239; radImg.data[pIdx + 1] = 68; radImg.data[pIdx + 2] = 68; radImg.data[pIdx + 3] = 230;
-              } else {
-                // >58 dBZ (Severe / Hail core - Magenta/Purple)
-                radImg.data[pIdx] = 217; radImg.data[pIdx + 1] = 70; radImg.data[pIdx + 2] = 239; radImg.data[pIdx + 3] = 245;
-              }
-            }
-          }
+        if (layers.passability && imp) {
+          strokeColor = IMPACT_COLORS[cls] || strokeColor;
         }
-        radCtx.putImageData(radImg, 0, 0);
 
-        ctx.save();
-        ctx.imageSmoothingEnabled = true;
-        ctx.globalAlpha = 0.88;
-        ctx.drawImage(radarCanvas, rMinX, rMinY, rW, rH);
-        ctx.restore();
-      }
+        const [p0x, p0y] = worldToScreen(r.geometry[0][0], r.geometry[0][1], gridMeta, transform, w, h);
 
-      // 2. Phosphor Radar Beam Sweep Sector Glow
-      const sweepGrad = ctx.createRadialGradient(centerX, centerY, 6, centerX, centerY, maxRadius);
-      sweepGrad.addColorStop(0, 'rgba(56, 189, 248, 0.45)');
-      sweepGrad.addColorStop(0.6, 'rgba(14, 165, 233, 0.16)');
-      sweepGrad.addColorStop(1.0, 'rgba(3, 105, 161, 0.01)');
-      ctx.fillStyle = sweepGrad;
-      ctx.beginPath();
-      ctx.moveTo(centerX, centerY);
-      ctx.arc(centerX, centerY, maxRadius, radarAngle - sweepSpan, radarAngle, false);
-      ctx.closePath();
-      ctx.fill();
-
-      // 3. Official Range Rings (25km, 50km, 100km, 150km, 200km)
-      ctx.strokeStyle = 'rgba(56, 189, 248, 0.35)';
-      ctx.lineWidth = 1.0;
-      ctx.setLineDash([3, 4]);
-      const ringIntervals = isMumbai ? [10, 25, 50, 100, 150] : [10, 25, 50, 100, 200];
-      for (const km of ringIntervals) {
-        const ringRadius = (km * 1000 / cs) * (rW / gw);
-        if (ringRadius < maxRadius * 1.5) {
+        // Dark Outer Casing Halo for crisp contrast
+        if (rClass === 'motorway' || rClass === 'trunk' || rClass === 'primary' || cls === 'IMPASSABLE') {
+          ctx.strokeStyle = 'rgba(0, 0, 0, 0.9)';
+          ctx.lineWidth = (baseWidth * scaleFactor) + 2.0;
           ctx.beginPath();
-          ctx.arc(centerX, centerY, ringRadius, 0, Math.PI * 2);
-          ctx.stroke();
-
-          ctx.fillStyle = 'rgba(56, 189, 248, 0.90)';
-          ctx.font = 'bold 9px -apple-system, monospace';
-          ctx.fillText(`${km}km`, centerX + ringRadius - 26, centerY - 4);
-        }
-      }
-
-      // 4. Azimuth Radials (0°, 45°, 90°, 135°, 180°, 225°, 270°, 315°)
-      ctx.setLineDash([2, 6]);
-      for (let deg = 0; deg < 360; deg += 45) {
-        const rad = (deg * Math.PI) / 180;
-        ctx.beginPath();
-        ctx.moveTo(centerX, centerY);
-        ctx.lineTo(centerX + Math.cos(rad) * maxRadius, centerY + Math.sin(rad) * maxRadius);
-        ctx.stroke();
-      }
-
-      // 5. Leading Active Sweep Beam
-      ctx.strokeStyle = '#38bdf8';
-      ctx.lineWidth = 2.0;
-      ctx.setLineDash([]);
-      ctx.beginPath();
-      ctx.moveTo(centerX, centerY);
-      ctx.lineTo(centerX + Math.cos(radarAngle) * maxRadius, centerY + Math.sin(radarAngle) * maxRadius);
-      ctx.stroke();
-
-      // 6. Station Central Radar Tower Marker & Legend
-      ctx.fillStyle = '#ef4444';
-      ctx.beginPath();
-      ctx.arc(centerX, centerY, 5, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.strokeStyle = '#ffffff';
-      ctx.lineWidth = 1.5;
-      ctx.stroke();
-
-      const stnName = (cityMeta?.city_id === 'mumbai') ? 'IMD DWR VERAVALI (MUMBAI C-BAND 5.6GHz)' : ((cityMeta?.city_id === 'vijayawada') ? 'IMD DWR MACHILIPATNAM (S-BAND 2.8GHz)' : (telemetry?.radar_station || 'IMD Doppler Weather Radar (5.6 GHz)'));
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.90)';
-      ctx.fillRect(centerX - 130, centerY + 12, 260, 36);
-      ctx.strokeStyle = '#0284c7';
-      ctx.lineWidth = 1;
-      ctx.strokeRect(centerX - 130, centerY + 12, 260, 36);
-
-      ctx.fillStyle = '#38bdf8';
-      ctx.font = 'bold 9px -apple-system, sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText(stnName, centerX, centerY + 24);
-
-      ctx.fillStyle = '#94a3b8';
-      ctx.font = '8px monospace';
-      ctx.fillText('0.5° PPI | dBZ: 10-65 | Zdr: +1.4dB | Kdp: 2.1°/km | ρhv: 0.98', centerX, centerY + 38);
-      ctx.textAlign = 'left';
-
-      ctx.restore();
-    }
-
-
-    // 2. LAYER A: 2D Surface Inundation Depth Raster (Overland Flow)
-    if (layers.flood_2d && depthGrid && depthGrid.length > 0) {
-      const depthLen = depthGrid.length;
-      let effectiveGW = gw;
-      let effectiveGH = gh;
-
-      if (effectiveGW * effectiveGH !== depthLen) {
-        if (depthLen === 825 * 1486) { effectiveGW = 825; effectiveGH = 1486; }
-        else if (depthLen === 606 * 481) { effectiveGW = 606; effectiveGH = 481; }
-        else if (depthLen === 980 * 1240) { effectiveGW = 980; effectiveGH = 1240; }
-        else if (depthLen === 134 * 134) { effectiveGW = 134; effectiveGH = 134; }
-        else {
-          effectiveGW = Math.round(Math.sqrt(depthLen));
-          effectiveGH = Math.round(depthLen / effectiveGW);
-        }
-      }
-
-      const [minSX, minSY] = worldToScreen(ox, oy + effectiveGH * cs, gridMeta, transform, w, h);
-      const [maxSX, maxSY] = worldToScreen(ox + effectiveGW * cs, oy, gridMeta, transform, w, h);
-      const rasterW = maxSX - minSX;
-      const rasterH = maxSY - minSY;
-
-      const offscreen = document.createElement('canvas');
-      offscreen.width = effectiveGW;
-      offscreen.height = effectiveGH;
-      const offCtx = offscreen.getContext('2d')!;
-      const imgData = offCtx.createImageData(effectiveGW, effectiveGH);
-
-      for (let r = 0; r < effectiveGH; r++) {
-        for (let c = 0; c < effectiveGW; c++) {
-          const idx = r * effectiveGW + c;
-          if (idx >= depthLen) continue;
-          const d = depthGrid[idx];
-          if (d >= minDepthThreshold) {
-            const pIdx = idx * 4;
-            if (d < 0.08) {
-              // Initial runoff wetting front (1-8cm)
-              imgData.data[pIdx] = 56; imgData.data[pIdx + 1] = 189; imgData.data[pIdx + 2] = 248; imgData.data[pIdx + 3] = 135;
-            } else if (d < 0.20) {
-              // Shallow street water (8-20cm - Low Impact)
-              imgData.data[pIdx] = 2; imgData.data[pIdx + 1] = 132; imgData.data[pIdx + 2] = 199; imgData.data[pIdx + 3] = 185;
-            } else if (d < 0.50) {
-              // Moderate inundation (20-50cm - Caution/High Impact)
-              imgData.data[pIdx] = 245; imgData.data[pIdx + 1] = 158; imgData.data[pIdx + 2] = 11; imgData.data[pIdx + 3] = 215;
-            } else if (d < 1.0) {
-              // Severe / Impassable (50-100cm)
-              imgData.data[pIdx] = 239; imgData.data[pIdx + 1] = 68; imgData.data[pIdx + 2] = 68; imgData.data[pIdx + 3] = 240;
-            } else {
-              // Extreme flood (>1.0m)
-              imgData.data[pIdx] = 168; imgData.data[pIdx + 1] = 85; imgData.data[pIdx + 2] = 247; imgData.data[pIdx + 3] = 255;
-            }
+          ctx.moveTo(p0x, p0y);
+          for (let i = 1; i < r.geometry.length; i++) {
+            const [px, py] = worldToScreen(r.geometry[i][0], r.geometry[i][1], gridMeta, transform, w, h);
+            ctx.lineTo(px, py);
           }
+          ctx.stroke();
+        }
+
+        // Main Stroke
+        ctx.strokeStyle = strokeColor;
+        ctx.lineWidth = Math.max(0.8, baseWidth * scaleFactor);
+        ctx.beginPath();
+        ctx.moveTo(p0x, p0y);
+        for (let i = 1; i < r.geometry.length; i++) {
+          const [px, py] = worldToScreen(r.geometry[i][0], r.geometry[i][1], gridMeta, transform, w, h);
+          ctx.lineTo(px, py);
+        }
+        ctx.stroke();
+
+        // Impassable hazard dash overlay
+        if (layers.passability && cls === 'IMPASSABLE') {
+          ctx.save();
+          ctx.strokeStyle = '#f43f5e';
+          ctx.lineWidth = Math.max(1.5, baseWidth * scaleFactor);
+          ctx.setLineDash([6, 4]);
+          ctx.beginPath();
+          ctx.moveTo(p0x, p0y);
+          for (let i = 1; i < r.geometry.length; i++) {
+            const [px, py] = worldToScreen(r.geometry[i][0], r.geometry[i][1], gridMeta, transform, w, h);
+            ctx.lineTo(px, py);
+          }
+          ctx.stroke();
+          ctx.restore();
         }
       }
-      offCtx.putImageData(imgData, 0, 0);
-
-      ctx.save();
-      ctx.imageSmoothingEnabled = true;
-      ctx.drawImage(offscreen, minSX, minSY, rasterW, rasterH);
-      ctx.restore();
     }
 
 
