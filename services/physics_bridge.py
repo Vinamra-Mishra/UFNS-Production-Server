@@ -147,13 +147,13 @@ def solve_inundation_2d(
         }
         return np.round(out_depth.astype(np.float64), 4), report_dict
 
-    # Vectorized NumPy Flow Accumulation & Low-Lying Depression Indexing
+    # Vectorized NumPy Fallback (Topographic Flow Accumulation & Depression Indexing)
     base_rate = base_rain_rate_mmh if base_rain_rate_mmh > 0 else (85.0 if scenario_id == "S4" else (72.0 if scenario_id == "S3" else 38.0))
     lead_hours = float(lead_minutes) / 60.0
     time_fac = max(0.20, math.sin(max(0.10, (lead_minutes / 90.0) * (math.pi / 2.0)))) if lead_minutes <= 90 else max(0.25, math.cos(min(math.pi / 2.0, ((lead_minutes - 90.0) / 90.0) * (math.pi / 2.0))))
 
-    gross_rain_m = (base_rate * max(0.08, lead_hours) * time_fac) / 1000.0
-    runoff_coeff = 0.10 if lead_minutes == 0 else min(0.92, 0.28 + 0.64 * math.tanh(lead_hours * 1.5))
+    gross_rain_m = (base_rate * lead_hours * time_fac) / 1000.0
+    runoff_coeff = 0.0 if lead_minutes == 0 else min(0.92, 0.28 + 0.64 * math.tanh(lead_hours * 1.5))
     net_runoff_m = gross_rain_m * runoff_coeff
 
     valid_mask = (land_mask == 1) & np.isfinite(dem) & (dem > -50.0)
@@ -165,17 +165,15 @@ def solve_inundation_2d(
     delta_z = np.maximum(0.0, z_med - dem)
     eta = np.clip(delta_z / z_range, 0.0, 1.0)
 
-    # Inundation concentrates in natural drainage corridors & low-lying depressions (eta > 0.55)
-    corridor_factor = np.maximum(0.0, (eta - 0.55) / 0.45) ** 1.6
     surcharge_m = np.zeros_like(dem)
-    if scenario_id in ("S4", "S3"):
+    if scenario_id in ("S4", "S3") and lead_minutes > 0:
         surch_intensity = 0.45 if scenario_id == "S4" else 0.25
-        surch_mask = eta > 0.55
-        surcharge_m[surch_mask] = surch_intensity * (0.05 if lead_minutes == 0 else math.tanh(lead_hours * 2.2)) * corridor_factor[surch_mask]
+        surch_mask = eta > 0.45
+        surcharge_m[surch_mask] = surch_intensity * math.tanh(lead_hours * 2.2) * (eta[surch_mask] - 0.45) / 0.55
 
-    depth = net_runoff_m * 4.5 * corridor_factor + surcharge_m
+    depth = net_runoff_m * (0.05 + 2.6 * (eta ** 1.4)) + surcharge_m
     depth[~valid_mask] = 0.0
-    depth[depth < 0.02] = 0.0
+    depth[depth < 0.001] = 0.0
 
     report_dict = {
         "mass_closure_error_pct": 0.012,
