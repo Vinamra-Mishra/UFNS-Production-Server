@@ -1,0 +1,14 @@
+{
+  "name": "UFNS Production Server",
+  "image": "mcr.microsoft.com/devcontainers/python:3.11",
+  "forwardPorts": [8000],
+  "portsAttributes": {
+    "8000": {
+      "label": "UFNS API Server",
+      "onAutoForward": "notify",
+      "visibility": "public"
+    }
+  },
+  "postCreateCommand": "pip install -r requirements.txt",
+  "postStartCommand": "uvicorn apps.api.app:app --host 0.0.0.0 --port 8000"
+}
