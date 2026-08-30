@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { apiUrl } from '../config';
 import {
   ScenarioMeta,
   RouteResponse,
@@ -74,7 +75,7 @@ export const FloatingDrawer: React.FC<FloatingDrawerProps> = ({
   const handleRunCalibration = async () => {
     setIsCalibrating(true);
     try {
-      const res = await fetch('/api/v1/calibration/solve', {
+      const res = await fetch(apiUrl('/api/v1/calibration/solve'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ strategy: 'NELDER_MEAD', target_params: ['pipe_manning_n', 'blockage_ratio', 'surface_roughness'] }),
@@ -100,7 +101,7 @@ export const FloatingDrawer: React.FC<FloatingDrawerProps> = ({
 
   const handleGenerateAlert = async () => {
     try {
-      const res = await fetch('/api/v1/alerts/generate', {
+      const res = await fetch(apiUrl('/api/v1/alerts/generate'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ scenario_id: activeScenarioId, lead_minutes: currentLead }),
@@ -123,7 +124,7 @@ export const FloatingDrawer: React.FC<FloatingDrawerProps> = ({
 
   const handleRunMitigation = async () => {
     try {
-      const res = await fetch('/api/v1/mitigation/simulate', {
+      const res = await fetch(apiUrl('/api/v1/mitigation/simulate'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ scenario_id: activeScenarioId, budget_cr: selectedBudget }),
@@ -143,7 +144,7 @@ export const FloatingDrawer: React.FC<FloatingDrawerProps> = ({
 
   const handleRunPareto = async () => {
     try {
-      const res = await fetch('/api/v1/mitigation/pareto', {
+      const res = await fetch(apiUrl('/api/v1/mitigation/pareto'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ budget_range_cr: [1.0, 10.0], steps: 5 }),
@@ -165,7 +166,7 @@ export const FloatingDrawer: React.FC<FloatingDrawerProps> = ({
 
   const handleRunMonteCarlo = async () => {
     try {
-      const res = await fetch('/api/v1/probabilistic/ensemble', {
+      const res = await fetch(apiUrl('/api/v1/probabilistic/ensemble'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ n_samples: 100, scenario_id: activeScenarioId }),

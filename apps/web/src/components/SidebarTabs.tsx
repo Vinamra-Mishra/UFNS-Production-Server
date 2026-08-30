@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { apiUrl } from '../config';
 import {
   ScenarioMeta,
   RouteResponse,
@@ -144,7 +145,7 @@ export const SidebarTabs: React.FC<SidebarTabsProps> = ({
   const handleRunCalibration = async () => {
     setIsCalibrating(true);
     try {
-      const res = await fetch('/api/v1/calibration/solve', {
+      const res = await fetch(apiUrl('/api/v1/calibration/solve'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -189,7 +190,7 @@ export const SidebarTabs: React.FC<SidebarTabsProps> = ({
 
   const handleGenerateAlert = async () => {
     try {
-      const res = await fetch('/api/v1/alerts/generate', {
+      const res = await fetch(apiUrl('/api/v1/alerts/generate'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -230,7 +231,7 @@ export const SidebarTabs: React.FC<SidebarTabsProps> = ({
 
   const handleRunMitigation = async (strat: string) => {
     try {
-      const res = await fetch('/api/v1/mitigation/simulate', {
+      const res = await fetch(apiUrl('/api/v1/mitigation/simulate'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -278,7 +279,7 @@ export const SidebarTabs: React.FC<SidebarTabsProps> = ({
   const handleRunPareto = async (overrideBudget?: number) => {
     const budget = overrideBudget ?? selectedBudget;
     try {
-      const res = await fetch('/api/v1/optimization/solve', {
+      const res = await fetch(apiUrl('/api/v1/optimization/solve'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -330,7 +331,7 @@ export const SidebarTabs: React.FC<SidebarTabsProps> = ({
 
   const handleRunMonteCarlo = async () => {
     try {
-      const res = await fetch('/api/v1/probabilistic/simulate', {
+      const res = await fetch(apiUrl('/api/v1/probabilistic/simulate'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ scenario_id: activeScenarioId, lead_minutes: currentLead, member_count: 20 }),
@@ -352,7 +353,7 @@ export const SidebarTabs: React.FC<SidebarTabsProps> = ({
 
   const handleLoadBriefing = async () => {
     try {
-      const res = await fetch('/api/v1/reports/executive-briefing');
+      const res = await fetch(apiUrl('/api/v1/reports/executive-briefing'));
       if (res.ok) {
         setBriefingData(await res.json());
       } else {

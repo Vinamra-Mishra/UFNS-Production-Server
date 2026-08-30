@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { apiUrl } from './config';
 import { Navbar } from './components/Navbar';
 import { SidebarTabs } from './components/SidebarTabs';
 import { MapView } from './components/MapView';
@@ -314,8 +315,8 @@ export const App: React.FC = () => {
     setIsBuffering(true);
     try {
       const url = activeScenarioId === 'REALTIME'
-        ? `/api/v1/nowcast/realtime/horizon?max_lead=${horizonMinutes}&step=${stepMinutes}`
-        : `/api/v1/scenarios/${activeScenarioId}/horizon?max_lead=${horizonMinutes}&step=${stepMinutes}`;
+        ? apiUrl(`/api/v1/nowcast/realtime/horizon?max_lead=${horizonMinutes}&step=${stepMinutes}`)
+        : apiUrl(`/api/v1/scenarios/${activeScenarioId}/horizon?max_lead=${horizonMinutes}&step=${stepMinutes}`);
       const res = await fetch(url);
       if (res.ok) {
         const data = await res.json();
@@ -382,8 +383,8 @@ export const App: React.FC = () => {
     try {
       const queryLead = scenarioId === 'REALTIME' ? lead : Math.round(lead / 5) * 5;
       const url = scenarioId === 'REALTIME'
-        ? `/api/v1/nowcast/realtime/frame?lead=${queryLead}`
-        : `/api/v1/scenarios/${scenarioId}/frame?lead=${queryLead}`;
+        ? apiUrl(`/api/v1/nowcast/realtime/frame?lead=${queryLead}`)
+        : apiUrl(`/api/v1/scenarios/${scenarioId}/frame?lead=${queryLead}`);
       const res = await fetch(url);
       if (res.ok) {
         const data = await res.json();
@@ -416,7 +417,7 @@ export const App: React.FC = () => {
       setBufferedLeads([]);
 
       try {
-        await fetch('/api/v1/city/switch', {
+        await fetch(apiUrl('/api/v1/city/switch'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ city_id: city }),
@@ -427,12 +428,12 @@ export const App: React.FC = () => {
 
       // Fetch core GIS and active city specification
       const [metaRes, scenRes, roadsRes, drainRes, assetsRes, telemRes] = await Promise.allSettled([
-        fetch('/api/v1/city/active').then((r) => (r.ok ? r.json() : null)),
-        fetch('/api/v1/scenarios').then((r) => (r.ok ? r.json() : null)),
-        fetch(`/api/v1/roads?tier=${roadTier === 'none' ? 'main' : roadTier}`).then((r) => (r.ok ? r.json() : null)),
-        fetch('/api/v1/drainage/points').then((r) => (r.ok ? r.json() : null)),
-        fetch(`/api/v1/vulnerability/assets?city=${city}`).then((r) => (r.ok ? r.json() : null)),
-        fetch('/api/v1/telemetry/live').then((r) => (r.ok ? r.json() : null)),
+        fetch(apiUrl('/api/v1/city/active')).then((r) => (r.ok ? r.json() : null)),
+        fetch(apiUrl('/api/v1/scenarios')).then((r) => (r.ok ? r.json() : null)),
+        fetch(apiUrl(`/api/v1/roads?tier=${roadTier === 'none' ? 'main' : roadTier}`)).then((r) => (r.ok ? r.json() : null)),
+        fetch(apiUrl('/api/v1/drainage/points')).then((r) => (r.ok ? r.json() : null)),
+        fetch(apiUrl(`/api/v1/vulnerability/assets?city=${city}`)).then((r) => (r.ok ? r.json() : null)),
+        fetch(apiUrl('/api/v1/telemetry/live')).then((r) => (r.ok ? r.json() : null)),
       ]);
 
       if (metaRes.status === 'fulfilled' && metaRes.value) {
@@ -517,7 +518,7 @@ export const App: React.FC = () => {
     }
     setLayers((prev) => ({ ...prev, roads: true }));
     try {
-      const res = await fetch(`/api/v1/roads?tier=${tier}`);
+      const res = await fetch(apiUrl(`/api/v1/roads?tier=${tier}`));
       if (res.ok) {
         const data = await res.json();
         const segs: RoadSegment[] = data.roads || data.segments || [];
@@ -531,7 +532,7 @@ export const App: React.FC = () => {
   // Handle Route Calculation
   const handleCalculateRoute = async (origin: [number, number], destination: [number, number], mode: string) => {
     try {
-      const res = await fetch('/api/v1/routes', {
+      const res = await fetch(apiUrl('/api/v1/routes'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { apiUrl } from '../config';
 import { IMDOverview, MOSDACSatelliteObservation } from '../types';
 
 interface IMDWeatherPanelProps {
@@ -20,10 +21,10 @@ export const IMDWeatherPanel: React.FC<IMDWeatherPanelProps> = ({ activeCity }) 
     setLoading(true);
 
     Promise.all([
-      fetch(`/api/v1/imd/overview?city=${activeCity}`)
+      fetch(apiUrl(`/api/v1/imd/overview?city=${activeCity}`))
         .then((r) => (r.ok ? r.json() : null))
         .catch(() => null),
-      fetch(`/api/v1/mosdac/latest-observation?city=${activeCity}`)
+      fetch(apiUrl(`/api/v1/mosdac/latest-observation?city=${activeCity}`))
         .then((r) => (r.ok ? r.json() : null))
         .catch(() => null),
     ])
@@ -65,7 +66,7 @@ export const IMDWeatherPanel: React.FC<IMDWeatherPanelProps> = ({ activeCity }) 
   const handleSearchMosdac = async () => {
     setIsSearchingMosdac(true);
     try {
-      const res = await fetch(`/api/v1/mosdac/search?datasetId=${searchDatasetId}&count=5`);
+      const res = await fetch(apiUrl(`/api/v1/mosdac/search?datasetId=${searchDatasetId}&count=5`));
       if (res.ok) {
         const json = await res.json();
         setMosdacSearchResults(json.entries || []);
