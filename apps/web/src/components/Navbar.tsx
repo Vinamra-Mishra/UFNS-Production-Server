@@ -45,31 +45,31 @@ export const Navbar: React.FC<NavbarProps> = ({
     <header
       role="banner"
       style={{
-        height: '48px',
-        background: 'rgba(24, 24, 26, 0.82)',
+        height: '52px',
+        background: 'rgba(18, 18, 22, 0.88)',
         backdropFilter: 'blur(24px) saturate(190%)',
         WebkitBackdropFilter: 'blur(24px) saturate(190%)',
         borderBottom: '1px solid var(--hairline)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        padding: '0 16px',
+        padding: '0 18px',
         zIndex: 50,
         position: 'relative',
       }}
     >
       {/* Brand & Project Identity */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
         <div
           style={{
-            background: 'var(--primary-focus)',
+            background: 'linear-gradient(135deg, #3b82f6, #1d4ed8)',
             color: '#ffffff',
             fontWeight: 800,
             fontSize: '13px',
-            padding: '2px 8px',
-            borderRadius: '6px',
+            padding: '4px 10px',
+            borderRadius: '10px',
             letterSpacing: '0.4px',
-            boxShadow: '0 2px 8px var(--primary-glow)',
+            boxShadow: '0 2px 10px rgba(37, 99, 235, 0.4)',
           }}
           aria-hidden="true"
         >
@@ -86,15 +86,17 @@ export const Navbar: React.FC<NavbarProps> = ({
       </div>
 
       {/* Center City Switcher & Live Feeds */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-        {/* Apple Segmented City Selector Pill */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+        {/* One UI Segmented City Selector Pill */}
         <div
           className="glass-pill"
           style={{
             display: 'flex',
             alignItems: 'center',
-            padding: '2px 10px',
-            gap: '6px',
+            padding: '4px 12px',
+            gap: '8px',
+            background: 'rgba(32, 32, 40, 0.8)',
+            border: '1px solid rgba(255, 255, 255, 0.12)',
           }}
         >
           <MapPin size={13} color="var(--primary-on-dark)" aria-hidden="true" />
@@ -130,7 +132,7 @@ export const Navbar: React.FC<NavbarProps> = ({
         </div>
 
         {/* Live Weather / Marine Badges */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           {/* Weather Widget Trigger Button */}
           <button
             type="button"
@@ -139,9 +141,11 @@ export const Navbar: React.FC<NavbarProps> = ({
             aria-label="Toggle live meteorological telemetry panel"
             className="chip-btn"
             style={{
-              background: showWeather ? 'rgba(0, 113, 227, 0.25)' : 'rgba(42, 42, 44, 0.65)',
+              background: showWeather ? 'rgba(37, 99, 235, 0.3)' : 'rgba(36, 36, 44, 0.75)',
               borderColor: showWeather ? 'var(--primary-on-dark)' : 'var(--hairline-soft)',
               color: showWeather ? '#ffffff' : 'var(--ink)',
+              padding: '5px 12px',
+              borderRadius: '9999px',
             }}
             title="Real-Time Meteorological & Satellite Telemetry"
           >
@@ -154,8 +158,11 @@ export const Navbar: React.FC<NavbarProps> = ({
             className="chip-btn"
             style={{
               color: !telemetry ? 'var(--body-muted)' : telemetry.radar_status === 'OFFLINE' ? 'var(--red)' : 'var(--green)',
-              borderColor: !telemetry ? 'var(--hairline-soft)' : telemetry.radar_status === 'OFFLINE' ? 'rgba(255, 69, 58, 0.25)' : 'rgba(48, 209, 88, 0.25)',
+              borderColor: !telemetry ? 'var(--hairline-soft)' : telemetry.radar_status === 'OFFLINE' ? 'rgba(239, 68, 68, 0.3)' : 'rgba(16, 185, 129, 0.3)',
+              background: telemetry?.radar_status === 'OFFLINE' ? 'rgba(239, 68, 68, 0.12)' : 'rgba(16, 185, 129, 0.12)',
               cursor: 'default',
+              padding: '5px 12px',
+              borderRadius: '9999px',
             }}
           >
             <Radio size={11} aria-hidden="true" />
@@ -167,8 +174,11 @@ export const Navbar: React.FC<NavbarProps> = ({
             className="chip-btn"
             style={{
               color: telemetry?.precip_rate_mmh != null ? 'var(--cyan)' : 'var(--body-muted)',
-              borderColor: telemetry?.precip_rate_mmh != null ? 'rgba(100, 210, 255, 0.2)' : 'var(--hairline-soft)',
+              borderColor: telemetry?.precip_rate_mmh != null ? 'rgba(6, 182, 212, 0.3)' : 'var(--hairline-soft)',
+              background: telemetry?.precip_rate_mmh != null ? 'rgba(6, 182, 212, 0.12)' : 'rgba(36, 36, 44, 0.75)',
               cursor: 'default',
+              padding: '5px 12px',
+              borderRadius: '9999px',
             }}
           >
             <CloudRain size={11} aria-hidden="true" />
@@ -182,8 +192,11 @@ export const Navbar: React.FC<NavbarProps> = ({
             className="chip-btn"
             style={{
               color: telemetry?.tide_level_m != null ? 'var(--primary-on-dark)' : 'var(--body-muted)',
-              borderColor: telemetry?.tide_level_m != null ? 'rgba(41, 151, 255, 0.2)' : 'var(--hairline-soft)',
+              borderColor: telemetry?.tide_level_m != null ? 'rgba(59, 130, 246, 0.3)' : 'var(--hairline-soft)',
+              background: telemetry?.tide_level_m != null ? 'rgba(59, 130, 246, 0.12)' : 'rgba(36, 36, 44, 0.75)',
               cursor: 'default',
+              padding: '5px 12px',
+              borderRadius: '9999px',
             }}
           >
             <Waves size={11} aria-hidden="true" />
@@ -196,20 +209,22 @@ export const Navbar: React.FC<NavbarProps> = ({
       </div>
 
       {/* Right Certification Provenance Badges */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
         <span
           className="chip-btn"
           style={{
+            background: 'rgba(16, 185, 129, 0.12)',
+            color: 'var(--green)',
+            borderColor: 'rgba(16, 185, 129, 0.3)',
             fontSize: '10px',
             fontWeight: 700,
-            background: 'rgba(48, 209, 88, 0.12)',
-            color: 'var(--green)',
-            borderColor: 'rgba(48, 209, 88, 0.3)',
             cursor: 'default',
+            padding: '4px 10px',
+            borderRadius: '9999px',
           }}
         >
-          <ShieldCheck size={11} aria-hidden="true" />
-          {cityMeta?.provenance_status || (activeCity === 'DEMO' ? 'SYNTHETIC_BENCHMARK' : 'REAL_OBSERVED')}
+          <ShieldCheck size={12} aria-hidden="true" />
+          <span>PROVISIONAL_SIMULATED</span>
         </span>
 
         <button

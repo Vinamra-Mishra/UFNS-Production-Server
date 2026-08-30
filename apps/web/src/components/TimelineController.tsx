@@ -109,24 +109,24 @@ export const TimelineController: React.FC<TimelineControllerProps> = ({
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px', width: '100%' }}>
         
         {/* Play / Pause / Reset / Step Jump Controls */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
           <button
             type="button"
             onClick={() => setIsPlaying(!isPlaying)}
             aria-label={isPlaying ? 'Pause simulation playback' : 'Play simulation timeline'}
             className="glass-btn"
             style={{
-              background: isPlaying ? 'var(--primary-focus)' : 'rgba(42, 42, 44, 0.85)',
+              background: isPlaying ? 'linear-gradient(135deg, #3b82f6, #1d4ed8)' : 'rgba(40, 40, 48, 0.85)',
               borderColor: isPlaying ? 'var(--primary-on-dark)' : 'var(--hairline)',
               color: '#ffffff',
               borderRadius: '9999px',
-              width: '32px',
-              height: '32px',
-              boxShadow: isPlaying ? '0 0 12px var(--primary-glow)' : 'none',
+              width: '36px',
+              height: '36px',
+              boxShadow: isPlaying ? '0 4px 14px rgba(37, 99, 235, 0.45)' : 'none',
             }}
             title={isPlaying ? 'Pause' : 'Play Continuous Hydrodynamic Timeline'}
           >
-            {isPlaying ? <Pause size={13} aria-hidden="true" /> : <Play size={13} style={{ marginLeft: '1px' }} aria-hidden="true" />}
+            {isPlaying ? <Pause size={14} aria-hidden="true" /> : <Play size={14} style={{ marginLeft: '1px' }} aria-hidden="true" />}
           </button>
 
           <button
@@ -138,10 +138,11 @@ export const TimelineController: React.FC<TimelineControllerProps> = ({
             aria-label="Reset timeline to T+0m baseline"
             className="glass-btn"
             style={{
-              width: '30px',
-              height: '30px',
-              borderRadius: '8px',
+              width: '32px',
+              height: '32px',
+              borderRadius: '9999px',
               color: 'var(--body-muted)',
+              padding: 0,
             }}
             title="Reset to T+0m"
           >
@@ -154,10 +155,11 @@ export const TimelineController: React.FC<TimelineControllerProps> = ({
             aria-label={`Step back ${currentStep} minutes`}
             className="glass-btn"
             style={{
-              width: '30px',
-              height: '30px',
-              borderRadius: '8px',
+              width: '32px',
+              height: '32px',
+              borderRadius: '9999px',
               color: 'var(--body-muted)',
+              padding: 0,
             }}
             title={`Step Back -${currentStep}m`}
           >
@@ -170,10 +172,11 @@ export const TimelineController: React.FC<TimelineControllerProps> = ({
             aria-label={`Step forward ${currentStep} minutes`}
             className="glass-btn"
             style={{
-              width: '30px',
-              height: '30px',
-              borderRadius: '8px',
+              width: '32px',
+              height: '32px',
+              borderRadius: '9999px',
               color: 'var(--body-muted)',
+              padding: 0,
             }}
             title={`Step Forward +${currentStep}m`}
           >
@@ -182,7 +185,7 @@ export const TimelineController: React.FC<TimelineControllerProps> = ({
         </div>
 
         {/* Lead Direct Input / Badge */}
-        <div style={{ minWidth: '76px', textAlign: 'center' }}>
+        <div style={{ minWidth: '84px', textAlign: 'center' }}>
           {isEditingLead ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
               <span style={{ fontSize: '11px', color: 'var(--primary-on-dark)', fontWeight: 700 }}>T+</span>
@@ -197,15 +200,15 @@ export const TimelineController: React.FC<TimelineControllerProps> = ({
                 autoFocus
                 aria-label="Direct lead minute entry"
                 style={{
-                  width: '42px',
-                  background: 'rgba(20, 20, 22, 0.95)',
+                  width: '46px',
+                  background: 'rgba(20, 20, 26, 0.95)',
                   border: '1px solid var(--primary-on-dark)',
-                  borderRadius: '4px',
+                  borderRadius: '8px',
                   color: 'var(--primary-on-dark)',
                   fontWeight: 700,
                   fontSize: '11px',
                   textAlign: 'center',
-                  padding: '2px',
+                  padding: '3px',
                   outline: 'none',
                 }}
               />
@@ -218,16 +221,18 @@ export const TimelineController: React.FC<TimelineControllerProps> = ({
               aria-label={`Current lead time T+${currentLead} minutes. Click to edit.`}
               className="chip-btn"
               style={{
-                background: 'rgba(41, 151, 255, 0.12)',
-                borderColor: 'rgba(41, 151, 255, 0.28)',
-                color: 'var(--primary-on-dark)',
-                padding: '3px 8px',
+                background: 'linear-gradient(135deg, rgba(37, 99, 235, 0.3), rgba(30, 64, 175, 0.3))',
+                borderColor: 'var(--primary-on-dark)',
+                color: '#ffffff',
+                fontWeight: 700,
+                fontSize: '12px',
+                padding: '5px 12px',
+                borderRadius: '9999px',
+                boxShadow: '0 2px 10px var(--primary-glow)',
               }}
-              title="Click to jump to any custom minute"
+              title="Click to manually enter forecast minute"
             >
-              <div style={{ fontSize: '13px', fontWeight: 700 }} className="tabular-nums">
-                T+{currentLead}m
-              </div>
+              <span className="tabular-nums">T+{currentLead}m</span>
             </button>
           )}
         </div>

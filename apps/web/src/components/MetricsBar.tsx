@@ -27,7 +27,7 @@ export const MetricsBar: React.FC<MetricsBarProps> = ({ metrics }) => {
       }}
     >
       {/* Lead Time Card */}
-      <div className="glass-card" style={{ padding: '4px 10px', minWidth: '85px', textAlign: 'center' }}>
+      <div className="glass-card" style={{ padding: '6px 12px', minWidth: '90px', textAlign: 'center', borderRadius: '12px' }}>
         <div style={{ color: 'var(--body-muted)', fontSize: '9px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.4px' }}>
           Lead Time
         </div>
@@ -37,7 +37,7 @@ export const MetricsBar: React.FC<MetricsBarProps> = ({ metrics }) => {
       </div>
 
       {/* Rainfall Intensity Card */}
-      <div className="glass-card" style={{ padding: '4px 10px', minWidth: '95px', textAlign: 'center' }}>
+      <div className="glass-card" style={{ padding: '6px 12px', minWidth: '100px', textAlign: 'center', borderRadius: '12px' }}>
         <div style={{ color: 'var(--body-muted)', fontSize: '9px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.4px' }}>
           Rainfall Rate
         </div>
@@ -47,7 +47,7 @@ export const MetricsBar: React.FC<MetricsBarProps> = ({ metrics }) => {
       </div>
 
       {/* Peak Depth Card */}
-      <div className="glass-card" style={{ padding: '4px 10px', minWidth: '90px', textAlign: 'center' }}>
+      <div className="glass-card" style={{ padding: '6px 12px', minWidth: '95px', textAlign: 'center', borderRadius: '12px' }}>
         <div style={{ color: 'var(--body-muted)', fontSize: '9px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.4px' }}>
           Peak Depth
         </div>
@@ -57,7 +57,7 @@ export const MetricsBar: React.FC<MetricsBarProps> = ({ metrics }) => {
       </div>
 
       {/* Flooded Area Card */}
-      <div className="glass-card" style={{ padding: '4px 10px', minWidth: '100px', textAlign: 'center' }}>
+      <div className="glass-card" style={{ padding: '6px 12px', minWidth: '105px', textAlign: 'center', borderRadius: '12px' }}>
         <div style={{ color: 'var(--body-muted)', fontSize: '9px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.4px' }}>
           Flooded Area
         </div>
@@ -67,7 +67,7 @@ export const MetricsBar: React.FC<MetricsBarProps> = ({ metrics }) => {
       </div>
 
       {/* Dry Roads Count */}
-      <div className="glass-card" style={{ padding: '4px 10px', minWidth: '85px', textAlign: 'center' }}>
+      <div className="glass-card" style={{ padding: '6px 12px', minWidth: '90px', textAlign: 'center', borderRadius: '12px' }}>
         <div style={{ color: 'var(--body-muted)', fontSize: '9px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.4px' }}>
           Dry Roads
         </div>
@@ -77,7 +77,7 @@ export const MetricsBar: React.FC<MetricsBarProps> = ({ metrics }) => {
       </div>
 
       {/* Passable Roads Count */}
-      <div className="glass-card" style={{ padding: '4px 10px', minWidth: '85px', textAlign: 'center' }}>
+      <div className="glass-card" style={{ padding: '6px 12px', minWidth: '90px', textAlign: 'center', borderRadius: '12px' }}>
         <div style={{ color: 'var(--body-muted)', fontSize: '9px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.4px' }}>
           Passable
         </div>
@@ -87,7 +87,7 @@ export const MetricsBar: React.FC<MetricsBarProps> = ({ metrics }) => {
       </div>
 
       {/* Impassable Roads Count */}
-      <div className="glass-card" style={{ padding: '4px 10px', minWidth: '95px', textAlign: 'center' }}>
+      <div className="glass-card" style={{ padding: '6px 12px', minWidth: '100px', textAlign: 'center', borderRadius: '12px' }}>
         <div style={{ color: 'var(--body-muted)', fontSize: '9px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.4px' }}>
           Impassable
         </div>
@@ -97,7 +97,7 @@ export const MetricsBar: React.FC<MetricsBarProps> = ({ metrics }) => {
       </div>
 
       {/* Surcharged Manholes */}
-      <div className="glass-card" style={{ padding: '4px 10px', minWidth: '90px', textAlign: 'center' }}>
+      <div className="glass-card" style={{ padding: '6px 12px', minWidth: '95px', textAlign: 'center', borderRadius: '12px' }}>
         <div style={{ color: 'var(--body-muted)', fontSize: '9px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.4px' }}>
           Surcharged
         </div>
@@ -107,7 +107,7 @@ export const MetricsBar: React.FC<MetricsBarProps> = ({ metrics }) => {
       </div>
 
       {/* Storage Volume */}
-      <div className="glass-card" style={{ padding: '4px 10px', minWidth: '100px', textAlign: 'center' }}>
+      <div className="glass-card" style={{ padding: '6px 12px', minWidth: '105px', textAlign: 'center', borderRadius: '12px' }}>
         <div style={{ color: 'var(--body-muted)', fontSize: '9px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.4px' }}>
           Storage Vol
         </div>
@@ -117,7 +117,7 @@ export const MetricsBar: React.FC<MetricsBarProps> = ({ metrics }) => {
       </div>
 
       {/* Outfall Discharge */}
-      <div className="glass-card" style={{ padding: '4px 10px', minWidth: '95px', textAlign: 'center' }}>
+      <div className="glass-card" style={{ padding: '6px 12px', minWidth: '100px', textAlign: 'center', borderRadius: '12px' }}>
         <div style={{ color: 'var(--body-muted)', fontSize: '9px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.4px' }}>
           Outfall Q
         </div>
@@ -127,7 +127,7 @@ export const MetricsBar: React.FC<MetricsBarProps> = ({ metrics }) => {
       </div>
 
       {/* Active Model */}
-      <div className="glass-card" style={{ padding: '4px 10px', minWidth: '130px', textAlign: 'center' }}>
+      <div className="glass-card" style={{ padding: '6px 12px', minWidth: '135px', textAlign: 'center', borderRadius: '12px' }}>
         <div style={{ color: 'var(--body-muted)', fontSize: '9px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.4px' }}>
           Active Model
         </div>
@@ -137,7 +137,7 @@ export const MetricsBar: React.FC<MetricsBarProps> = ({ metrics }) => {
       </div>
 
       {/* Dataset Source */}
-      <div className="glass-card" style={{ padding: '4px 10px', minWidth: '135px', textAlign: 'center' }}>
+      <div className="glass-card" style={{ padding: '6px 12px', minWidth: '140px', textAlign: 'center', borderRadius: '12px' }}>
         <div style={{ color: 'var(--body-muted)', fontSize: '9px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.4px' }}>
           Dataset Source
         </div>

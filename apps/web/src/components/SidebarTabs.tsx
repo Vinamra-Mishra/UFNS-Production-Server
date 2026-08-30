@@ -398,16 +398,16 @@ export const SidebarTabs: React.FC<SidebarTabsProps> = ({
         overflow: 'hidden',
       }}
     >
-      {/* Unified Multi-Module Navigation Strip (Balanced 2-Row Layout) */}
+      {/* Unified Multi-Module Navigation Strip (One UI Mobile Pill Group) */}
       <div
         role="tablist"
         aria-label="Sidebar Module Navigation"
         style={{
           display: 'flex',
           flexWrap: 'wrap',
-          gap: '4px',
-          background: 'rgba(18, 18, 20, 0.95)',
-          padding: '6px',
+          gap: '6px',
+          background: 'rgba(16, 16, 20, 0.95)',
+          padding: '8px',
           borderBottom: '1px solid var(--hairline)',
           width: '100%',
           boxSizing: 'border-box',
@@ -428,12 +428,12 @@ export const SidebarTabs: React.FC<SidebarTabsProps> = ({
                 if (t.id === 'tab-risk-briefing' && !briefingData) handleLoadBriefing();
               }}
               style={{
-                flex: idx < 4 ? '1 1 calc(25% - 4px)' : '1 1 calc(33.33% - 4px)',
-                background: isActive ? 'var(--primary-focus)' : 'rgba(38, 38, 40, 0.55)',
+                flex: idx < 4 ? '1 1 calc(25% - 6px)' : '1 1 calc(33.33% - 6px)',
+                background: isActive ? 'linear-gradient(135deg, #3b82f6, #2563eb)' : 'rgba(32, 32, 40, 0.6)',
                 color: isActive ? '#ffffff' : 'var(--body-muted)',
-                border: isActive ? '1px solid var(--primary-on-dark)' : '1px solid var(--hairline-soft)',
-                borderRadius: '8px',
-                padding: '6px 3px',
+                border: isActive ? '1px solid rgba(255, 255, 255, 0.25)' : '1px solid var(--hairline-soft)',
+                borderRadius: '12px',
+                padding: '7px 4px',
                 cursor: 'pointer',
                 fontSize: '11px',
                 fontWeight: 600,
@@ -442,19 +442,17 @@ export const SidebarTabs: React.FC<SidebarTabsProps> = ({
                 alignItems: 'center',
                 justifyContent: 'center',
                 gap: '2px',
-                transition: 'all 0.15s ease',
+                transition: 'all 0.15s cubic-bezier(0.16, 1, 0.3, 1)',
                 textAlign: 'center',
                 boxSizing: 'border-box',
-                boxShadow: isActive ? '0 2px 8px var(--primary-glow)' : 'none',
+                boxShadow: isActive ? '0 4px 14px rgba(37, 99, 235, 0.4)' : 'none',
               }}
             >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                 {t.icon}
-                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.label}</span>
+                <span>{t.label}</span>
               </div>
-              <span style={{ fontSize: '8px', color: isActive ? 'rgba(255,255,255,0.8)' : 'var(--ink-muted-48)', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                {t.subtitle}
-              </span>
+              <span style={{ fontSize: '9px', opacity: isActive ? 0.95 : 0.65, fontWeight: 500 }}>{t.subtitle}</span>
             </button>
           );
         })}
@@ -719,7 +717,7 @@ export const SidebarTabs: React.FC<SidebarTabsProps> = ({
                   </div>
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginTop: '4px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginTop: '6px' }}>
                   <button
                     type="button"
                     disabled={!isRouteFormValid}
@@ -727,14 +725,20 @@ export const SidebarTabs: React.FC<SidebarTabsProps> = ({
                     className="action-btn"
                     title={isRouteFormValid ? 'Compute Path' : 'Enter valid numeric X, Y coordinates'}
                     style={{
-                      padding: '8px',
-                      fontSize: '11px',
-                      gap: '5px',
+                      padding: '10px 14px',
+                      fontSize: '12px',
+                      fontWeight: 700,
+                      gap: '6px',
+                      borderRadius: '9999px',
+                      background: isRouteFormValid ? 'linear-gradient(135deg, #3b82f6, #1d4ed8)' : 'rgba(40, 40, 48, 0.5)',
+                      boxShadow: isRouteFormValid ? '0 4px 14px rgba(37, 99, 235, 0.4)' : 'none',
+                      color: '#ffffff',
                       opacity: isRouteFormValid ? 1.0 : 0.45,
                       cursor: isRouteFormValid ? 'pointer' : 'not-allowed',
+                      border: '1px solid rgba(255, 255, 255, 0.15)',
                     }}
                   >
-                    <Navigation size={12} aria-hidden="true" />
+                    <Navigation size={13} aria-hidden="true" />
                     <span>Compute Path</span>
                   </button>
                   <button
@@ -769,12 +773,22 @@ export const SidebarTabs: React.FC<SidebarTabsProps> = ({
                       setDestY(targetDest[1]);
                       setDestInput(`${targetDest[0].toFixed(1)}, ${targetDest[1].toFixed(1)}`);
                       if (onDestinationChange) onDestinationChange(targetDest);
-                      onCalculateRoute([originX, originY], targetDest, routeMode || 'flood_aware');
+                      onCalculateRoute([originX, originY], targetDest, routeMode || 'safest');
                     }}
                     className="action-btn"
-                    style={{ background: 'var(--green)', color: '#000000', padding: '8px', fontSize: '11px', gap: '5px' }}
+                    style={{
+                      background: 'linear-gradient(135deg, #10b981, #047857)',
+                      boxShadow: '0 4px 14px rgba(16, 185, 129, 0.4)',
+                      color: '#ffffff',
+                      padding: '10px 14px',
+                      fontSize: '12px',
+                      fontWeight: 700,
+                      gap: '6px',
+                      borderRadius: '9999px',
+                      border: '1px solid rgba(255, 255, 255, 0.15)',
+                    }}
                   >
-                    <ShieldCheck size={12} aria-hidden="true" />
+                    <ShieldCheck size={13} aria-hidden="true" />
                     <span>Nearest Shelter</span>
                   </button>
 
