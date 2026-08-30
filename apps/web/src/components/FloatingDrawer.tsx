@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { apiUrl } from '../config';
 import {
   ScenarioMeta,
@@ -70,19 +70,39 @@ export const FloatingDrawer: React.FC<FloatingDrawerProps> = ({
   const [briefingData, setBriefingData] = useState<any>(null);
   const [selectedBudget, setSelectedBudget] = useState<number>(5.0);
 
+  const drawerAbortControllerRef = useRef<AbortController | null>(null);
+
+  const renewAbortController = () => {
+    if (drawerAbortControllerRef.current) {
+      drawerAbortControllerRef.current.abort();
+    }
+    const controller = new AbortController();
+    drawerAbortControllerRef.current = controller;
+    return controller;
+  };
+
+  useEffect(() => {
+    if (drawerAbortControllerRef.current) {
+      drawerAbortControllerRef.current.abort();
+    }
+  }, [activeScenarioId, currentLead]);
+
   const activeScenario = scenarios.find((s) => s.scenario_id === activeScenarioId) || scenarios[0];
 
   const handleRunCalibration = async () => {
+    const controller = renewAbortController();
     setIsCalibrating(true);
     try {
       const res = await fetch(apiUrl('/api/v1/calibration/solve'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ strategy: 'NELDER_MEAD', target_params: ['pipe_manning_n', 'blockage_ratio', 'surface_roughness'] }),
+        signal: controller.signal,
       });
-      if (res.ok) setCalibResult(await res.json());
-      else throw new Error('Fallback');
-    } catch {
+      if (res.ok && !controller.signal.aborted) setCalibResult(await res.json());
+      else if (!controller.signal.aborted) throw new Error('Fallback');
+    } catch (e: any) {
+      if (e?.name === 'AbortError') return;
       setCalibResult({
         pipe_manning_n: 0.0142,
         blockage_ratio: 0.08,
@@ -95,19 +115,24 @@ export const FloatingDrawer: React.FC<FloatingDrawerProps> = ({
         benchmark_state: 'VERIFIED_CALIBRATED',
       });
     } finally {
-      setIsCalibrating(false);
+      if (drawerAbortControllerRef.current === controller) {
+        setIsCalibrating(false);
+      }
     }
   };
 
   const handleGenerateAlert = async () => {
+    const controller = renewAbortController();
     try {
       const res = await fetch(apiUrl('/api/v1/alerts/generate'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ scenario_id: activeScenarioId, lead_minutes: currentLead }),
+        signal: controller.signal,
       });
-      if (res.ok) setAlertResult(await res.json());
-    } catch {
+      if (res.ok && !controller.signal.aborted) setAlertResult(await res.json());
+    } catch (e: any) {
+      if (e?.name === 'AbortError') return;
       setAlertResult({
         alert_id: `CAP-ALERT-MUMBAI-${currentLead}M`,
         headline: `CRITICAL FLOOD ALERT: Surcharged Drainage & Road Inundation at T+${currentLead}m`,
@@ -123,14 +148,17 @@ export const FloatingDrawer: React.FC<FloatingDrawerProps> = ({
   };
 
   const handleRunMitigation = async () => {
+    const controller = renewAbortController();
     try {
       const res = await fetch(apiUrl('/api/v1/mitigation/simulate'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ scenario_id: activeScenarioId, budget_cr: selectedBudget }),
+        signal: controller.signal,
       });
-      if (res.ok) setMitigationResult(await res.json());
-    } catch {
+      if (res.ok && !controller.signal.aborted) setMitigationResult(await res.json());
+    } catch (e: any) {
+      if (e?.name === 'AbortError') return;
       setMitigationResult({
         retention_volume_m3: 5200,
         pump_capacity_m3h: 2400,
@@ -143,14 +171,17 @@ export const FloatingDrawer: React.FC<FloatingDrawerProps> = ({
   };
 
   const handleRunPareto = async () => {
+    const controller = renewAbortController();
     try {
       const res = await fetch(apiUrl('/api/v1/mitigation/pareto'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ budget_range_cr: [1.0, 10.0], steps: 5 }),
+        signal: controller.signal,
       });
-      if (res.ok) setParetoResult(await res.json());
-    } catch {
+      if (res.ok && !controller.signal.aborted) setParetoResult(await res.json());
+    } catch (e: any) {
+      if (e?.name === 'AbortError') return;
       setParetoResult({
         frontier: [
           { budget_cr: 1.0, depth_reduction_pct: 18.2, bcr: 4.1 },
@@ -165,14 +196,17 @@ export const FloatingDrawer: React.FC<FloatingDrawerProps> = ({
   };
 
   const handleRunMonteCarlo = async () => {
+    const controller = renewAbortController();
     try {
       const res = await fetch(apiUrl('/api/v1/probabilistic/ensemble'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ n_samples: 100, scenario_id: activeScenarioId }),
+        signal: controller.signal,
       });
-      if (res.ok) setMcResult(await res.json());
-    } catch {
+      if (res.ok && !controller.signal.aborted) setMcResult(await res.json());
+    } catch (e: any) {
+      if (e?.name === 'AbortError') return;
       setMcResult({
         n_members: 100,
         p50_peak_depth_m: 0.62,

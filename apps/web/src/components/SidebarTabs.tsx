@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { apiUrl } from '../config';
 import {
   ScenarioMeta,
@@ -129,7 +129,7 @@ export const SidebarTabs: React.FC<SidebarTabsProps> = ({
 
 
 
-  // Operational feature states
+  // Operational feature states & Abort Controller
   const [calibResult, setCalibResult] = useState<any>(null);
   const [isCalibrating, setIsCalibrating] = useState<boolean>(false);
   const [alertResult, setAlertResult] = useState<any>(null);
@@ -139,10 +139,30 @@ export const SidebarTabs: React.FC<SidebarTabsProps> = ({
   const [briefingData, setBriefingData] = useState<any>(null);
   const [selectedBudget, setSelectedBudget] = useState<number>(5.0);
 
+  const tabAbortControllerRef = useRef<AbortController | null>(null);
+
+  // Helper to renew calculation abort signal
+  const renewAbortController = () => {
+    if (tabAbortControllerRef.current) {
+      tabAbortControllerRef.current.abort();
+    }
+    const controller = new AbortController();
+    tabAbortControllerRef.current = controller;
+    return controller;
+  };
+
+  // Abort all calculations on city or scenario change
+  React.useEffect(() => {
+    if (tabAbortControllerRef.current) {
+      tabAbortControllerRef.current.abort();
+    }
+  }, [activeScenarioId, activeCity]);
+
   const activeScenario = scenarios.find((s) => s.scenario_id === activeScenarioId) || scenarios[0];
 
   // Unified Calibration: Nelder-Mead Optimization + Hydrodynamic Benchmark Metrics
   const handleRunCalibration = async () => {
+    const controller = renewAbortController();
     setIsCalibrating(true);
     try {
       const res = await fetch(apiUrl('/api/v1/calibration/solve'), {
@@ -155,8 +175,9 @@ export const SidebarTabs: React.FC<SidebarTabsProps> = ({
           max_evaluations: 10,
           duration_minutes: 15.0,
         }),
+        signal: controller.signal,
       });
-      if (res.ok) {
+      if (res.ok && !controller.signal.aborted) {
         const data = await res.json();
         setCalibResult({
           ...data,
@@ -168,10 +189,11 @@ export const SidebarTabs: React.FC<SidebarTabsProps> = ({
           critical_success_index: data.critical_success_index ?? 0.887,
           root_mean_square_error_m: data.root_mean_square_error_m ?? data.final_metrics?.rmse ?? 0.038,
         });
-      } else {
+      } else if (!controller.signal.aborted) {
         throw new Error('Fallback calibration');
       }
-    } catch {
+    } catch (e: any) {
+      if (e?.name === 'AbortError') return;
       setCalibResult({
         pipe_manning_n: 0.0142,
         blockage_ratio: 0.08,
@@ -184,11 +206,14 @@ export const SidebarTabs: React.FC<SidebarTabsProps> = ({
         benchmark_state: 'VERIFIED_CALIBRATED',
       });
     } finally {
-      setIsCalibrating(false);
+      if (tabAbortControllerRef.current === controller) {
+        setIsCalibrating(false);
+      }
     }
   };
 
   const handleGenerateAlert = async () => {
+    const controller = renewAbortController();
     try {
       const res = await fetch(apiUrl('/api/v1/alerts/generate'), {
         method: 'POST',
@@ -197,8 +222,9 @@ export const SidebarTabs: React.FC<SidebarTabsProps> = ({
           scenario_id: activeScenarioId === 'REALTIME' ? 'S4' : activeScenarioId,
           lead_minutes: currentLead,
         }),
+        signal: controller.signal,
       });
-      if (res.ok) {
+      if (res.ok && !controller.signal.aborted) {
         const data = await res.json();
         const info0 = data.alert?.info?.[0] || {};
         setAlertResult({
@@ -212,10 +238,11 @@ export const SidebarTabs: React.FC<SidebarTabsProps> = ({
           description: data.description || info0.description || 'Coupled 2D overland hydrodynamics forecast high inundation on primary roadway corridors.',
           instruction: data.instruction || info0.instruction || 'Avoid low-lying underpasses. Reroute via elevated evacuation paths.',
         });
-      } else {
+      } else if (!controller.signal.aborted) {
         throw new Error('Fallback alert');
       }
-    } catch {
+    } catch (e: any) {
+      if (e?.name === 'AbortError') return;
       setAlertResult({
         alert_id: 'CAP-IN-2026-UFNS-001',
         event: 'Severe Flash Flood Inundation & Street Surcharge',
@@ -230,6 +257,7 @@ export const SidebarTabs: React.FC<SidebarTabsProps> = ({
   };
 
   const handleRunMitigation = async (strat: string) => {
+    const controller = renewAbortController();
     try {
       const res = await fetch(apiUrl('/api/v1/mitigation/simulate'), {
         method: 'POST',
@@ -243,8 +271,9 @@ export const SidebarTabs: React.FC<SidebarTabsProps> = ({
           pumping_capacity_m3s: 2.0,
           desilt_critical_conduits: true,
         }),
+        signal: controller.signal,
       });
-      if (res.ok) {
+      if (res.ok && !controller.signal.aborted) {
         const data = await res.json();
         const peakRed = data.deltas?.depth_reduction_pct || data.deltas?.max_depth_reduction_pct || 36.4;
         const bcr = data.benefit_cost_ratio ?? (data.mitigation_effectiveness_index ? +(data.mitigation_effectiveness_index * 12.5).toFixed(2) : 3.92);
@@ -260,10 +289,11 @@ export const SidebarTabs: React.FC<SidebarTabsProps> = ({
           volume_captured_m3: volCap,
           reopened_roads_count: reopened,
         });
-      } else {
+      } else if (!controller.signal.aborted) {
         throw new Error('Fallback mitigation');
       }
-    } catch {
+    } catch (e: any) {
+      if (e?.name === 'AbortError') return;
       setMitigationResult({
         strategy_id: strat,
         peak_depth_reduction_pct: 36.4,
@@ -278,6 +308,7 @@ export const SidebarTabs: React.FC<SidebarTabsProps> = ({
 
   const handleRunPareto = async (overrideBudget?: number) => {
     const budget = overrideBudget ?? selectedBudget;
+    const controller = renewAbortController();
     try {
       const res = await fetch(apiUrl('/api/v1/optimization/solve'), {
         method: 'POST',
@@ -287,8 +318,9 @@ export const SidebarTabs: React.FC<SidebarTabsProps> = ({
           lead_minutes: currentLead,
           budget_crores: budget,
         }),
+        signal: controller.signal,
       });
-      if (res.ok) {
+      if (res.ok && !controller.signal.aborted) {
         const data = await res.json();
         const activeTier = data.pareto_frontier?.find((t: any) => t.tier_id === data.optimal_recommended_tier) || data.pareto_frontier?.[0] || {};
         setParetoResult({
@@ -299,10 +331,11 @@ export const SidebarTabs: React.FC<SidebarTabsProps> = ({
           benefit_cost_ratio: activeTier.benefit_cost_ratio_bcr ?? data.benefit_cost_ratio ?? 1.08,
           allocated_capex_cr: activeTier.cost_breakdown?.total_capex_crores ?? budget,
         });
-      } else {
+      } else if (!controller.signal.aborted) {
         throw new Error('Fallback pareto');
       }
-    } catch {
+    } catch (e: any) {
+      if (e?.name === 'AbortError') return;
       let tier = 'TIER_1_TACTICAL';
       let dRed = 45.4;
       let bcr = 1.08;
@@ -330,18 +363,21 @@ export const SidebarTabs: React.FC<SidebarTabsProps> = ({
   };
 
   const handleRunMonteCarlo = async () => {
+    const controller = renewAbortController();
     try {
       const res = await fetch(apiUrl('/api/v1/probabilistic/simulate'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ scenario_id: activeScenarioId, lead_minutes: currentLead, member_count: 10 }),
+        signal: controller.signal,
       });
-      if (res.ok) {
+      if (res.ok && !controller.signal.aborted) {
         setMcResult(await res.json());
-      } else {
+      } else if (!controller.signal.aborted) {
         throw new Error('Fallback MC');
       }
-    } catch {
+    } catch (e: any) {
+      if (e?.name === 'AbortError') return;
       setMcResult({
         p10_max_depth_m: 0.42,
         p50_max_depth_m: 0.78,
@@ -352,14 +388,16 @@ export const SidebarTabs: React.FC<SidebarTabsProps> = ({
   };
 
   const handleLoadBriefing = async () => {
+    const controller = renewAbortController();
     try {
-      const res = await fetch(apiUrl('/api/v1/reports/executive-briefing'));
-      if (res.ok) {
+      const res = await fetch(apiUrl('/api/v1/reports/executive-briefing'), { signal: controller.signal });
+      if (res.ok && !controller.signal.aborted) {
         setBriefingData(await res.json());
-      } else {
+      } else if (!controller.signal.aborted) {
         throw new Error('Fallback briefing');
       }
-    } catch {
+    } catch (e: any) {
+      if (e?.name === 'AbortError') return;
       setBriefingData({
         title: 'Disaster Management Authority Incident Briefing',
         authority: 'Municipal Corporation Flood Command Cell',

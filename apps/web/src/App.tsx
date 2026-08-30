@@ -86,6 +86,15 @@ export const App: React.FC = () => {
   const [bufferedLeads, setBufferedLeads] = useState<number[]>([]);
   const [isBuffering, setIsBuffering] = useState<boolean>(false);
 
+  // Active In-Flight Calculation & Fetch Abort Controllers
+  const cityAbortControllerRef = useRef<AbortController | null>(null);
+  const horizonAbortControllerRef = useRef<AbortController | null>(null);
+  const frameAbortControllerRef = useRef<AbortController | null>(null);
+  const roadTierAbortControllerRef = useRef<AbortController | null>(null);
+  const routeAbortControllerRef = useRef<AbortController | null>(null);
+  const cityGenerationTokenRef = useRef<number>(0);
+  const frameGenerationTokenRef = useRef<number>(0);
+
   // 14 Layer Toggles State
   const [layers, setLayers] = useState<LayerState>({
     flood_2d: true,
@@ -140,11 +149,13 @@ export const App: React.FC = () => {
         }
       } else if (rawDepth instanceof Float32Array) {
         parsedDepth = rawDepth;
-      } else {
+      } else if (Array.isArray(rawDepth)) {
         parsedDepth = new Float32Array(rawDepth);
+      } else {
+        parsedDepth = new Float32Array(0);
       }
     } else {
-      parsedDepth = new Float32Array(gridMeta.width * gridMeta.height);
+      parsedDepth = new Float32Array(0);
     }
 
     const rawRain = data.rainfall_grid || data.rainfall?.values || data.rain_grid;
@@ -310,38 +321,50 @@ export const App: React.FC = () => {
     return lowerFrame || upperFrame || null;
   }, []);
 
-  // Pre-load horizon frames in background (Full 3-hour 180min nowcast horizon)
-  const preloadHorizon = useCallback(async (horizonMinutes = 180, stepMinutes = 5) => {
+  // Pre-load horizon frames in background with immediate cancellation support
+  const preloadHorizon = useCallback(async (scenarioId: string, horizonMinutes = 180, stepMinutes = 5) => {
+    if (horizonAbortControllerRef.current) {
+      horizonAbortControllerRef.current.abort();
+    }
+    const controller = new AbortController();
+    horizonAbortControllerRef.current = controller;
+    const currentToken = cityGenerationTokenRef.current;
+
     setIsBuffering(true);
     try {
-      const url = activeScenarioId === 'REALTIME'
+      const url = scenarioId === 'REALTIME'
         ? apiUrl(`/api/v1/nowcast/realtime/horizon?max_lead=${horizonMinutes}&step=${stepMinutes}`)
-        : apiUrl(`/api/v1/scenarios/${activeScenarioId}/horizon?max_lead=${horizonMinutes}&step=${stepMinutes}`);
-      const res = await fetch(url);
-      if (res.ok) {
+        : apiUrl(`/api/v1/scenarios/${scenarioId}/horizon?max_lead=${horizonMinutes}&step=${stepMinutes}`);
+      const res = await fetch(url, { signal: controller.signal });
+      if (res.ok && !controller.signal.aborted && currentToken === cityGenerationTokenRef.current) {
         const data = await res.json();
         if (Array.isArray(data.frames)) {
           const loadedLeads: number[] = [];
           data.frames.forEach((f: any) => {
             const lead = f.lead_minutes ?? 0;
-            const parsed = parseFramePayload(f, activeScenarioId, lead);
-            frameCacheRef.current.set(`${activeScenarioId}_${lead}`, parsed);
+            const parsed = parseFramePayload(f, scenarioId, lead);
+            frameCacheRef.current.set(`${scenarioId}_${lead}`, parsed);
             loadedLeads.push(lead);
           });
-          setBufferedLeads((prev) =>
-            Array.from(new Set([...prev, ...loadedLeads])).sort((a, b) => a - b)
-          );
+          if (!controller.signal.aborted && currentToken === cityGenerationTokenRef.current) {
+            setBufferedLeads((prev) =>
+              Array.from(new Set([...prev, ...loadedLeads])).sort((a, b) => a - b)
+            );
+          }
         }
-
       }
-    } catch (e) {
-      console.warn('Batch horizon preload failed:', e);
+    } catch (e: any) {
+      if (e?.name !== 'AbortError') {
+        console.warn('Batch horizon preload failed:', e);
+      }
     } finally {
-      setIsBuffering(false);
+      if (horizonAbortControllerRef.current === controller) {
+        setIsBuffering(false);
+      }
     }
-  }, [activeScenarioId, parseFramePayload]);
+  }, [parseFramePayload]);
 
-  // Load single or interpolated frame
+  // Load single or interpolated frame with cancellation guard
   const loadFrame = useCallback(async (scenarioId: string, lead: number, showBlockingLoader = false) => {
     const cached = getInterpolatedFrame(scenarioId, lead);
     if (cached) {
@@ -375,6 +398,15 @@ export const App: React.FC = () => {
       return;
     }
 
+    // Abort previous in-flight single frame fetch
+    if (frameAbortControllerRef.current) {
+      frameAbortControllerRef.current.abort();
+    }
+    const controller = new AbortController();
+    frameAbortControllerRef.current = controller;
+    const reqToken = ++frameGenerationTokenRef.current;
+    const currentCityToken = cityGenerationTokenRef.current;
+
     if (showBlockingLoader) {
       setIsLoading(true);
       setLoadingMessage(`Solving Coupled Hydrodynamic Equations (T+${lead}m)...`);
@@ -385,8 +417,8 @@ export const App: React.FC = () => {
       const url = scenarioId === 'REALTIME'
         ? apiUrl(`/api/v1/nowcast/realtime/frame?lead=${queryLead}`)
         : apiUrl(`/api/v1/scenarios/${scenarioId}/frame?lead=${queryLead}`);
-      const res = await fetch(url);
-      if (res.ok) {
+      const res = await fetch(url, { signal: controller.signal });
+      if (res.ok && !controller.signal.aborted && reqToken === frameGenerationTokenRef.current && currentCityToken === cityGenerationTokenRef.current) {
         const data = await res.json();
         const parsed = parseFramePayload(data, scenarioId, queryLead);
         frameCacheRef.current.set(`${scenarioId}_${queryLead}`, parsed);
@@ -400,41 +432,63 @@ export const App: React.FC = () => {
 
         setBufferedLeads((prev) => Array.from(new Set([...prev, queryLead])).sort((a, b) => a - b));
       }
-    } catch (e) {
-      console.error('Error fetching frame:', e);
+    } catch (e: any) {
+      if (e?.name !== 'AbortError') {
+        console.error('Error fetching frame:', e);
+      }
     } finally {
-      if (showBlockingLoader) setIsLoading(false);
+      if (showBlockingLoader && frameAbortControllerRef.current === controller) {
+        setIsLoading(false);
+      }
     }
   }, [getInterpolatedFrame, parseFramePayload]);
 
 
-  // Load City Data
-  const loadCityData = useCallback(async (city: CityId) => {
+  // Load City Data with complete in-flight abort
+  const loadCityData = useCallback(async (city: CityId, scenarioId: string) => {
+    // 1. Abort ALL previous in-flight city, horizon, frame, road and route requests
+    if (cityAbortControllerRef.current) cityAbortControllerRef.current.abort();
+    if (horizonAbortControllerRef.current) horizonAbortControllerRef.current.abort();
+    if (frameAbortControllerRef.current) frameAbortControllerRef.current.abort();
+    if (roadTierAbortControllerRef.current) roadTierAbortControllerRef.current.abort();
+    if (routeAbortControllerRef.current) routeAbortControllerRef.current.abort();
+
+    const controller = new AbortController();
+    cityAbortControllerRef.current = controller;
+    const token = ++cityGenerationTokenRef.current;
+
     setIsLoading(true);
     setLoadingMessage(`Loading High-Precision GIS Topography & Infrastructure for ${city}...`);
-    try {
-      frameCacheRef.current.clear();
-      setBufferedLeads([]);
+    frameCacheRef.current.clear();
+    setBufferedLeads([]);
+    setActiveRoute(null);
 
+    try {
       try {
         await fetch(apiUrl('/api/v1/city/switch'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ city_id: city }),
+          signal: controller.signal,
         });
-      } catch (e) {
+      } catch (e: any) {
+        if (e?.name === 'AbortError') return;
         console.warn('City switch notification notice:', e);
       }
 
-      // Fetch core GIS and active city specification
+      if (controller.signal.aborted || token !== cityGenerationTokenRef.current) return;
+
+      // Fetch core GIS and active city specification in parallel with abort signal
       const [metaRes, scenRes, roadsRes, drainRes, assetsRes, telemRes] = await Promise.allSettled([
-        fetch(apiUrl('/api/v1/city/active')).then((r) => (r.ok ? r.json() : null)),
-        fetch(apiUrl('/api/v1/scenarios')).then((r) => (r.ok ? r.json() : null)),
-        fetch(apiUrl(`/api/v1/roads?tier=${roadTier === 'none' ? 'main' : roadTier}`)).then((r) => (r.ok ? r.json() : null)),
-        fetch(apiUrl('/api/v1/drainage/points')).then((r) => (r.ok ? r.json() : null)),
-        fetch(apiUrl(`/api/v1/vulnerability/assets?city=${city}`)).then((r) => (r.ok ? r.json() : null)),
-        fetch(apiUrl('/api/v1/telemetry/live')).then((r) => (r.ok ? r.json() : null)),
+        fetch(apiUrl('/api/v1/city/active'), { signal: controller.signal }).then((r) => (r.ok ? r.json() : null)),
+        fetch(apiUrl('/api/v1/scenarios'), { signal: controller.signal }).then((r) => (r.ok ? r.json() : null)),
+        fetch(apiUrl(`/api/v1/roads?tier=${roadTier === 'none' ? 'main' : roadTier}`), { signal: controller.signal }).then((r) => (r.ok ? r.json() : null)),
+        fetch(apiUrl('/api/v1/drainage/points'), { signal: controller.signal }).then((r) => (r.ok ? r.json() : null)),
+        fetch(apiUrl(`/api/v1/vulnerability/assets?city=${city}`), { signal: controller.signal }).then((r) => (r.ok ? r.json() : null)),
+        fetch(apiUrl('/api/v1/telemetry/live'), { signal: controller.signal }).then((r) => (r.ok ? r.json() : null)),
       ]);
+
+      if (controller.signal.aborted || token !== cityGenerationTokenRef.current) return;
 
       if (metaRes.status === 'fulfilled' && metaRes.value) {
         const data = metaRes.value;
@@ -482,11 +536,11 @@ export const App: React.FC = () => {
 
       // Initial Frame (t=0)
       try {
-        const frameRes = await fetch(apiUrl(`/api/v1/scenarios/${activeScenarioId}/frame?lead=0`));
-        if (frameRes.ok) {
+        const frameRes = await fetch(apiUrl(`/api/v1/scenarios/${scenarioId}/frame?lead=0`), { signal: controller.signal });
+        if (frameRes.ok && !controller.signal.aborted && token === cityGenerationTokenRef.current) {
           const fData = await frameRes.json();
-          const parsed = parseFramePayload(fData, activeScenarioId, 0);
-          frameCacheRef.current.set(`${activeScenarioId}_0`, parsed);
+          const parsed = parseFramePayload(fData, scenarioId, 0);
+          frameCacheRef.current.set(`${scenarioId}_0`, parsed);
           setDepthGrid(parsed.depth);
           setRainfallGrid(parsed.rainfallGrid || null);
           setRoadImpacts(parsed.roadImpacts);
@@ -496,20 +550,34 @@ export const App: React.FC = () => {
           }
           setBufferedLeads([0]);
         }
-      } catch (fe) {
-        console.warn('Initial frame fetch warning:', fe);
+      } catch (fe: any) {
+        if (fe?.name !== 'AbortError') {
+          console.warn('Initial frame fetch warning:', fe);
+        }
       }
 
-      preloadHorizon(180, 5);
-    } catch (e) {
-      console.error('Error loading city data:', e);
+      if (!controller.signal.aborted && token === cityGenerationTokenRef.current) {
+        preloadHorizon(scenarioId, 180, 5);
+      }
+    } catch (e: any) {
+      if (e?.name !== 'AbortError') {
+        console.error('Error loading city data:', e);
+      }
     } finally {
-      setIsLoading(false);
+      if (cityAbortControllerRef.current === controller) {
+        setIsLoading(false);
+      }
     }
-  }, [activeScenarioId, parseFramePayload, preloadHorizon, roadTier]);
+  }, [parseFramePayload, preloadHorizon, roadTier]);
 
-  // Handle dynamic road tier partition switching
+  // Handle dynamic road tier partition switching with abort
   const handleRoadTierChange = useCallback(async (tier: RoadTier) => {
+    if (roadTierAbortControllerRef.current) {
+      roadTierAbortControllerRef.current.abort();
+    }
+    const controller = new AbortController();
+    roadTierAbortControllerRef.current = controller;
+
     setRoadTier(tier);
     if (tier === 'none') {
       setRoads([]);
@@ -518,19 +586,27 @@ export const App: React.FC = () => {
     }
     setLayers((prev) => ({ ...prev, roads: true }));
     try {
-      const res = await fetch(apiUrl(`/api/v1/roads?tier=${tier}`));
-      if (res.ok) {
+      const res = await fetch(apiUrl(`/api/v1/roads?tier=${tier}`), { signal: controller.signal });
+      if (res.ok && !controller.signal.aborted) {
         const data = await res.json();
         const segs: RoadSegment[] = data.roads || data.segments || [];
         setRoads(segs);
       }
-    } catch (e) {
-      console.error('Error fetching road tier:', e);
+    } catch (e: any) {
+      if (e?.name !== 'AbortError') {
+        console.error('Error fetching road tier:', e);
+      }
     }
   }, []);
 
-  // Handle Route Calculation
+  // Handle Route Calculation with abort
   const handleCalculateRoute = async (origin: [number, number], destination: [number, number], mode: string) => {
+    if (routeAbortControllerRef.current) {
+      routeAbortControllerRef.current.abort();
+    }
+    const controller = new AbortController();
+    routeAbortControllerRef.current = controller;
+
     try {
       const res = await fetch(apiUrl('/api/v1/routes'), {
         method: 'POST',
@@ -542,8 +618,9 @@ export const App: React.FC = () => {
           destination,
           mode: mode || 'safest',
         }),
+        signal: controller.signal,
       });
-      if (res.ok) {
+      if (res.ok && !controller.signal.aborted) {
         const routeData = await res.json();
 
         const parseTier = (t: any, defaultId: 'safest' | 'caution' | 'hazardous', defaultLabel: string, defaultColor: string): RouteTier | undefined => {
@@ -604,8 +681,10 @@ export const App: React.FC = () => {
         const err = await res.json().catch(() => ({}));
         console.warn('Route calculation warning response:', err);
       }
-    } catch (e) {
-      console.error('Route calculation error:', e);
+    } catch (e: any) {
+      if (e?.name !== 'AbortError') {
+        console.error('Route calculation error:', e);
+      }
     }
   };
 
@@ -628,15 +707,17 @@ export const App: React.FC = () => {
 
   // When activeCity changes (initial load or city switch)
   useEffect(() => {
-    loadCityData(activeCity);
-  }, [activeCity, loadCityData]);
+    loadCityData(activeCity, activeScenarioId);
+  }, [activeCity, activeScenarioId, loadCityData]);
 
   // When scenario changes
   useEffect(() => {
+    if (horizonAbortControllerRef.current) horizonAbortControllerRef.current.abort();
+    if (frameAbortControllerRef.current) frameAbortControllerRef.current.abort();
     frameCacheRef.current.clear();
     setBufferedLeads([]);
     loadFrame(activeScenarioId, currentLead, false);
-    preloadHorizon(180, 5);
+    preloadHorizon(activeScenarioId, 180, 5);
   }, [activeScenarioId]);
 
   // When lead changes (Smooth playback - purely in-memory from cache)
@@ -726,7 +807,7 @@ export const App: React.FC = () => {
         onStepChange={setCurrentTimeStep}
         bufferedLeads={bufferedLeads}
         isBuffering={isBuffering}
-        onPreloadHorizon={preloadHorizon}
+        onPreloadHorizon={(horizonMinutes) => preloadHorizon(activeScenarioId, horizonMinutes, 5)}
       />
 
       {/* 4. Bottom Real-Time Telemetry Metrics Strip */}
