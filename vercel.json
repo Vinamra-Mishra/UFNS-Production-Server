@@ -5,15 +5,15 @@
   "rewrites": [
     {
       "source": "/api/(.*)",
-      "destination": "http://paloma.hidencloud.com:24666/api/$1"
+      "destination": "https://super-space-system-4jg4g5wg95w53pj4-8000.app.github.dev/api/$1"
     },
     {
       "source": "/health",
-      "destination": "http://paloma.hidencloud.com:24666/health"
+      "destination": "https://super-space-system-4jg4g5wg95w53pj4-8000.app.github.dev/health"
     },
     {
       "source": "/data/(.*)",
-      "destination": "http://paloma.hidencloud.com:24666/data/$1"
+      "destination": "https://super-space-system-4jg4g5wg95w53pj4-8000.app.github.dev/data/$1"
     },
     {
       "source": "/((?!assets/).*)",
